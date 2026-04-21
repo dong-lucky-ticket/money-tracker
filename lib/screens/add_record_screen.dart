@@ -25,6 +25,7 @@ class _AddRecordScreenState extends State<AddRecordScreen> {
   final TextEditingController _remarkController = TextEditingController();
   final FocusNode _remarkFocusNode = FocusNode();
   bool _isKeyboardVisible = false;
+  final Map<String, GlobalKey> _categoryKeys = {};
 
   @override
   void initState() {
@@ -340,8 +341,24 @@ class _AddRecordScreenState extends State<AddRecordScreen> {
 
   Widget _buildCategoryItem(Category cat, bool isSelected) {
     final color = _hexToColor(cat.colorHex);
+    final key = _categoryKeys.putIfAbsent(cat.id, () => GlobalKey());
+
     return GestureDetector(
-      onTap: () => setState(() => _selectedCategory = cat),
+      key: key,
+      onTap: () {
+        setState(() => _selectedCategory = cat);
+        // 延迟到下一帧，等待底部功能区出现、GridView 尺寸缩小后，确保选中的分类依然在可视区域内
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (key.currentContext != null) {
+            Scrollable.ensureVisible(
+              key.currentContext!,
+              duration: const Duration(milliseconds: 300),
+              curve: Curves.easeInOut,
+              alignmentPolicy: ScrollPositionAlignmentPolicy.keepVisibleAtEnd,
+            );
+          }
+        });
+      },
       child: Column(
         children: [
           Container(

@@ -4,12 +4,87 @@ import 'package:material_design_icons_flutter/material_design_icons_flutter.dart
 class IconMapper {
   static IconData getIcon(String name) {
     switch (name) {
+      // === 支出 ===
       case 'food':
-        return MdiIcons.food;
+        return MdiIcons.silverwareForkKnife;
       case 'shopping':
-        return MdiIcons.shopping;
-      case 'bus':
+        return MdiIcons.shoppingOutline;
+      case 'daily':
+        return MdiIcons.paperRollOutline;
+      case 'transport':
         return MdiIcons.bus;
+      case 'vegetables':
+        return MdiIcons.carrot;
+      case 'fruit':
+        return MdiIcons.fruitCherries;
+      case 'snacks':
+        return MdiIcons.cupcake;
+      case 'entertainment':
+        return MdiIcons.microphoneVariant;
+      case 'communication':
+        return MdiIcons.phoneInTalkOutline;
+      case 'clothing':
+        return MdiIcons.tshirtCrewOutline;
+      case 'housing':
+        return MdiIcons.homeOutline;
+      case 'child':
+        return MdiIcons.babyFaceOutline;
+      case 'elders':
+        return MdiIcons.faceManProfile;
+      case 'social':
+        return MdiIcons.chatOutline;
+      case 'travel':
+        return MdiIcons.airplane;
+      case 'alcohol':
+        return MdiIcons.glassWine;
+      case 'digital':
+        return MdiIcons.usb;
+      case 'car':
+        return MdiIcons.carOutline;
+      case 'medical':
+        return MdiIcons.medicalBag;
+      case 'books':
+        return MdiIcons.bookOutline;
+      case 'study':
+        return MdiIcons.schoolOutline;
+      case 'gift-money':
+        return MdiIcons.emailOutline;
+      case 'gift':
+        return MdiIcons.giftOutline;
+      case 'office':
+        return MdiIcons.briefcaseOutline;
+      case 'repair':
+        return MdiIcons.hammerWrench;
+      case 'lottery':
+        return MdiIcons.ticketOutline;
+      case 'relatives':
+        return MdiIcons.accountGroupOutline;
+      case 'express':
+        return MdiIcons.packageVariantClosed;
+      case 'wish':
+        return MdiIcons.heartOutline;
+      case 'train':
+        return MdiIcons.train;
+      case 'phone-bill':
+        return MdiIcons.cellphone;
+      case 'utility':
+        return MdiIcons.officeBuildingOutline;
+
+      // === 收入 ===
+      case 'salary':
+        return MdiIcons.cashMultiple;
+      case 'part-time':
+        return MdiIcons.clockOutline;
+      case 'investment':
+        return MdiIcons.chartLine;
+      case 'gift-money-income':
+        return MdiIcons.emailOutline;
+      case 'other':
+        return MdiIcons.sackOutline;
+      case 'lottery-income':
+        return MdiIcons.ticketOutline;
+
+      // === 系统图标/后备 ===
       case 'home-variant':
       case 'home-city':
         return MdiIcons.homeCity;

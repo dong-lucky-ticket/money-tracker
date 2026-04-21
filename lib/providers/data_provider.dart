@@ -26,21 +26,56 @@ class DataProvider with ChangeNotifier {
 
     _isDarkTheme = _settingsBox.get('isDarkTheme', defaultValue: false);
 
-    if (_categoriesBox.isEmpty) {
+    // 如果分类太少，自动重新初始化（方便演示更新的分类）
+    if (_categoriesBox.length < 15) {
+      await _categoriesBox.clear();
       _initDefaultCategories();
     }
   }
 
   void _initDefaultCategories() {
     final defaultCategories = [
-      Category(id: const Uuid().v4(), name: '餐饮美食', iconName: 'food', colorHex: '#F97316', isExpense: true, sortOrder: 0),
-      Category(id: const Uuid().v4(), name: '购物消费', iconName: 'shopping', colorHex: '#A855F7', isExpense: true, sortOrder: 1),
-      Category(id: const Uuid().v4(), name: '交通出行', iconName: 'bus', colorHex: '#3B82F6', isExpense: true, sortOrder: 2),
-      Category(id: const Uuid().v4(), name: '房屋居住', iconName: 'home-variant', colorHex: '#EF4444', isExpense: true, sortOrder: 3),
-      Category(id: const Uuid().v4(), name: '休闲娱乐', iconName: 'movie', colorHex: '#EC4899', isExpense: true, sortOrder: 4),
-      Category(id: const Uuid().v4(), name: '医疗保健', iconName: 'hospital', colorHex: '#14B8A6', isExpense: true, sortOrder: 5),
-      Category(id: const Uuid().v4(), name: '教育培训', iconName: 'school', colorHex: '#F59E0B', isExpense: true, sortOrder: 6),
-      Category(id: const Uuid().v4(), name: '工资收入', iconName: 'cash-multiple', colorHex: '#10B981', isExpense: false, sortOrder: 0),
+      // === 支出 ===
+      Category(id: const Uuid().v4(), name: '餐饮', iconName: 'food', colorHex: '#F97316', isExpense: true, sortOrder: 0),
+      Category(id: const Uuid().v4(), name: '购物', iconName: 'shopping', colorHex: '#EF4444', isExpense: true, sortOrder: 1),
+      Category(id: const Uuid().v4(), name: '日用', iconName: 'daily', colorHex: '#3B82F6', isExpense: true, sortOrder: 2),
+      Category(id: const Uuid().v4(), name: '交通', iconName: 'transport', colorHex: '#14B8A6', isExpense: true, sortOrder: 3),
+      Category(id: const Uuid().v4(), name: '蔬菜', iconName: 'vegetables', colorHex: '#10B981', isExpense: true, sortOrder: 4),
+      Category(id: const Uuid().v4(), name: '水果', iconName: 'fruit', colorHex: '#F59E0B', isExpense: true, sortOrder: 5),
+      Category(id: const Uuid().v4(), name: '零食', iconName: 'snacks', colorHex: '#EC4899', isExpense: true, sortOrder: 6),
+      Category(id: const Uuid().v4(), name: '娱乐', iconName: 'entertainment', colorHex: '#A855F7', isExpense: true, sortOrder: 7),
+      Category(id: const Uuid().v4(), name: '通讯', iconName: 'communication', colorHex: '#3B82F6', isExpense: true, sortOrder: 8),
+      Category(id: const Uuid().v4(), name: '服饰', iconName: 'clothing', colorHex: '#EC4899', isExpense: true, sortOrder: 9),
+      Category(id: const Uuid().v4(), name: '住房', iconName: 'housing', colorHex: '#F59E0B', isExpense: true, sortOrder: 10),
+      Category(id: const Uuid().v4(), name: '孩子', iconName: 'child', colorHex: '#14B8A6', isExpense: true, sortOrder: 11),
+      Category(id: const Uuid().v4(), name: '长辈', iconName: 'elders', colorHex: '#EF4444', isExpense: true, sortOrder: 12),
+      Category(id: const Uuid().v4(), name: '社交', iconName: 'social', colorHex: '#3B82F6', isExpense: true, sortOrder: 13),
+      Category(id: const Uuid().v4(), name: '旅行', iconName: 'travel', colorHex: '#10B981', isExpense: true, sortOrder: 14),
+      Category(id: const Uuid().v4(), name: '烟酒', iconName: 'alcohol', colorHex: '#EF4444', isExpense: true, sortOrder: 15),
+      Category(id: const Uuid().v4(), name: '数码', iconName: 'digital', colorHex: '#6366F1', isExpense: true, sortOrder: 16),
+      Category(id: const Uuid().v4(), name: '汽车', iconName: 'car', colorHex: '#3B82F6', isExpense: true, sortOrder: 17),
+      Category(id: const Uuid().v4(), name: '医疗', iconName: 'medical', colorHex: '#EF4444', isExpense: true, sortOrder: 18),
+      Category(id: const Uuid().v4(), name: '书籍', iconName: 'books', colorHex: '#8B5CF6', isExpense: true, sortOrder: 19),
+      Category(id: const Uuid().v4(), name: '学习', iconName: 'study', colorHex: '#F59E0B', isExpense: true, sortOrder: 20),
+      Category(id: const Uuid().v4(), name: '礼金', iconName: 'gift-money', colorHex: '#EF4444', isExpense: true, sortOrder: 21),
+      Category(id: const Uuid().v4(), name: '礼物', iconName: 'gift', colorHex: '#EC4899', isExpense: true, sortOrder: 22),
+      Category(id: const Uuid().v4(), name: '办公', iconName: 'office', colorHex: '#64748B', isExpense: true, sortOrder: 23),
+      Category(id: const Uuid().v4(), name: '维修', iconName: 'repair', colorHex: '#64748B', isExpense: true, sortOrder: 24),
+      Category(id: const Uuid().v4(), name: '彩票', iconName: 'lottery', colorHex: '#EF4444', isExpense: true, sortOrder: 25),
+      Category(id: const Uuid().v4(), name: '亲友', iconName: 'relatives', colorHex: '#F97316', isExpense: true, sortOrder: 26),
+      Category(id: const Uuid().v4(), name: '快递', iconName: 'express', colorHex: '#F59E0B', isExpense: true, sortOrder: 27),
+      Category(id: const Uuid().v4(), name: '星愿', iconName: 'wish', colorHex: '#A855F7', isExpense: true, sortOrder: 28),
+      Category(id: const Uuid().v4(), name: '火车高铁', iconName: 'train', colorHex: '#3B82F6', isExpense: true, sortOrder: 29),
+      Category(id: const Uuid().v4(), name: '话费', iconName: 'phone-bill', colorHex: '#14B8A6', isExpense: true, sortOrder: 30),
+      Category(id: const Uuid().v4(), name: '生活缴费', iconName: 'utility', colorHex: '#3B82F6', isExpense: true, sortOrder: 31),
+
+      // === 收入 ===
+      Category(id: const Uuid().v4(), name: '工资', iconName: 'salary', colorHex: '#10B981', isExpense: false, sortOrder: 0),
+      Category(id: const Uuid().v4(), name: '兼职', iconName: 'part-time', colorHex: '#F59E0B', isExpense: false, sortOrder: 1),
+      Category(id: const Uuid().v4(), name: '理财', iconName: 'investment', colorHex: '#3B82F6', isExpense: false, sortOrder: 2),
+      Category(id: const Uuid().v4(), name: '礼金', iconName: 'gift-money-income', colorHex: '#EF4444', isExpense: false, sortOrder: 3),
+      Category(id: const Uuid().v4(), name: '其它', iconName: 'other', colorHex: '#8B5CF6', isExpense: false, sortOrder: 4),
+      Category(id: const Uuid().v4(), name: '彩票', iconName: 'lottery-income', colorHex: '#EF4444', isExpense: false, sortOrder: 5),
     ];
     for (var c in defaultCategories) {
       _categoriesBox.put(c.id, c);

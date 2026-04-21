@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>蓝账本 - 分类管理</title>
+<script src="https://modao.cc/agent-py/static/source/js/tailwindcss.3.4.3.js"></script>
+<script src="https://modao.cc/agent-py/static/source/js/iconify-icon.min.1.0.7.js"></script>
+<style>
+        body { background-color: #f0f2f5; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif; }
+        .phone-container { width: 393px; height: 851px; background: #F7F9FC; position: relative; overflow: hidden; border: 8px solid #333; border-radius: 40px; box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25); margin: 20px auto; }
+        .status-bar { height: 44px; padding: 0 24px; display: flex; justify-content: space-between; align-items: center; font-size: 14px; font-weight: 600; }
+        .no-scrollbar::-webkit-scrollbar { display: none; }
+    </style>
+</head>
+<body>
+<div class="phone-container flex flex-col">
+<!-- 状态栏 -->
+<div class="status-bar text-gray-800">
+<span>09:41</span>
+<div class="flex gap-1.5 items-center">
+<iconify-icon icon="mdi:signal"></iconify-icon>
+<iconify-icon icon="mdi:wifi"></iconify-icon>
+<iconify-icon icon="mdi:battery"></iconify-icon>
+</div>
+</div>
+<!-- 顶部导航 -->
+<div class="px-5 py-4 flex items-center border-b bg-white">
+<a class="mr-4" href="record.html">
+<iconify-icon class="text-2xl text-gray-600" icon="mdi:arrow-left"></iconify-icon>
+</a>
+<h1 class="text-lg font-bold text-gray-900 flex-1 text-center mr-8">分类管理</h1>
+</div>
+<!-- Tab 切换 -->
+<div class="flex bg-white px-5 py-3 gap-8 border-b">
+<div class="relative pb-2">
+<span class="text-sm font-bold text-[#4A90E2]">支出分类</span>
+<div class="absolute bottom-0 left-0 w-full h-1 bg-[#4A90E2] rounded-full"></div>
+</div>
+<div class="relative pb-2">
+<span class="text-sm font-bold text-gray-400">收入分类</span>
+</div>
+</div>
+<!-- 内容列表 -->
+<div class="flex-1 overflow-y-auto px-5 no-scrollbar py-4">
+<div class="bg-white rounded-3xl shadow-sm border border-gray-100 overflow-hidden">
+<!-- 餐饮 -->
+<div class="flex items-center gap-4 p-4 border-b border-gray-50 active:bg-gray-50">
+<div class="w-10 h-10 rounded-full bg-orange-100 flex items-center justify-center text-orange-500">
+<iconify-icon icon="mdi:food" width="24"></iconify-icon>
+</div>
+<span class="flex-1 font-medium text-gray-800">餐饮美食</span>
+<iconify-icon class="text-gray-300" icon="mdi:menu"></iconify-icon>
+</div>
+<!-- 购物 -->
+<div class="flex items-center gap-4 p-4 border-b border-gray-50 active:bg-gray-50">
+<div class="w-10 h-10 rounded-full bg-purple-100 flex items-center justify-center text-purple-500">
+<iconify-icon icon="mdi:shopping" width="24"></iconify-icon>
+</div>
+<span class="flex-1 font-medium text-gray-800">购物消费</span>
+<iconify-icon class="text-gray-300" icon="mdi:menu"></iconify-icon>
+</div>
+<!-- 交通 -->
+<div class="flex items-center gap-4 p-4 border-b border-gray-50 active:bg-gray-50">
+<div class="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center text-blue-500">
+<iconify-icon icon="mdi:bus" width="24"></iconify-icon>
+</div>
+<span class="flex-1 font-medium text-gray-800">交通出行</span>
+<iconify-icon class="text-gray-300" icon="mdi:menu"></iconify-icon>
+</div>
+<!-- 居住 -->
+<div class="flex items-center gap-4 p-4 border-b border-gray-50 active:bg-gray-50">
+<div class="w-10 h-10 rounded-full bg-red-100 flex items-center justify-center text-red-500">
+<iconify-icon icon="mdi:home-variant" width="24"></iconify-icon>
+</div>
+<span class="flex-1 font-medium text-gray-800">房屋居住</span>
+<iconify-icon class="text-gray-300" icon="mdi:menu"></iconify-icon>
+</div>
+<!-- 娱乐 -->
+<div class="flex items-center gap-4 p-4 border-b border-gray-50 active:bg-gray-50">
+<div class="w-10 h-10 rounded-full bg-pink-100 flex items-center justify-center text-pink-500">
+<iconify-icon icon="mdi:movie" width="24"></iconify-icon>
+</div>
+<span class="flex-1 font-medium text-gray-800">休闲娱乐</span>
+<iconify-icon class="text-gray-300" icon="mdi:menu"></iconify-icon>
+</div>
+<!-- 医疗 -->
+<div class="flex items-center gap-4 p-4 border-b border-gray-50 active:bg-gray-50">
+<div class="w-10 h-10 rounded-full bg-teal-100 flex items-center justify-center text-teal-500">
+<iconify-icon icon="mdi:hospital" width="24"></iconify-icon>
+</div>
+<span class="flex-1 font-medium text-gray-800">医疗保健</span>
+<iconify-icon class="text-gray-300" icon="mdi:menu"></iconify-icon>
+</div>
+</div>
+<button class="w-full mt-6 py-4 bg-white rounded-2xl border-2 border-dashed border-gray-200 text-gray-400 flex items-center justify-center gap-2 font-medium">
+<iconify-icon icon="mdi:plus"></iconify-icon>
+<span>新增分类</span>
+</button>
+</div>
+<!-- 底部说明 -->
+<div class="px-8 pb-10 text-center">
+<p class="text-xs text-gray-400 leading-relaxed">长按分类项目可以拖拽排序</p>
+</div>
+</div>
+</body>
+</html>

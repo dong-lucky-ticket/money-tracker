@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>蓝账本 - 记一笔</title>
+<script src="https://modao.cc/agent-py/static/source/js/tailwindcss.3.4.3.js"></script>
+<script src="https://modao.cc/agent-py/static/source/js/iconify-icon.min.1.0.7.js"></script>
+<style>
+        body { background-color: #f0f2f5; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif; }
+        .phone-container { width: 393px; height: 851px; background: #FFF; position: relative; overflow: hidden; border: 8px solid #333; border-radius: 40px; box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25); margin: 20px auto; }
+        .status-bar { height: 44px; padding: 0 24px; display: flex; justify-content: space-between; align-items: center; font-size: 14px; font-weight: 600; }
+        .category-item.active { background-color: #4A90E2; color: white; }
+        .keypad-btn { height: 60px; display: flex; items-center; justify-center; font-size: 20px; font-weight: 500; border: 0.5px solid #f3f4f6; }
+        .keypad-btn:active { background-color: #f3f4f6; }
+    </style>
+</head>
+<body class="flex items-center justify-center min-h-screen">
+<div class="phone-container flex flex-col">
+<!-- 状态栏 -->
+<div class="status-bar text-gray-800">
+<span>09:41</span>
+<div class="flex gap-1.5 items-center">
+<iconify-icon icon="mdi:signal"></iconify-icon>
+<iconify-icon icon="mdi:wifi"></iconify-icon>
+<iconify-icon icon="mdi:battery"></iconify-icon>
+</div>
+</div>
+<!-- 顶部导航 -->
+<div class="px-4 py-2 flex justify-between items-center border-b">
+<a class="text-gray-600 text-sm" href="index.html">取消</a>
+<div class="flex bg-gray-100 rounded-full p-1">
+<button class="px-6 py-1.5 rounded-full text-sm font-bold bg-white shadow-sm text-gray-800">支出</button>
+<button class="px-6 py-1.5 rounded-full text-sm font-bold text-gray-500">收入</button>
+</div>
+<a class="text-[#4A90E2] text-sm font-bold" href="index.html">完成</a>
+</div>
+<!-- 金额显示 -->
+<div class="px-6 py-8">
+<div class="flex justify-between items-end border-b-2 border-gray-100 pb-2">
+<span class="text-gray-400 text-sm mb-1">金额 (CNY)</span>
+<div class="flex items-center">
+<span class="text-4xl font-bold text-gray-900">0.00</span>
+<span class="w-1 h-8 bg-[#4A90E2] ml-1 animate-pulse"></span>
+</div>
+</div>
+</div>
+<!-- 分类选择区 -->
+<div class="flex-1 overflow-y-auto px-4">
+<div class="grid grid-cols-4 gap-y-6 py-4">
+<div class="flex flex-col items-center gap-2">
+<div class="w-12 h-12 rounded-full bg-[#4A90E2] text-white flex items-center justify-center">
+<iconify-icon icon="mdi:food" width="28"></iconify-icon>
+</div>
+<span class="text-xs text-gray-700">餐饮</span>
+</div>
+<div class="flex flex-col items-center gap-2">
+<div class="w-12 h-12 rounded-full bg-gray-100 text-gray-600 flex items-center justify-center">
+<iconify-icon icon="mdi:shopping" width="28"></iconify-icon>
+</div>
+<span class="text-xs text-gray-700">购物</span>
+</div>
+<div class="flex flex-col items-center gap-2">
+<div class="w-12 h-12 rounded-full bg-gray-100 text-gray-600 flex items-center justify-center">
+<iconify-icon icon="mdi:bus" width="28"></iconify-icon>
+</div>
+<span class="text-xs text-gray-700">交通</span>
+</div>
+<div class="flex flex-col items-center gap-2">
+<div class="w-12 h-12 rounded-full bg-gray-100 text-gray-600 flex items-center justify-center">
+<iconify-icon icon="mdi:home-variant" width="28"></iconify-icon>
+</div>
+<span class="text-xs text-gray-700">居住</span>
+</div>
+<div class="flex flex-col items-center gap-2">
+<div class="w-12 h-12 rounded-full bg-gray-100 text-gray-600 flex items-center justify-center">
+<iconify-icon icon="mdi:movie" width="28"></iconify-icon>
+</div>
+<span class="text-xs text-gray-700">娱乐</span>
+</div>
+<div class="flex flex-col items-center gap-2">
+<div class="w-12 h-12 rounded-full bg-gray-100 text-gray-600 flex items-center justify-center">
+<iconify-icon icon="mdi:hospital" width="28"></iconify-icon>
+</div>
+<span class="text-xs text-gray-700">医疗</span>
+</div>
+<div class="flex flex-col items-center gap-2">
+<div class="w-12 h-12 rounded-full bg-gray-100 text-gray-600 flex items-center justify-center">
+<iconify-icon icon="mdi:school" width="28"></iconify-icon>
+</div>
+<span class="text-xs text-gray-700">教育</span>
+</div>
+<div class="flex flex-col items-center gap-2">
+<div class="w-12 h-12 rounded-full bg-gray-100 text-gray-600 flex items-center justify-center">
+<iconify-icon icon="mdi:heart" width="28"></iconify-icon>
+</div>
+<span class="text-xs text-gray-700">社交</span>
+</div>
+<div class="flex flex-col items-center gap-2">
+<div class="w-12 h-12 rounded-full bg-gray-100 text-gray-600 flex items-center justify-center">
+<iconify-icon icon="mdi:cog-outline" width="28"></iconify-icon>
+</div>
+<span class="text-xs text-gray-700">设置</span>
+</div>
+<a class="flex flex-col items-center gap-2" href="categories.html">
+<div class="w-12 h-12 rounded-full bg-gray-50 border border-dashed border-gray-300 text-gray-400 flex items-center justify-center">
+<iconify-icon icon="mdi:plus" width="28"></iconify-icon>
+</div>
+<span class="text-xs text-gray-500">添加</span>
+</a>
+</div>
+</div>
+<!-- 备注和日期 -->
+<div class="bg-gray-50 px-6 py-4 space-y-3">
+<div class="flex items-center gap-3">
+<iconify-icon class="text-gray-400" icon="mdi:calendar-blank"></iconify-icon>
+<span class="text-sm text-gray-700 font-medium">2026年04月21日</span>
+</div>
+<div class="flex items-center gap-3">
+<iconify-icon class="text-gray-400" icon="mdi:pencil-outline"></iconify-icon>
+<input class="bg-transparent text-sm w-full outline-none text-gray-600" placeholder="点击添加备注..." type="text"/>
+</div>
+</div>
+<!-- 数字键盘 -->
+<div class="grid grid-cols-4 bg-white select-none">
+<div class="keypad-btn">1</div>
+<div class="keypad-btn">2</div>
+<div class="keypad-btn">3</div>
+<div class="keypad-btn bg-gray-50 text-red-500">
+<iconify-icon icon="mdi:backspace-outline" width="24"></iconify-icon>
+</div>
+<div class="keypad-btn">4</div>
+<div class="keypad-btn">5</div>
+<div class="keypad-btn">6</div>
+<div class="keypad-btn bg-gray-50 text-gray-400">+</div>
+<div class="keypad-btn">7</div>
+<div class="keypad-btn">8</div>
+<div class="keypad-btn">9</div>
+<div class="keypad-btn bg-gray-50 text-gray-400">-</div>
+<div class="keypad-btn">.</div>
+<div class="keypad-btn">0</div>
+<div class="keypad-btn">00</div>
+<div class="keypad-btn bg-[#4A90E2] text-white">确定</div>
+</div>
+</div>
+</body>
+</html>

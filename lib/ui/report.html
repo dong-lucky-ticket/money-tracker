@@ -1,0 +1,193 @@
+<!DOCTYPE html>
+
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>蓝账本 - 报表</title>
+<script src="https://modao.cc/agent-py/static/source/js/tailwindcss.3.4.3.js"></script>
+<script src="https://modao.cc/agent-py/static/source/js/iconify-icon.min.1.0.7.js"></script>
+<script src="https://modao.cc/agent-py/static/source/js/echarts.min.5.4.3.js"></script>
+<style>
+        body { background-color: #f0f2f5; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif; }
+        .phone-container { width: 393px; height: 851px; background: #F7F9FC; position: relative; overflow: hidden; border: 8px solid #333; border-radius: 40px; box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25); margin: 20px auto; }
+        .status-bar { height: 44px; padding: 0 24px; display: flex; justify-content: space-between; align-items: center; font-size: 14px; font-weight: 600; }
+        .no-scrollbar::-webkit-scrollbar { display: none; }
+        .active-tab { color: #4A90E2; }
+    </style>
+</head>
+<body>
+<div class="phone-container flex flex-col">
+<!-- 状态栏 -->
+<div class="status-bar text-gray-800">
+<span>09:41</span>
+<div class="flex gap-1.5 items-center">
+<iconify-icon icon="mdi:signal"></iconify-icon>
+<iconify-icon icon="mdi:wifi"></iconify-icon>
+<iconify-icon icon="mdi:battery"></iconify-icon>
+</div>
+</div>
+<!-- 顶部导航 -->
+<div class="px-5 py-4 text-center relative border-b bg-white">
+<h1 class="text-lg font-bold text-gray-900">收支报表</h1>
+<div class="absolute right-5 top-4">
+<iconify-icon class="text-2xl text-gray-600" icon="mdi:calendar-month-outline"></iconify-icon>
+</div>
+</div>
+<!-- 筛选器 -->
+<div class="bg-white px-5 py-4">
+<div class="flex bg-gray-100 rounded-xl p-1">
+<button class="flex-1 py-2 text-sm font-bold text-gray-400">周</button>
+<button class="flex-1 py-2 text-sm font-bold bg-white text-[#4A90E2] rounded-lg shadow-sm">月</button>
+<button class="flex-1 py-2 text-sm font-bold text-gray-400">年</button>
+</div>
+</div>
+<!-- 主内容 -->
+<div class="flex-1 overflow-y-auto px-5 no-scrollbar pb-24">
+<!-- 数据统计卡片 -->
+<div class="mt-4 grid grid-cols-2 gap-4">
+<div class="bg-white p-4 rounded-2xl shadow-sm border border-gray-50">
+<p class="text-gray-400 text-xs">总支出</p>
+<p class="text-xl font-bold text-[#FF5A5A] mt-1">4,280.50</p>
+</div>
+<div class="bg-white p-4 rounded-2xl shadow-sm border border-gray-50">
+<p class="text-gray-400 text-xs">总收入</p>
+<p class="text-xl font-bold text-[#28CA7F] mt-1">12,500.00</p>
+</div>
+</div>
+<!-- 图表区域 -->
+<div class="bg-white rounded-3xl mt-6 p-4 shadow-sm">
+<h3 class="font-bold text-gray-800 mb-2">支出占比</h3>
+<div id="pieChart" style="width: 100%; height: 260px;"></div>
+</div>
+<!-- 排行列表 -->
+<div class="mt-8">
+<div class="flex justify-between items-center mb-4 px-1">
+<h3 class="font-bold text-gray-800">支出排行</h3>
+<span class="text-xs text-gray-400">按金额排序</span>
+</div>
+<div class="space-y-4">
+<!-- 排行项 1 -->
+<div class="bg-white p-4 rounded-2xl shadow-sm">
+<div class="flex items-center gap-3 mb-2">
+<div class="w-8 h-8 rounded-full bg-red-100 flex items-center justify-center text-red-500">
+<iconify-icon icon="mdi:home-city" width="18"></iconify-icon>
+</div>
+<div class="flex-1">
+<div class="flex justify-between items-center">
+<span class="font-bold text-gray-800">房屋居住</span>
+<span class="font-bold text-gray-900">2,100.00</span>
+</div>
+</div>
+</div>
+<div class="w-full h-1.5 bg-gray-100 rounded-full overflow-hidden">
+<div class="h-full bg-[#4A90E2]" style="width: 49%"></div>
+</div>
+<div class="flex justify-between mt-1.5">
+<span class="text-[10px] text-gray-400">占比 49.0%</span>
+<span class="text-[10px] text-gray-400">1 笔</span>
+</div>
+</div>
+<!-- 排行项 2 -->
+<div class="bg-white p-4 rounded-2xl shadow-sm">
+<div class="flex items-center gap-3 mb-2">
+<div class="w-8 h-8 rounded-full bg-orange-100 flex items-center justify-center text-orange-500">
+<iconify-icon icon="mdi:food" width="18"></iconify-icon>
+</div>
+<div class="flex-1">
+<div class="flex justify-between items-center">
+<span class="font-bold text-gray-800">餐饮美食</span>
+<span class="font-bold text-gray-900">1,250.00</span>
+</div>
+</div>
+</div>
+<div class="w-full h-1.5 bg-gray-100 rounded-full overflow-hidden">
+<div class="h-full bg-orange-400" style="width: 29%"></div>
+</div>
+<div class="flex justify-between mt-1.5">
+<span class="text-[10px] text-gray-400">占比 29.2%</span>
+<span class="text-[10px] text-gray-400">42 笔</span>
+</div>
+</div>
+<!-- 排行项 3 -->
+<div class="bg-white p-4 rounded-2xl shadow-sm">
+<div class="flex items-center gap-3 mb-2">
+<div class="w-8 h-8 rounded-full bg-purple-100 flex items-center justify-center text-purple-500">
+<iconify-icon icon="mdi:shopping" width="18"></iconify-icon>
+</div>
+<div class="flex-1">
+<div class="flex justify-between items-center">
+<span class="font-bold text-gray-800">购物消费</span>
+<span class="font-bold text-gray-900">680.00</span>
+</div>
+</div>
+</div>
+<div class="w-full h-1.5 bg-gray-100 rounded-full overflow-hidden">
+<div class="h-full bg-purple-400" style="width: 15%"></div>
+</div>
+<div class="flex justify-between mt-1.5">
+<span class="text-[10px] text-gray-400">占比 15.9%</span>
+<span class="text-[10px] text-gray-400">8 笔</span>
+</div>
+</div>
+</div>
+</div>
+</div>
+<!-- 底部导航栏 -->
+<div class="bg-white h-20 border-t flex items-center justify-around px-2 pb-2">
+<a class="flex flex-col items-center gap-1 text-gray-400" href="index.html">
+<iconify-icon icon="mdi:format-list-bulleted" width="24"></iconify-icon>
+<span class="text-[10px] font-medium">账单</span>
+</a>
+<a class="flex flex-col items-center gap-1 active-tab" href="report.html">
+<iconify-icon icon="mdi:chart-pie" width="24"></iconify-icon>
+<span class="text-[10px] font-medium">报表</span>
+</a>
+<a class="flex flex-col items-center gap-1 text-gray-400" href="settings.html">
+<iconify-icon icon="mdi:account-outline" width="24"></iconify-icon>
+<span class="text-[10px] font-medium">我的</span>
+</a>
+</div>
+</div>
+<script>
+        document.addEventListener('DOMContentLoaded', function () {
+            var chartDom = document.getElementById('pieChart');
+            var myChart = echarts.init(chartDom);
+            var option = {
+                color: ['#4A90E2', '#FF8D29', '#A389F4', '#FF5A5A', '#28CA7F', '#F4C22B'],
+                tooltip: { trigger: 'item' },
+                series: [
+                    {
+                        name: '支出分类',
+                        type: 'pie',
+                        radius: ['45%', '75%'],
+                        avoidLabelOverlap: false,
+                        itemStyle: {
+                            borderRadius: 10,
+                            borderColor: '#fff',
+                            borderWidth: 2
+                        },
+                        label: { show: false },
+                        emphasis: {
+                            label: {
+                                show: true,
+                                fontSize: '14',
+                                fontWeight: 'bold'
+                            }
+                        },
+                        labelLine: { show: false },
+                        data: [
+                            { value: 2100, name: '居住' },
+                            { value: 1250, name: '餐饮' },
+                            { value: 680, name: '购物' },
+                            { value: 150, name: '交通' },
+                            { value: 100, name: '娱乐' }
+                        ]
+                    }
+                ]
+            };
+            myChart.setOption(option);
+        });
+    </script>
+</body>
+</html>

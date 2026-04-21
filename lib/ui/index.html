@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>蓝账本 - 首页</title>
+<script src="https://modao.cc/agent-py/static/source/js/tailwindcss.3.4.3.js"></script>
+<script src="https://modao.cc/agent-py/static/source/js/iconify-icon.min.1.0.7.js"></script>
+<style>
+        body { background-color: #f0f2f5; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif; }
+        .phone-container { width: 393px; height: 851px; background: #F7F9FC; position: relative; overflow: hidden; border: 8px solid #333; border-radius: 40px; box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25); margin: 20px auto; }
+        .status-bar { height: 44px; padding: 0 24px; display: flex; justify-content: space-between; align-items: center; font-size: 14px; font-weight: 600; }
+        .no-scrollbar::-webkit-scrollbar { display: none; }
+        .fab-shadow { box-shadow: 0 4px 15px rgba(74, 144, 226, 0.4); }
+        .active-tab { color: #4A90E2; }
+    </style>
+</head>
+<body>
+<div class="phone-container flex flex-col">
+<!-- 状态栏 -->
+<div class="status-bar text-gray-800">
+<span>09:41</span>
+<div class="flex gap-1.5 items-center">
+<iconify-icon icon="mdi:signal"></iconify-icon>
+<iconify-icon icon="mdi:wifi"></iconify-icon>
+<iconify-icon icon="mdi:battery"></iconify-icon>
+</div>
+</div>
+<!-- 顶部导航 -->
+<div class="px-5 py-2 flex justify-between items-center">
+<div class="flex items-center gap-1">
+<span class="text-xl font-bold text-gray-900">2026年4月</span>
+<iconify-icon class="text-gray-500" icon="mdi:chevron-down"></iconify-icon>
+</div>
+<iconify-icon class="text-2xl text-gray-600" icon="mdi:magnify"></iconify-icon>
+</div>
+<!-- 主内容滚动区 -->
+<div class="flex-1 overflow-y-auto px-5 no-scrollbar pb-24">
+<!-- 总览卡片 -->
+<div class="bg-[#4A90E2] rounded-3xl p-6 mt-4 text-white shadow-lg relative overflow-hidden">
+<div class="absolute -right-4 -top-4 w-24 h-24 bg-white/10 rounded-full"></div>
+<div class="relative z-10">
+<p class="text-white/80 text-sm">本月总支出 (元)</p>
+<h2 class="text-3xl font-bold mt-1">￥4,280.50</h2>
+<div class="flex mt-6 gap-8">
+<div>
+<p class="text-white/80 text-xs">本月收入</p>
+<p class="text-lg font-semibold mt-0.5">12,500.00</p>
+</div>
+<div>
+<p class="text-white/80 text-xs">本月结余</p>
+<p class="text-lg font-semibold mt-0.5">8,219.50</p>
+</div>
+</div>
+</div>
+</div>
+<!-- 流水列表 -->
+<div class="mt-8">
+<!-- 4月21日 -->
+<div class="mb-6">
+<div class="flex justify-between items-center text-xs text-gray-500 mb-3 px-1">
+<span class="font-medium">4月21日 今天</span>
+<span>支出: 156.00</span>
+</div>
+<div class="space-y-3">
+<!-- 单项记录 -->
+<div class="bg-white p-4 rounded-2xl flex items-center gap-4 shadow-sm">
+<div class="w-10 h-10 rounded-full bg-orange-100 flex items-center justify-center text-orange-500">
+<iconify-icon icon="mdi:food" width="24"></iconify-icon>
+</div>
+<div class="flex-1">
+<h4 class="font-bold text-gray-800">午餐外卖</h4>
+<p class="text-xs text-gray-400 mt-0.5">美团外卖 - 湘菜</p>
+</div>
+<span class="font-bold text-[#FF5A5A]">-35.00</span>
+</div>
+<div class="bg-white p-4 rounded-2xl flex items-center gap-4 shadow-sm">
+<div class="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center text-blue-500">
+<iconify-icon icon="mdi:bus" width="24"></iconify-icon>
+</div>
+<div class="flex-1">
+<h4 class="font-bold text-gray-800">交通出行</h4>
+<p class="text-xs text-gray-400 mt-0.5">地铁乘车</p>
+</div>
+<span class="font-bold text-[#FF5A5A]">-4.00</span>
+</div>
+<div class="bg-white p-4 rounded-2xl flex items-center gap-4 shadow-sm">
+<div class="w-10 h-10 rounded-full bg-purple-100 flex items-center justify-center text-purple-500">
+<iconify-icon icon="mdi:shopping" width="24"></iconify-icon>
+</div>
+<div class="flex-1">
+<h4 class="font-bold text-gray-800">超市购物</h4>
+<p class="text-xs text-gray-400 mt-0.5">全家便利店</p>
+</div>
+<span class="font-bold text-[#FF5A5A]">-117.00</span>
+</div>
+</div>
+</div>
+<!-- 4月20日 -->
+<div class="mb-6">
+<div class="flex justify-between items-center text-xs text-gray-500 mb-3 px-1">
+<span class="font-medium">4月20日 昨天</span>
+<div class="flex gap-3">
+<span>收入: 12500.00</span>
+<span>支出: 2100.00</span>
+</div>
+</div>
+<div class="space-y-3">
+<div class="bg-white p-4 rounded-2xl flex items-center gap-4 shadow-sm">
+<div class="w-10 h-10 rounded-full bg-green-100 flex items-center justify-center text-[#28CA7F]">
+<iconify-icon icon="mdi:cash-multiple" width="24"></iconify-icon>
+</div>
+<div class="flex-1">
+<h4 class="font-bold text-gray-800">工资收入</h4>
+<p class="text-xs text-gray-400 mt-0.5">4月份基本薪资</p>
+</div>
+<span class="font-bold text-[#28CA7F]">+12,500.00</span>
+</div>
+<div class="bg-white p-4 rounded-2xl flex items-center gap-4 shadow-sm">
+<div class="w-10 h-10 rounded-full bg-red-100 flex items-center justify-center text-red-500">
+<iconify-icon icon="mdi:home-city" width="24"></iconify-icon>
+</div>
+<div class="flex-1">
+<h4 class="font-bold text-gray-800">房屋租金</h4>
+<p class="text-xs text-gray-400 mt-0.5">4月份公寓房租</p>
+</div>
+<span class="font-bold text-[#FF5A5A]">-2,100.00</span>
+</div>
+</div>
+</div>
+</div>
+</div>
+<!-- 悬浮按钮 -->
+<a class="absolute bottom-24 right-6 w-14 h-14 bg-[#4A90E2] rounded-full flex items-center justify-center text-white fab-shadow transition-transform active:scale-90" href="record.html">
+<iconify-icon icon="mdi:plus" width="32"></iconify-icon>
+</a>
+<!-- 底部导航栏 -->
+<div class="bg-white h-20 border-t flex items-center justify-around px-2 pb-2">
+<a class="flex flex-col items-center gap-1 active-tab" href="index.html">
+<iconify-icon icon="mdi:format-list-bulleted" width="24"></iconify-icon>
+<span class="text-[10px] font-medium">账单</span>
+</a>
+<a class="flex flex-col items-center gap-1 text-gray-400" href="report.html">
+<iconify-icon icon="mdi:chart-pie" width="24"></iconify-icon>
+<span class="text-[10px] font-medium">报表</span>
+</a>
+<a class="flex flex-col items-center gap-1 text-gray-400" href="settings.html">
+<iconify-icon icon="mdi:account-outline" width="24"></iconify-icon>
+<span class="text-[10px] font-medium">我的</span>
+</a>
+</div>
+</div>
+</body>
+</html>

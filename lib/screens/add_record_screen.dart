@@ -124,6 +124,9 @@ class _AddRecordScreenState extends State<AddRecordScreen> {
           if (_selectedCategory != null) {
             setState(() {
               _selectedCategory = null;
+              _amountStr = '0.00';
+              _selectedDate = DateTime.now();
+              _remarkController.clear();
             });
           }
         },
@@ -191,46 +194,52 @@ class _AddRecordScreenState extends State<AddRecordScreen> {
               GestureDetector(
                 behavior: HitTestBehavior.opaque,
                 onTap: () {}, // 拦截点击
-                child: Column(
-                  children: [
-                    // 金额显示
-                    Padding(
-                      padding: const EdgeInsets.fromLTRB(24, 16, 24, 16),
-                      child: Container(
-                        decoration: BoxDecoration(
-                          border: Border(bottom: BorderSide(color: Colors.grey.shade100, width: 2)),
-                        ),
-                        padding: const EdgeInsets.only(bottom: 8),
-                        child: Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          crossAxisAlignment: CrossAxisAlignment.end,
-                          children: [
-                            const Text('金额 (CNY)', style: TextStyle(color: Color(0xFF9CA3AF), fontSize: 14)),
-                            Row(
-                              children: [
-                                Text(_amountStr, style: const TextStyle(fontSize: 36, fontWeight: FontWeight.bold, color: Color(0xFF111827))),
-                                Container(
-                                  width: 4,
-                                  height: 32,
-                                  margin: const EdgeInsets.only(left: 4),
-                                  decoration: BoxDecoration(
-                                    color: const Color(0xFF4A90E2),
-                                    borderRadius: BorderRadius.circular(2),
+                child: Container(
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFF9FAFB),
+                    border: Border(
+                      top: BorderSide(color: Colors.grey.shade200, width: 1),
+                    ),
+                  ),
+                  child: Column(
+                    children: [
+                      // 金额显示
+                      Padding(
+                        padding: const EdgeInsets.fromLTRB(24, 16, 24, 0),
+                        child: Container(
+                          decoration: BoxDecoration(
+                            border: Border(bottom: BorderSide(color: Colors.grey.shade200, width: 1)),
+                          ),
+                          padding: const EdgeInsets.only(bottom: 12),
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            crossAxisAlignment: CrossAxisAlignment.end,
+                            children: [
+                              const Text('金额 (CNY)', style: TextStyle(color: Color(0xFF9CA3AF), fontSize: 14)),
+                              Row(
+                                children: [
+                                  Text(_amountStr, style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: Color(0xFF111827))),
+                                  Container(
+                                    width: 4,
+                                    height: 32,
+                                    margin: const EdgeInsets.only(left: 4),
+                                    decoration: BoxDecoration(
+                                      color: const Color(0xFF4A90E2),
+                                      borderRadius: BorderRadius.circular(2),
+                                    ),
                                   ),
-                                ),
-                              ],
-                            ),
-                          ],
+                                ],
+                              ),
+                            ],
+                          ),
                         ),
                       ),
-                    ),
-                    
-                    // 备注和日期
-                    Container(
-                      color: const Color(0xFFF9FAFB),
-                      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
-                      child: Column(
-                        children: [
+                      
+                      // 备注和日期
+                      Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+                        child: Column(
+                          children: [
                           InkWell(
                             onTap: () async {
                               final date = await showDatePicker(
@@ -282,6 +291,7 @@ class _AddRecordScreenState extends State<AddRecordScreen> {
                   ],
                 ),
               ),
+            ),
             
             // 数字键盘
             if (_selectedCategory != null && !_isKeyboardVisible)
@@ -304,6 +314,9 @@ class _AddRecordScreenState extends State<AddRecordScreen> {
         setState(() {
           _isExpense = isExpense;
           _selectedCategory = null;
+          _amountStr = '0.00';
+          _selectedDate = DateTime.now();
+          _remarkController.clear();
         });
       },
       child: Container(

@@ -30,9 +30,20 @@ class _AddRecordScreenState extends State<AddRecordScreen> {
   void initState() {
     super.initState();
     _remarkFocusNode.addListener(() {
-      setState(() {
-        _isKeyboardVisible = _remarkFocusNode.hasFocus;
-      });
+      if (_remarkFocusNode.hasFocus) {
+        setState(() {
+          _isKeyboardVisible = true;
+        });
+      } else {
+        // 延迟恢复自定义键盘，等待系统键盘收起动画完成，避免瞬间高度溢出
+        Future.delayed(const Duration(milliseconds: 250), () {
+          if (mounted) {
+            setState(() {
+              _isKeyboardVisible = false;
+            });
+          }
+        });
+      }
     });
   }
 
@@ -107,8 +118,13 @@ class _AddRecordScreenState extends State<AddRecordScreen> {
 
     return Scaffold(
       backgroundColor: Colors.white,
-      body: SafeArea(
-        child: Column(
+      body: GestureDetector(
+        onTap: () {
+          // 点击空白处收起系统键盘
+          FocusScope.of(context).unfocus();
+        },
+        child: SafeArea(
+          child: Column(
           children: [
             // 顶部导航
             Container(
@@ -211,6 +227,7 @@ class _AddRecordScreenState extends State<AddRecordScreen> {
                         initialDate: _selectedDate,
                         firstDate: DateTime(2000),
                         lastDate: DateTime(2100),
+                        initialEntryMode: DatePickerEntryMode.calendarOnly,
                       );
                       if (date != null) {
                         setState(() => _selectedDate = date);
@@ -232,6 +249,7 @@ class _AddRecordScreenState extends State<AddRecordScreen> {
                       Expanded(
                         child: TextField(
                           controller: _remarkController,
+                          focusNode: _remarkFocusNode,
                           decoration: const InputDecoration(
                             hintText: '点击添加备注...',
                             hintStyle: TextStyle(color: Color(0xFF9CA3AF), fontSize: 14),
@@ -240,6 +258,9 @@ class _AddRecordScreenState extends State<AddRecordScreen> {
                             contentPadding: EdgeInsets.zero,
                           ),
                           style: const TextStyle(fontSize: 14, color: Color(0xFF4B5563)),
+                          onSubmitted: (_) {
+                            _remarkFocusNode.unfocus();
+                          },
                         ),
                       ),
                     ],
@@ -249,8 +270,9 @@ class _AddRecordScreenState extends State<AddRecordScreen> {
             ),
             
             // 数字键盘
-            _buildKeypad(),
-          ],
+              if (!_isKeyboardVisible) _buildKeypad(),
+            ],
+          ),
         ),
       ),
     );

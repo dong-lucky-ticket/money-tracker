@@ -1,5 +1,5 @@
 name: expensetracker
-description: "记账助储应用"
+description: "记账助储"
 publish_to: 'none'
 version: 1.0.0+1
 

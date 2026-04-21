@@ -58,6 +58,12 @@ android {
             signingConfig signingConfigs.debug
         }
     }
+
+    applicationVariants.all { variant ->
+        variant.outputs.all {
+            outputFileName = "记账助储_v${variant.versionName}.apk"
+        }
+    }
 }
 
 flutter {

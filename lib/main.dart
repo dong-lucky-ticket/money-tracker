@@ -36,7 +36,7 @@ class MyApp extends StatelessWidget {
     final dataProvider = context.watch<DataProvider>();
     
     return MaterialApp(
-      title: '蓝账本',
+      title: '记账助储',
       debugShowCheckedModeBanner: false,
       localizationsDelegates: const [
         GlobalMaterialLocalizations.delegate,

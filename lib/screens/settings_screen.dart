@@ -222,7 +222,7 @@ class SettingsScreen extends StatelessWidget {
                     _buildSettingItem(
                       icon: MdiIcons.informationOutline,
                       iconColor: Colors.grey,
-                      title: '关于蓝账本',
+                      title: '关于记账助储',
                       trailingText: 'v1.0.0',
                     ),
                     _buildSettingItem(

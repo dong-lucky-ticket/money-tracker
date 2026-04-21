@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:material_design_icons_flutter/material_design_icons_flutter.dart';
 import 'package:provider/provider.dart';
-import 'package:uuid/uuid.dart';
 
 import '../providers/data_provider.dart';
 import '../models/category.dart';
 import '../utils/icon_mapper.dart';
+import 'add_category_screen.dart';
 
 class CategoriesScreen extends StatefulWidget {
   const CategoriesScreen({super.key});
@@ -18,48 +18,11 @@ class _CategoriesScreenState extends State<CategoriesScreen> {
   bool _isExpense = true;
 
   void _showAddCategoryDialog(BuildContext context) {
-    String name = '';
-    String iconName = 'food';
-    String colorHex = '#4A90E2';
-
-    showDialog(
-      context: context,
-      builder: (ctx) {
-        return AlertDialog(
-          title: const Text('新增分类'),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              TextField(
-                decoration: const InputDecoration(labelText: '分类名称'),
-                onChanged: (v) => name = v,
-              ),
-              // Simplified for now: just use a default icon/color
-              // In a real app, this would be a grid of icons and colors
-            ],
-          ),
-          actions: [
-            TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('取消')),
-            TextButton(
-              onPressed: () {
-                if (name.isNotEmpty) {
-                  final newCat = Category(
-                    id: const Uuid().v4(),
-                    name: name,
-                    iconName: iconName,
-                    colorHex: colorHex,
-                    isExpense: _isExpense,
-                    sortOrder: 99,
-                  );
-                  context.read<DataProvider>().addCategory(newCat);
-                  Navigator.pop(ctx);
-                }
-              },
-              child: const Text('保存'),
-            ),
-          ],
-        );
-      },
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => AddCategoryScreen(isExpense: _isExpense),
+      ),
     );
   }
 
@@ -94,9 +57,9 @@ class _CategoriesScreenState extends State<CategoriesScreen> {
             
             // Tab 切换
             Container(
-              color: Colors.white,
               padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
               decoration: const BoxDecoration(
+                color: Colors.white,
                 border: Border(bottom: BorderSide(color: Color(0xFFF3F4F6))),
               ),
               child: Row(
@@ -126,9 +89,22 @@ class _CategoriesScreenState extends State<CategoriesScreen> {
                           boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.02), blurRadius: 4)],
                         ),
                         clipBehavior: Clip.antiAlias,
-                        child: Column(
+                        child: ReorderableListView(
+                          shrinkWrap: true,
+                          physics: const NeverScrollableScrollPhysics(),
+                          onReorder: (oldIndex, newIndex) {
+                            if (oldIndex < newIndex) {
+                              newIndex -= 1;
+                            }
+                            final Category item = categories.removeAt(oldIndex);
+                            categories.insert(newIndex, item);
+                            provider.reorderCategories(categories);
+                          },
                           children: categories.map((cat) {
-                            return _buildCategoryItem(cat, provider);
+                            return Container(
+                              key: Key(cat.id),
+                              child: _buildCategoryItem(cat, provider),
+                            );
                           }).toList(),
                         ),
                       ),
@@ -203,7 +179,7 @@ class _CategoriesScreenState extends State<CategoriesScreen> {
   Widget _buildCategoryItem(Category cat, DataProvider provider) {
     final color = _hexToColor(cat.colorHex);
     return Dismissible(
-      key: Key(cat.id),
+      key: Key('dismiss_${cat.id}'),
       direction: DismissDirection.endToStart,
       onDismissed: (_) {
         provider.deleteCategory(cat.id);

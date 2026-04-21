@@ -151,7 +151,7 @@ class IconMapper {
       case 'star-outline':
         return MdiIcons.starOutline;
       default:
-        return MdiIcons.helpCircleOutline;
+        return MdiIcons.fromString(name) ?? MdiIcons.helpCircleOutline;
     }
   }
 }

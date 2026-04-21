@@ -103,6 +103,15 @@ class DataProvider with ChangeNotifier {
     await _categoriesBox.delete(id);
     notifyListeners();
   }
+
+  Future<void> reorderCategories(List<Category> newOrderList) async {
+    for (int i = 0; i < newOrderList.length; i++) {
+      var cat = newOrderList[i];
+      cat.sortOrder = i;
+      await _categoriesBox.put(cat.id, cat);
+    }
+    notifyListeners();
+  }
   
   Future<void> clearAllData() async {
     await _recordsBox.clear();

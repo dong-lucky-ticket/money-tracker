@@ -394,7 +394,7 @@ class _AddRecordScreenState extends State<AddRecordScreen> {
             decoration: BoxDecoration(
               color: const Color(0xFFF9FAFB),
               shape: BoxShape.circle,
-              border: Border.all(color: const Color(0xFFD1D5DB), style: BorderStyle.solid, width: 1), // dashed usually requires custom painter, solid is fine
+              border: Border.all(color: const Color(0xFFD1D5DB), width: 1),
             ),
             child: Icon(MdiIcons.plus, color: const Color(0xFF9CA3AF), size: 28),
           ),

@@ -363,7 +363,7 @@ class _AddRecordScreenState extends State<AddRecordScreen> {
           _buildKey('1'), _buildKey('2'), _buildKey('3'), _buildKey('backspace', icon: MdiIcons.backspaceOutline, color: Colors.red),
           _buildKey('4'), _buildKey('5'), _buildKey('6'), _buildKey('C', color: Colors.grey),
           _buildKey('7'), _buildKey('8'), _buildKey('9'), _buildKey('', color: Colors.grey),
-          _buildKey('.'), _buildKey('0'), _buildKey('00'), _buildKey('确定', isAction: true),
+          _buildKey('00'), _buildKey('0'), _buildKey('.'), _buildKey('确定', isAction: true),
         ],
       ),
     );

@@ -33,7 +33,6 @@ class SettingsScreen extends StatelessWidget {
       final directory = await getTemporaryDirectory();
       final timestamp = DateFormat('yyyyMMdd_HHmmss').format(DateTime.now());
       final path = '${directory.path}/记账助储_$timestamp.csv';
-      print(path);
       final file = File(path);
       await file.writeAsString(csv);
       

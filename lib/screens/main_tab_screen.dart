@@ -49,9 +49,13 @@ class _MainTabScreenState extends State<MainTabScreen> {
         child: Row(
           mainAxisAlignment: MainAxisAlignment.spaceAround,
           children: [
+            const SizedBox(width: 10),
             _buildNavItem(0, MdiIcons.formatListBulleted, '账单'),
+            const SizedBox(width: 10),
             _buildNavItem(1, MdiIcons.chartPie, '报表'),
+            const SizedBox(width: 10),
             _buildNavItem(2, MdiIcons.accountOutline, '我的', activeIcon: MdiIcons.account),
+            const SizedBox(width: 10),
           ],
         ),
       ),
@@ -63,23 +67,25 @@ class _MainTabScreenState extends State<MainTabScreen> {
     final color = isActive ? const Color(0xFF4A90E2) : const Color(0xFF9CA3AF);
     final displayIcon = isActive && activeIcon != null ? activeIcon : icon;
 
-    return GestureDetector(
-      behavior: HitTestBehavior.opaque,
-      onTap: () => setState(() => _currentIndex = index),
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Icon(displayIcon, size: 24, color: color),
-          const SizedBox(height: 4),
-          Text(
-            label,
-            style: TextStyle(
-              fontSize: 10,
-              fontWeight: FontWeight.w500,
-              color: color,
+    return Expanded(
+      child: GestureDetector(
+        behavior: HitTestBehavior.opaque,
+        onTap: () => setState(() => _currentIndex = index),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(displayIcon, size: 24, color: color),
+            const SizedBox(height: 4),
+            Text(
+              label,
+              style: TextStyle(
+                fontSize: 10,
+                fontWeight: FontWeight.w500,
+                color: color,
+              ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }

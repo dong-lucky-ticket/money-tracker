@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 import 'package:provider/provider.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
@@ -10,6 +11,12 @@ import 'screens/main_tab_screen.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+
+  // 设置状态栏透明，使内容可以延伸到状态栏下方
+  SystemChrome.setSystemUIOverlayStyle(const SystemUiOverlayStyle(
+    statusBarColor: Colors.transparent, // 状态栏背景色透明
+    statusBarIconBrightness: Brightness.dark, // 状态栏图标为深色（如果是在暗色模式下，系统一般会自动处理）
+  ));
 
   await Hive.initFlutter();
   Hive.registerAdapter(CategoryAdapter());

@@ -36,270 +36,340 @@ class _ReportScreenState extends State<ReportScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return SafeArea(
-      child: Column(
-        children: [
-          // 顶部导航
-          Container(
-            color: Colors.white,
-            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+    return Column(
+      children: [
+        Container(
+          color: Colors.white,
+          child: SafeArea(
+            bottom: false,
+            child: Column(
               children: [
-                const SizedBox(width: 24),
-                const Text('收支报表', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Color(0xFF111827))),
-                GestureDetector(
-                  onTap: _pickDate,
-                  child: Icon(MdiIcons.calendarMonthOutline, size: 24, color: const Color(0xFF4B5563)),
+                // 顶部导航
+                Container(
+                  color: Colors.white,
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      const SizedBox(width: 24),
+                      const Text('收支报表',
+                          style: TextStyle(
+                              fontSize: 18,
+                              fontWeight: FontWeight.bold,
+                              color: Color(0xFF111827))),
+                      GestureDetector(
+                        onTap: _pickDate,
+                        child: Icon(MdiIcons.calendarMonthOutline,
+                            size: 24, color: const Color(0xFF4B5563)),
+                      ),
+                    ],
+                  ),
+                ),
+
+                // 筛选器
+                Container(
+                  color: Colors.white,
+                  padding: const EdgeInsets.fromLTRB(20, 0, 20, 16),
+                  child: Container(
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFF3F4F6),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    padding: const EdgeInsets.all(4),
+                    child: Row(
+                      children: [
+                        _buildFilterBtn('周', 0),
+                        _buildFilterBtn('月', 1),
+                        _buildFilterBtn('年', 2),
+                      ],
+                    ),
+                  ),
                 ),
               ],
             ),
           ),
-          
-          // 筛选器
-          Container(
-            color: Colors.white,
-            padding: const EdgeInsets.fromLTRB(20, 0, 20, 16),
-            child: Container(
-              decoration: BoxDecoration(
-                color: const Color(0xFFF3F4F6),
-                borderRadius: BorderRadius.circular(12),
-              ),
-              padding: const EdgeInsets.all(4),
-              child: Row(
-                children: [
-                  _buildFilterBtn('周', 0),
-                  _buildFilterBtn('月', 1),
-                  _buildFilterBtn('年', 2),
-                ],
-              ),
-            ),
-          ),
-          
-          // 主内容
-          Expanded(
-            child: Consumer<DataProvider>(
-              builder: (context, provider, child) {
-                // Filter records
-                final targetDate = _selectedDate;
-                List<Record> filteredRecords = provider.records.where((r) {
-                  if (_filterIndex == 1) { // Month
-                    return r.date.year == targetDate.year && r.date.month == targetDate.month;
-                  } else if (_filterIndex == 2) { // Year
-                    return r.date.year == targetDate.year;
-                  } else { // Week (simplified to 7 days before targetDate)
-                    final diff = targetDate.difference(r.date).inDays;
-                    return diff >= 0 && diff <= 7;
-                  }
-                }).toList();
+        ),
 
-                final expenseRecords = filteredRecords.where((r) => r.isExpense).toList();
-                final incomeRecords = filteredRecords.where((r) => !r.isExpense).toList();
-                
-                final totalExp = expenseRecords.fold(0.0, (s, r) => s + r.amount);
-                final totalInc = incomeRecords.fold(0.0, (s, r) => s + r.amount);
-
-                // Group expenses by category
-                final Map<String, double> catExpense = {};
-                final Map<String, int> catCount = {};
-                final Map<String, String> catColor = {};
-                final Map<String, String> catIcon = {};
-
-                for (var r in expenseRecords) {
-                  final catId = r.category.id;
-                  catExpense[catId] = (catExpense[catId] ?? 0) + r.amount;
-                  catCount[catId] = (catCount[catId] ?? 0) + 1;
-                  catColor[catId] = r.category.colorHex;
-                  catIcon[catId] = r.category.iconName;
+        // 主内容
+        Expanded(
+          child: Consumer<DataProvider>(
+            builder: (context, provider, child) {
+              // Filter records
+              final targetDate = _selectedDate;
+              List<Record> filteredRecords = provider.records.where((r) {
+                if (_filterIndex == 1) {
+                  // Month
+                  return r.date.year == targetDate.year &&
+                      r.date.month == targetDate.month;
+                } else if (_filterIndex == 2) {
+                  // Year
+                  return r.date.year == targetDate.year;
+                } else {
+                  // Week (simplified to 7 days before targetDate)
+                  final diff = targetDate.difference(r.date).inDays;
+                  return diff >= 0 && diff <= 7;
                 }
+              }).toList();
 
-                final sortedCats = catExpense.entries.toList()..sort((a, b) => b.value.compareTo(a.value));
+              final expenseRecords =
+                  filteredRecords.where((r) => r.isExpense).toList();
+              final incomeRecords =
+                  filteredRecords.where((r) => !r.isExpense).toList();
 
-                return ListView(
-                  padding: const EdgeInsets.fromLTRB(20, 16, 20, 100),
-                  physics: const BouncingScrollPhysics(),
-                  children: [
-                    // 数据统计卡片
-                    Row(
-                      children: [
-                        Expanded(child: _buildStatCard('总支出', totalExp, const Color(0xFFFF5A5A))),
-                        const SizedBox(width: 16),
-                        Expanded(child: _buildStatCard('总收入', totalInc, const Color(0xFF28CA7F))),
-                      ],
-                    ),
-                    const SizedBox(height: 24),
-                    
-                    // 图表区域
-                    if (totalExp > 0)
-                      Container(
-                        padding: const EdgeInsets.all(16),
-                        decoration: BoxDecoration(
-                          color: Colors.white,
-                          borderRadius: BorderRadius.circular(24),
-                          boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.02), blurRadius: 4)],
-                        ),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            const Text('支出占比', style: TextStyle(fontWeight: FontWeight.bold, color: Color(0xFF1F2937))),
-                            const SizedBox(height: 16),
-                            SizedBox(
-                              height: 200,
-                              child: PieChart(
-                                PieChartData(
-                                  sectionsSpace: 2,
-                                  centerSpaceRadius: 50,
-                                  sections: sortedCats.map((e) {
-                                    final percentage = (e.value / totalExp) * 100;
-                                    return PieChartSectionData(
-                                      color: _hexToColor(catColor[e.key]!),
-                                      value: e.value,
-                                      title: '${percentage.toStringAsFixed(1)}%',
-                                      radius: 40,
-                                      titleStyle: const TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: Colors.white),
-                                    );
-                                  }).toList(),
-                                ),
+              final totalExp = expenseRecords.fold(0.0, (s, r) => s + r.amount);
+              final totalInc = incomeRecords.fold(0.0, (s, r) => s + r.amount);
+
+              // Group expenses by category
+              final Map<String, double> catExpense = {};
+              final Map<String, int> catCount = {};
+              final Map<String, String> catColor = {};
+              final Map<String, String> catIcon = {};
+
+              for (var r in expenseRecords) {
+                final catId = r.category.id;
+                catExpense[catId] = (catExpense[catId] ?? 0) + r.amount;
+                catCount[catId] = (catCount[catId] ?? 0) + 1;
+                catColor[catId] = r.category.colorHex;
+                catIcon[catId] = r.category.iconName;
+              }
+
+              final sortedCats = catExpense.entries.toList()
+                ..sort((a, b) => b.value.compareTo(a.value));
+
+              return ListView(
+                padding: const EdgeInsets.fromLTRB(20, 16, 20, 100),
+                physics: const BouncingScrollPhysics(),
+                children: [
+                  // 数据统计卡片
+                  Row(
+                    children: [
+                      Expanded(
+                          child: _buildStatCard(
+                              '总支出', totalExp, const Color(0xFFFF5A5A))),
+                      const SizedBox(width: 16),
+                      Expanded(
+                          child: _buildStatCard(
+                              '总收入', totalInc, const Color(0xFF28CA7F))),
+                    ],
+                  ),
+                  const SizedBox(height: 24),
+
+                  // 图表区域
+                  if (totalExp > 0)
+                    Container(
+                      padding: const EdgeInsets.all(16),
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(24),
+                        boxShadow: [
+                          BoxShadow(
+                              color: Colors.black.withOpacity(0.02),
+                              blurRadius: 4)
+                        ],
+                      ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          const Text('支出占比',
+                              style: TextStyle(
+                                  fontWeight: FontWeight.bold,
+                                  color: Color(0xFF1F2937))),
+                          const SizedBox(height: 16),
+                          SizedBox(
+                            height: 200,
+                            child: PieChart(
+                              PieChartData(
+                                sectionsSpace: 2,
+                                centerSpaceRadius: 50,
+                                sections: sortedCats.map((e) {
+                                  final percentage = (e.value / totalExp) * 100;
+                                  return PieChartSectionData(
+                                    color: _hexToColor(catColor[e.key]!),
+                                    value: e.value,
+                                    title: '${percentage.toStringAsFixed(1)}%',
+                                    radius: 40,
+                                    titleStyle: const TextStyle(
+                                        fontSize: 10,
+                                        fontWeight: FontWeight.bold,
+                                        color: Colors.white),
+                                  );
+                                }).toList(),
                               ),
                             ),
-                            const SizedBox(height: 24),
-                            Center(
-                              child: Wrap(
-                                spacing: 16,
-                                runSpacing: 12,
-                                alignment: WrapAlignment.center,
-                                children: sortedCats.map((e) {
-                                  final cat = expenseRecords.firstWhere((r) => r.category.id == e.key).category;
-                                  final color = _hexToColor(catColor[e.key]!);
-                                  return Row(
-                                    mainAxisSize: MainAxisSize.min,
-                                    children: [
-                                      Container(
-                                        width: 10,
-                                        height: 10,
-                                        decoration: BoxDecoration(
-                                          color: color,
-                                          shape: BoxShape.circle,
-                                        ),
+                          ),
+                          const SizedBox(height: 24),
+                          Center(
+                            child: Wrap(
+                              spacing: 16,
+                              runSpacing: 12,
+                              alignment: WrapAlignment.center,
+                              children: sortedCats.map((e) {
+                                final cat = expenseRecords
+                                    .firstWhere((r) => r.category.id == e.key)
+                                    .category;
+                                final color = _hexToColor(catColor[e.key]!);
+                                return Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    Container(
+                                      width: 10,
+                                      height: 10,
+                                      decoration: BoxDecoration(
+                                        color: color,
+                                        shape: BoxShape.circle,
                                       ),
-                                      const SizedBox(width: 6),
-                                      Text(
-                                        cat.name,
-                                        style: const TextStyle(fontSize: 12, color: Color(0xFF4B5563)),
+                                    ),
+                                    const SizedBox(width: 6),
+                                    Text(
+                                      cat.name,
+                                      style: const TextStyle(
+                                          fontSize: 12,
+                                          color: Color(0xFF4B5563)),
+                                    ),
+                                  ],
+                                );
+                              }).toList(),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+
+                  const SizedBox(height: 16),
+
+                  // 柱状图区域
+                  if (totalExp > 0)
+                    Container(
+                      padding: const EdgeInsets.all(16),
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(24),
+                        boxShadow: [
+                          BoxShadow(
+                              color: Colors.black.withOpacity(0.02),
+                              blurRadius: 4)
+                        ],
+                      ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          const Text('支出分类统计',
+                              style: TextStyle(
+                                  fontWeight: FontWeight.bold,
+                                  color: Color(0xFF1F2937))),
+                          const SizedBox(height: 24),
+                          SizedBox(
+                            height: 200,
+                            child: BarChart(
+                              BarChartData(
+                                alignment: BarChartAlignment.spaceAround,
+                                barTouchData: BarTouchData(enabled: false),
+                                titlesData: FlTitlesData(
+                                  show: true,
+                                  bottomTitles: AxisTitles(
+                                    sideTitles: SideTitles(
+                                      showTitles: true,
+                                      reservedSize: 28,
+                                      getTitlesWidget:
+                                          (double value, TitleMeta meta) {
+                                        if (value.toInt() >= 0 &&
+                                            value.toInt() < sortedCats.length) {
+                                          final catId =
+                                              sortedCats[value.toInt()].key;
+                                          final cat = expenseRecords
+                                              .firstWhere(
+                                                  (r) => r.category.id == catId)
+                                              .category;
+                                          return Padding(
+                                            padding:
+                                                const EdgeInsets.only(top: 8.0),
+                                            child: Text(
+                                              cat.name,
+                                              style: const TextStyle(
+                                                  fontSize: 10,
+                                                  color: Color(0xFF6B7280)),
+                                            ),
+                                          );
+                                        }
+                                        return const SizedBox();
+                                      },
+                                    ),
+                                  ),
+                                  leftTitles: const AxisTitles(
+                                      sideTitles:
+                                          SideTitles(showTitles: false)),
+                                  topTitles: const AxisTitles(
+                                      sideTitles:
+                                          SideTitles(showTitles: false)),
+                                  rightTitles: const AxisTitles(
+                                      sideTitles:
+                                          SideTitles(showTitles: false)),
+                                ),
+                                gridData: const FlGridData(show: false),
+                                borderData: FlBorderData(show: false),
+                                barGroups:
+                                    sortedCats.asMap().entries.map((entry) {
+                                  final index = entry.key;
+                                  final e = entry.value;
+                                  final color = _hexToColor(catColor[e.key]!);
+                                  return BarChartGroupData(
+                                    x: index,
+                                    barRods: [
+                                      BarChartRodData(
+                                        toY: e.value,
+                                        color: color,
+                                        width: 16,
+                                        borderRadius: const BorderRadius.only(
+                                          topLeft: Radius.circular(4),
+                                          topRight: Radius.circular(4),
+                                        ),
                                       ),
                                     ],
                                   );
                                 }).toList(),
                               ),
                             ),
-                          ],
-                        ),
-                      ),
-                    
-                    const SizedBox(height: 16),
-                    
-                    // 柱状图区域
-                    if (totalExp > 0)
-                      Container(
-                        padding: const EdgeInsets.all(16),
-                        decoration: BoxDecoration(
-                          color: Colors.white,
-                          borderRadius: BorderRadius.circular(24),
-                          boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.02), blurRadius: 4)],
-                        ),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            const Text('支出分类统计', style: TextStyle(fontWeight: FontWeight.bold, color: Color(0xFF1F2937))),
-                            const SizedBox(height: 24),
-                            SizedBox(
-                              height: 200,
-                              child: BarChart(
-                                BarChartData(
-                                  alignment: BarChartAlignment.spaceAround,
-                                  barTouchData: BarTouchData(enabled: false),
-                                  titlesData: FlTitlesData(
-                                    show: true,
-                                    bottomTitles: AxisTitles(
-                                      sideTitles: SideTitles(
-                                        showTitles: true,
-                                        reservedSize: 28,
-                                        getTitlesWidget: (double value, TitleMeta meta) {
-                                          if (value.toInt() >= 0 && value.toInt() < sortedCats.length) {
-                                            final catId = sortedCats[value.toInt()].key;
-                                            final cat = expenseRecords.firstWhere((r) => r.category.id == catId).category;
-                                            return Padding(
-                                              padding: const EdgeInsets.only(top: 8.0),
-                                              child: Text(
-                                                cat.name,
-                                                style: const TextStyle(fontSize: 10, color: Color(0xFF6B7280)),
-                                              ),
-                                            );
-                                          }
-                                          return const SizedBox();
-                                        },
-                                      ),
-                                    ),
-                                    leftTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
-                                    topTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
-                                    rightTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
-                                  ),
-                                  gridData: const FlGridData(show: false),
-                                  borderData: FlBorderData(show: false),
-                                  barGroups: sortedCats.asMap().entries.map((entry) {
-                                    final index = entry.key;
-                                    final e = entry.value;
-                                    final color = _hexToColor(catColor[e.key]!);
-                                    return BarChartGroupData(
-                                      x: index,
-                                      barRods: [
-                                        BarChartRodData(
-                                          toY: e.value,
-                                          color: color,
-                                          width: 16,
-                                          borderRadius: const BorderRadius.only(
-                                            topLeft: Radius.circular(4),
-                                            topRight: Radius.circular(4),
-                                          ),
-                                        ),
-                                      ],
-                                    );
-                                  }).toList(),
-                                ),
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-
-                    const SizedBox(height: 32),
-                    
-                    // 排行列表
-                    if (totalExp > 0)
-                      Column(
-                        children: [
-                          const Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                            children: [
-                              Text('支出排行', style: TextStyle(fontWeight: FontWeight.bold, color: Color(0xFF1F2937))),
-                              Text('按金额排序', style: TextStyle(fontSize: 12, color: Color(0xFF9CA3AF))),
-                            ],
                           ),
-                          const SizedBox(height: 16),
-                          ...sortedCats.map((e) {
-                            final cat = expenseRecords.firstWhere((r) => r.category.id == e.key).category;
-                            final percentage = (e.value / totalExp) * 100;
-                            return _buildRankItem(cat, e.value, percentage, catCount[e.key]!);
-                          }),
                         ],
                       ),
-                  ],
-                );
-              },
-            ),
+                    ),
+
+                  const SizedBox(height: 32),
+
+                  // 排行列表
+                  if (totalExp > 0)
+                    Column(
+                      children: [
+                        const Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            Text('支出排行',
+                                style: TextStyle(
+                                    fontWeight: FontWeight.bold,
+                                    color: Color(0xFF1F2937))),
+                            Text('按金额排序',
+                                style: TextStyle(
+                                    fontSize: 12, color: Color(0xFF9CA3AF))),
+                          ],
+                        ),
+                        const SizedBox(height: 16),
+                        ...sortedCats.map((e) {
+                          final cat = expenseRecords
+                              .firstWhere((r) => r.category.id == e.key)
+                              .category;
+                          final percentage = (e.value / totalExp) * 100;
+                          return _buildRankItem(
+                              cat, e.value, percentage, catCount[e.key]!);
+                        }),
+                      ],
+                    ),
+                ],
+              );
+            },
           ),
-        ],
-      ),
+        ),
+      ],
     );
   }
 
@@ -313,7 +383,12 @@ class _ReportScreenState extends State<ReportScreen> {
           decoration: BoxDecoration(
             color: isActive ? Colors.white : Colors.transparent,
             borderRadius: BorderRadius.circular(8),
-            boxShadow: isActive ? [BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 2)] : null,
+            boxShadow: isActive
+                ? [
+                    BoxShadow(
+                        color: Colors.black.withOpacity(0.05), blurRadius: 2)
+                  ]
+                : null,
           ),
           alignment: Alignment.center,
           child: Text(
@@ -321,7 +396,8 @@ class _ReportScreenState extends State<ReportScreen> {
             style: TextStyle(
               fontSize: 14,
               fontWeight: FontWeight.bold,
-              color: isActive ? const Color(0xFF4A90E2) : const Color(0xFF9CA3AF),
+              color:
+                  isActive ? const Color(0xFF4A90E2) : const Color(0xFF9CA3AF),
             ),
           ),
         ),
@@ -336,23 +412,28 @@ class _ReportScreenState extends State<ReportScreen> {
         color: Colors.white,
         borderRadius: BorderRadius.circular(16),
         border: Border.all(color: const Color(0xFFF9FAFB)),
-        boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.02), blurRadius: 4)],
+        boxShadow: [
+          BoxShadow(color: Colors.black.withOpacity(0.02), blurRadius: 4)
+        ],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(title, style: const TextStyle(fontSize: 12, color: Color(0xFF9CA3AF))),
+          Text(title,
+              style: const TextStyle(fontSize: 12, color: Color(0xFF9CA3AF))),
           const SizedBox(height: 4),
           Text(
             amount.toStringAsFixed(2),
-            style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: color),
+            style: TextStyle(
+                fontSize: 20, fontWeight: FontWeight.bold, color: color),
           ),
         ],
       ),
     );
   }
 
-  Widget _buildRankItem(Category cat, double amount, double percentage, int count) {
+  Widget _buildRankItem(
+      Category cat, double amount, double percentage, int count) {
     final color = _hexToColor(cat.colorHex);
     return Container(
       margin: const EdgeInsets.only(bottom: 16),
@@ -360,7 +441,9 @@ class _ReportScreenState extends State<ReportScreen> {
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(16),
-        boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.02), blurRadius: 4)],
+        boxShadow: [
+          BoxShadow(color: Colors.black.withOpacity(0.02), blurRadius: 4)
+        ],
       ),
       child: Column(
         children: [
@@ -373,15 +456,22 @@ class _ReportScreenState extends State<ReportScreen> {
                   color: color.withOpacity(0.15),
                   shape: BoxShape.circle,
                 ),
-                child: Icon(IconMapper.getIcon(cat.iconName), color: color, size: 18),
+                child: Icon(IconMapper.getIcon(cat.iconName),
+                    color: color, size: 18),
               ),
               const SizedBox(width: 12),
               Expanded(
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    Text(cat.name, style: const TextStyle(fontWeight: FontWeight.bold, color: Color(0xFF1F2937))),
-                    Text(amount.toStringAsFixed(2), style: const TextStyle(fontWeight: FontWeight.bold, color: Color(0xFF111827))),
+                    Text(cat.name,
+                        style: const TextStyle(
+                            fontWeight: FontWeight.bold,
+                            color: Color(0xFF1F2937))),
+                    Text(amount.toStringAsFixed(2),
+                        style: const TextStyle(
+                            fontWeight: FontWeight.bold,
+                            color: Color(0xFF111827))),
                   ],
                 ),
               ),
@@ -401,8 +491,12 @@ class _ReportScreenState extends State<ReportScreen> {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Text('占比 ${percentage.toStringAsFixed(1)}%', style: const TextStyle(fontSize: 10, color: Color(0xFF9CA3AF))),
-              Text('$count 笔', style: const TextStyle(fontSize: 10, color: Color(0xFF9CA3AF))),
+              Text('占比 ${percentage.toStringAsFixed(1)}%',
+                  style:
+                      const TextStyle(fontSize: 10, color: Color(0xFF9CA3AF))),
+              Text('$count 笔',
+                  style:
+                      const TextStyle(fontSize: 10, color: Color(0xFF9CA3AF))),
             ],
           ),
         ],

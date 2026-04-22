@@ -5,6 +5,7 @@ import 'package:provider/provider.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:csv/csv.dart';
 import 'package:intl/intl.dart';
+import 'package:share_plus/share_plus.dart';
 
 import '../providers/data_provider.dart';
 
@@ -29,13 +30,20 @@ class SettingsScreen extends StatelessWidget {
 
       String csv = const ListToCsvConverter().convert(rows);
       
-      final directory = await getApplicationDocumentsDirectory();
-      final path = '${directory.path}/expensetracker_export_${DateTime.now().millisecondsSinceEpoch}.csv';
+      final directory = await getTemporaryDirectory();
+      final timestamp = DateFormat('yyyyMMdd_HHmmss').format(DateTime.now());
+      final path = '${directory.path}/记账助储_$timestamp.csv';
+      print(path);
       final file = File(path);
       await file.writeAsString(csv);
       
       if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('已导出到: $path')));
+        final box = context.findRenderObject() as RenderBox?;
+        await Share.shareXFiles(
+          [XFile(path)],
+          subject: '账单数据导出',
+          sharePositionOrigin: box!.localToGlobal(Offset.zero) & box.size,
+        );
       }
     } catch (e) {
       if (context.mounted) {
@@ -62,6 +70,104 @@ class SettingsScreen extends StatelessWidget {
               child: const Text('确定', style: TextStyle(color: Colors.red)),
             ),
           ],
+        );
+      },
+    );
+  }
+
+  Future<void> _viewExportedFiles(BuildContext context) async {
+    final directory = await getTemporaryDirectory();
+    List<File> files = directory.listSync().whereType<File>().where((file) {
+      final name = file.path.split(Platform.pathSeparator).last;
+      return (name.startsWith('expensetracker_') || name.startsWith('记账助储_')) && name.endsWith('.csv');
+    }).toList();
+
+    files.sort((a, b) => b.lastModifiedSync().compareTo(a.lastModifiedSync()));
+
+    if (!context.mounted) return;
+
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.white,
+      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(20))),
+      builder: (ctx) {
+        return StatefulBuilder(
+          builder: (BuildContext sheetContext, StateSetter setSheetState) {
+            return Column(
+              children: [
+                const Padding(
+                  padding: EdgeInsets.all(16.0),
+                  child: Text('已导出的 CSV 文件', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+                ),
+                Expanded(
+                  child: files.isEmpty
+                      ? const Center(child: Text('暂无导出的文件', style: TextStyle(color: Colors.grey)))
+                      : ListView.builder(
+                          itemCount: files.length,
+                          itemBuilder: (listContext, index) {
+                            final file = files[index];
+                            final fileName = file.path.split(Platform.pathSeparator).last;
+                            final fileSize = (file.lengthSync() / 1024).toStringAsFixed(2);
+                            final modifiedTime = DateFormat('yyyy-MM-dd HH:mm:ss').format(file.lastModifiedSync());
+
+                            return Builder(
+                              builder: (itemContext) {
+                                return ListTile(
+                                  leading: Icon(MdiIcons.fileDelimitedOutline, color: const Color(0xFF4A90E2)),
+                                  title: Text(fileName, style: const TextStyle(fontSize: 14)),
+                                  subtitle: Text('$modifiedTime  |  $fileSize KB', style: const TextStyle(fontSize: 12)),
+                                  trailing: Row(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      IconButton(
+                                        icon: const Icon(Icons.share, size: 20, color: Colors.grey),
+                                        onPressed: () async {
+                                          final box = itemContext.findRenderObject() as RenderBox?;
+                                          await Share.shareXFiles(
+                                            [XFile(file.path)],
+                                            subject: '分享 CSV 数据',
+                                            sharePositionOrigin: box!.localToGlobal(Offset.zero) & box.size,
+                                          );
+                                        },
+                                      ),
+                                      IconButton(
+                                        icon: const Icon(Icons.delete_outline, size: 20, color: Colors.redAccent),
+                                        onPressed: () {
+                                          showDialog(
+                                            context: itemContext,
+                                            builder: (dialogCtx) {
+                                              return AlertDialog(
+                                                title: const Text('删除文件'),
+                                                content: const Text('确定要删除这个导出的文件吗？此操作不可恢复。'),
+                                                actions: [
+                                                  TextButton(onPressed: () => Navigator.pop(dialogCtx), child: const Text('取消')),
+                                                  TextButton(
+                                                    onPressed: () {
+                                                      file.deleteSync();
+                                                      setSheetState(() {
+                                                        files.removeAt(index);
+                                                      });
+                                                      Navigator.pop(dialogCtx);
+                                                    },
+                                                    child: const Text('删除', style: TextStyle(color: Colors.red)),
+                                                  ),
+                                                ],
+                                              );
+                                            },
+                                          );
+                                        },
+                                      ),
+                                    ],
+                                  ),
+                                );
+                              },
+                            );
+                          },
+                        ),
+                ),
+              ],
+            );
+          },
         );
       },
     );
@@ -153,6 +259,13 @@ class SettingsScreen extends StatelessWidget {
                           onTap: () => _exportToCSV(context, provider),
                         );
                       }
+                    ),
+                    _buildSettingItem(
+                      icon: MdiIcons.fileDocumentMultipleOutline,
+                      iconColor: Colors.orange,
+                      title: '查看已导出的 CSV',
+                      showArrow: true,
+                      onTap: () => _viewExportedFiles(context),
                     ),
                     _buildSettingItem(
                       icon: MdiIcons.cloudSyncOutline,

@@ -661,7 +661,7 @@ class _ReportScreenState extends State<ReportScreen> {
                               .category;
                           final percentage = (e.value / viewTotal) * 100;
                           return _buildRankItem(
-                              cat, e.value, percentage, catCount[e.key]!, viewColor);
+                              cat, e.value, percentage, catCount[e.key]!, viewColor, viewRecords);
                         }),
                       ],
                     ),
@@ -912,73 +912,84 @@ class _ReportScreenState extends State<ReportScreen> {
   }
 
   Widget _buildRankItem(
-      Category cat, double amount, double percentage, int count, Color valueColor) {
+      Category cat, double amount, double percentage, int count, Color valueColor, List<Record> viewRecords) {
     final color = _hexToColor(cat.colorHex);
-    return Container(
-      margin: const EdgeInsets.only(bottom: 16),
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
-        boxShadow: [
-          BoxShadow(color: Colors.black.withOpacity(0.02), blurRadius: 4)
-        ],
-      ),
-      child: Column(
-        children: [
-          Row(
-            children: [
-              Container(
-                width: 32,
-                height: 32,
-                decoration: BoxDecoration(
-                  color: color.withOpacity(0.15),
-                  shape: BoxShape.circle,
+    return GestureDetector(
+      onTap: () => _showCategoryDetails(cat, viewRecords),
+      child: Container(
+        margin: const EdgeInsets.only(bottom: 12),
+        padding: const EdgeInsets.all(12),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: const Color(0xFFF9FAFB)),
+          boxShadow: [
+            BoxShadow(color: Colors.black.withOpacity(0.01), blurRadius: 2, offset: const Offset(0, 1))
+          ],
+        ),
+        child: Column(
+          children: [
+            Row(
+              children: [
+                Container(
+                  width: 32,
+                  height: 32,
+                  decoration: BoxDecoration(
+                    color: color.withOpacity(0.15),
+                    shape: BoxShape.circle,
+                  ),
+                  child: Icon(IconMapper.getIcon(cat.iconName),
+                      color: color, size: 18),
                 ),
-                child: Icon(IconMapper.getIcon(cat.iconName),
-                    color: color, size: 18),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Text(cat.name,
-                        style: const TextStyle(
-                            fontWeight: FontWeight.bold,
-                            color: Color(0xFF1F2937))),
-                    Text(amount.toStringAsFixed(2),
-                        style: TextStyle(
-                            fontWeight: FontWeight.bold,
-                            color: valueColor)),
-                  ],
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Row(
+                        children: [
+                          Text(cat.name,
+                              style: const TextStyle(
+                                  fontWeight: FontWeight.bold,
+                                  color: Color(0xFF1F2937))),
+                          const SizedBox(width: 4),
+                          Icon(MdiIcons.chevronRight, size: 16, color: const Color(0xFFD1D5DB)),
+                        ],
+                      ),
+                      Text(amount.toStringAsFixed(2),
+                          style: TextStyle(
+                              fontWeight: FontWeight.bold,
+                              fontSize: 16,
+                              color: valueColor)),
+                    ],
+                  ),
                 ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 8),
-          ClipRRect(
-            borderRadius: BorderRadius.circular(4),
-            child: LinearProgressIndicator(
-              value: percentage / 100,
-              backgroundColor: const Color(0xFFF3F4F6),
-              valueColor: AlwaysStoppedAnimation<Color>(color),
-              minHeight: 6,
+              ],
             ),
-          ),
-          const SizedBox(height: 6),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Text('占比 ${percentage.toStringAsFixed(1)}%',
-                  style:
-                      const TextStyle(fontSize: 10, color: Color(0xFF9CA3AF))),
-              Text('$count 笔',
-                  style:
-                      const TextStyle(fontSize: 10, color: Color(0xFF9CA3AF))),
-            ],
-          ),
-        ],
+            const SizedBox(height: 8),
+            ClipRRect(
+              borderRadius: BorderRadius.circular(4),
+              child: LinearProgressIndicator(
+                value: percentage / 100,
+                backgroundColor: const Color(0xFFF3F4F6),
+                valueColor: AlwaysStoppedAnimation<Color>(color),
+                minHeight: 6,
+              ),
+            ),
+            const SizedBox(height: 4),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text('占比 ${percentage.toStringAsFixed(1)}%',
+                    style:
+                        const TextStyle(fontSize: 10, color: Color(0xFF9CA3AF))),
+                Text('$count 笔',
+                    style:
+                        const TextStyle(fontSize: 10, color: Color(0xFF9CA3AF))),
+              ],
+            ),
+          ],
+        ),
       ),
     );
   }

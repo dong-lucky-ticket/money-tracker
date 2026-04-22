@@ -17,6 +17,22 @@ class ReportScreen extends StatefulWidget {
 
 class _ReportScreenState extends State<ReportScreen> {
   int _filterIndex = 0; // 0:周, 1:月, 2:年
+  DateTime _selectedDate = DateTime.now();
+
+  void _pickDate() async {
+    final DateTime? picked = await showDatePicker(
+      context: context,
+      initialDate: _selectedDate,
+      firstDate: DateTime(2000),
+      lastDate: DateTime(2100),
+      initialEntryMode: DatePickerEntryMode.calendarOnly,
+    );
+    if (picked != null) {
+      setState(() {
+        _selectedDate = picked;
+      });
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -32,7 +48,10 @@ class _ReportScreenState extends State<ReportScreen> {
               children: [
                 const SizedBox(width: 24),
                 const Text('收支报表', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Color(0xFF111827))),
-                Icon(MdiIcons.calendarMonthOutline, size: 24, color: const Color(0xFF4B5563)),
+                GestureDetector(
+                  onTap: _pickDate,
+                  child: Icon(MdiIcons.calendarMonthOutline, size: 24, color: const Color(0xFF4B5563)),
+                ),
               ],
             ),
           ),
@@ -62,14 +81,15 @@ class _ReportScreenState extends State<ReportScreen> {
             child: Consumer<DataProvider>(
               builder: (context, provider, child) {
                 // Filter records
-                final now = DateTime.now();
+                final targetDate = _selectedDate;
                 List<Record> filteredRecords = provider.records.where((r) {
                   if (_filterIndex == 1) { // Month
-                    return r.date.year == now.year && r.date.month == now.month;
+                    return r.date.year == targetDate.year && r.date.month == targetDate.month;
                   } else if (_filterIndex == 2) { // Year
-                    return r.date.year == now.year;
-                  } else { // Week (simplified to last 7 days)
-                    return now.difference(r.date).inDays <= 7;
+                    return r.date.year == targetDate.year;
+                  } else { // Week (simplified to 7 days before targetDate)
+                    final diff = targetDate.difference(r.date).inDays;
+                    return diff >= 0 && diff <= 7;
                   }
                 }).toList();
 

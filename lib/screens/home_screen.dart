@@ -7,8 +7,76 @@ import '../providers/data_provider.dart';
 import '../models/record.dart';
 import '../utils/icon_mapper.dart';
 
-class HomeScreen extends StatelessWidget {
+import '../screens/search_screen.dart';
+
+class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
+
+  @override
+  State<HomeScreen> createState() => _HomeScreenState();
+}
+
+class _HomeScreenState extends State<HomeScreen> {
+  DateTime _selectedMonth = DateTime.now();
+
+  void _pickMonth() {
+    showDialog(
+      context: context,
+      builder: (context) {
+        int tempYear = _selectedMonth.year;
+        return AlertDialog(
+          title: const Text('选择月份'),
+          content: StatefulBuilder(
+            builder: (context, setStateDialog) {
+              return SizedBox(
+                width: 300,
+                height: 300,
+                child: Column(
+                  children: [
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        IconButton(icon: const Icon(Icons.chevron_left), onPressed: () => setStateDialog(() => tempYear--)),
+                        Text('$tempYear年', style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+                        IconButton(icon: const Icon(Icons.chevron_right), onPressed: () => setStateDialog(() => tempYear++)),
+                      ],
+                    ),
+                    Expanded(
+                      child: GridView.builder(
+                        gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(crossAxisCount: 3, childAspectRatio: 2),
+                        itemCount: 12,
+                        itemBuilder: (context, index) {
+                          int month = index + 1;
+                          bool isSelected = tempYear == _selectedMonth.year && month == _selectedMonth.month;
+                          return InkWell(
+                            onTap: () {
+                              setState(() {
+                                _selectedMonth = DateTime(tempYear, month);
+                              });
+                              Navigator.pop(context);
+                            },
+                            child: Container(
+                              alignment: Alignment.center,
+                              margin: const EdgeInsets.all(4),
+                              decoration: BoxDecoration(
+                                color: isSelected ? const Color(0xFF4A90E2) : Colors.transparent,
+                                borderRadius: BorderRadius.circular(8),
+                              ),
+                              child: Text('$month月', style: TextStyle(color: isSelected ? Colors.white : Colors.black87)),
+                            ),
+                          );
+                        },
+                      ),
+                    ),
+                  ],
+                ),
+              );
+            },
+          ),
+        );
+      },
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -21,21 +89,32 @@ class HomeScreen extends StatelessWidget {
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Row(
-                  children: [
-                    Text(
-                      DateFormat('yyyy年M月').format(DateTime.now()),
-                      style: const TextStyle(
-                        fontSize: 20,
-                        fontWeight: FontWeight.bold,
-                        color: Color(0xFF111827),
+                GestureDetector(
+                  onTap: _pickMonth,
+                  child: Row(
+                    children: [
+                      Text(
+                        DateFormat('yyyy年M月').format(_selectedMonth),
+                        style: const TextStyle(
+                          fontSize: 20,
+                          fontWeight: FontWeight.bold,
+                          color: Color(0xFF111827),
+                        ),
                       ),
-                    ),
-                    const SizedBox(width: 4),
-                    Icon(MdiIcons.chevronDown, color: const Color(0xFF6B7280)),
-                  ],
+                      const SizedBox(width: 4),
+                      Icon(MdiIcons.chevronDown, color: const Color(0xFF6B7280)),
+                    ],
+                  ),
                 ),
-                Icon(MdiIcons.magnify, size: 28, color: const Color(0xFF4B5563)),
+                GestureDetector(
+                  onTap: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(builder: (context) => const SearchScreen()),
+                    );
+                  },
+                  child: Icon(MdiIcons.magnify, size: 28, color: const Color(0xFF4B5563)),
+                ),
               ],
             ),
           ),
@@ -44,8 +123,11 @@ class HomeScreen extends StatelessWidget {
           Expanded(
             child: Consumer<DataProvider>(
               builder: (context, provider, child) {
-                final records = provider.records;
+                final records = provider.records.where((r) => r.date.year == _selectedMonth.year && r.date.month == _selectedMonth.month).toList();
                 
+                final double monthlyExpense = records.where((r) => r.isExpense).fold(0.0, (s, r) => s + r.amount);
+                final double monthlyIncome = records.where((r) => !r.isExpense).fold(0.0, (s, r) => s + r.amount);
+
                 // Group records by date (yyyy-MM-dd)
                 final Map<String, List<Record>> groupedRecords = {};
                 for (var r in records) {
@@ -61,7 +143,7 @@ class HomeScreen extends StatelessWidget {
                   physics: const BouncingScrollPhysics(),
                   children: [
                     // 总览卡片
-                    _buildOverviewCard(provider),
+                    _buildOverviewCard(monthlyExpense, monthlyIncome),
                     const SizedBox(height: 32),
                     // 流水列表
                     ...groupedRecords.entries.map((e) => _buildDailyRecordList(e.key, e.value, provider)),
@@ -75,7 +157,7 @@ class HomeScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildOverviewCard(DataProvider provider) {
+  Widget _buildOverviewCard(double monthlyExpense, double monthlyIncome) {
     return Container(
       decoration: BoxDecoration(
         color: const Color(0xFF4A90E2),
@@ -113,7 +195,7 @@ class HomeScreen extends StatelessWidget {
               ),
               const SizedBox(height: 4),
               Text(
-                '￥${provider.monthlyExpense.toStringAsFixed(2)}',
+                '￥${monthlyExpense.toStringAsFixed(2)}',
                 style: const TextStyle(color: Colors.white, fontSize: 30, fontWeight: FontWeight.bold),
               ),
               const SizedBox(height: 24),
@@ -124,7 +206,7 @@ class HomeScreen extends StatelessWidget {
                     children: [
                       Text('本月收入', style: TextStyle(color: Colors.white.withOpacity(0.8), fontSize: 12)),
                       const SizedBox(height: 2),
-                      Text(provider.monthlyIncome.toStringAsFixed(2), style: const TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.w600)),
+                      Text(monthlyIncome.toStringAsFixed(2), style: const TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.w600)),
                     ],
                   ),
                   const SizedBox(width: 32),
@@ -133,7 +215,7 @@ class HomeScreen extends StatelessWidget {
                     children: [
                       Text('本月结余', style: TextStyle(color: Colors.white.withOpacity(0.8), fontSize: 12)),
                       const SizedBox(height: 2),
-                      Text((provider.monthlyIncome - provider.monthlyExpense).toStringAsFixed(2), style: const TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.w600)),
+                      Text((monthlyIncome - monthlyExpense).toStringAsFixed(2), style: const TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.w600)),
                     ],
                   ),
                 ],

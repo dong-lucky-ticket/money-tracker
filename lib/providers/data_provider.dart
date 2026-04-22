@@ -105,12 +105,17 @@ class DataProvider with ChangeNotifier {
   }
 
   Future<void> reorderCategories(List<Category> newOrderList) async {
+    // 1. 立即在内存中更新排序，并同步通知UI刷新
+    // 这样 ReorderableListView 能够立刻获取到最新顺序，避免拖拽松手后“回弹再动画”的冗余表现
     for (int i = 0; i < newOrderList.length; i++) {
-      var cat = newOrderList[i];
-      cat.sortOrder = i;
-      await _categoriesBox.put(cat.id, cat);
+      newOrderList[i].sortOrder = i;
     }
     notifyListeners();
+
+    // 2. 随后在后台异步持久化到本地存储
+    for (var cat in newOrderList) {
+      await _categoriesBox.put(cat.id, cat);
+    }
   }
   
   Future<void> clearAllData() async {

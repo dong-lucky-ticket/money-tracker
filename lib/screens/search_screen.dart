@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:material_design_icons_flutter/material_design_icons_flutter.dart';
 import 'package:provider/provider.dart';
 import 'package:intl/intl.dart';
 
@@ -42,10 +43,17 @@ class _SearchScreenState extends State<SearchScreen> {
       body: Consumer<DataProvider>(
         builder: (context, provider, child) {
           if (_searchQuery.isEmpty) {
-            return const Center(
-              child: Text(
-                '输入关键字进行搜索',
-                style: TextStyle(color: Color(0xFF9CA3AF), fontSize: 16),
+            return Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(MdiIcons.textSearch, size: 64, color: const Color(0xFFE5E7EB)),
+                  const SizedBox(height: 16),
+                  const Text(
+                    '输入分类或备注进行搜索',
+                    style: TextStyle(color: Color(0xFF9CA3AF)),
+                  ),
+                ],
               ),
             );
           }
@@ -56,10 +64,17 @@ class _SearchScreenState extends State<SearchScreen> {
           }).toList();
 
           if (filteredRecords.isEmpty) {
-            return const Center(
-              child: Text(
-                '未找到相关记录',
-                style: TextStyle(color: Color(0xFF9CA3AF), fontSize: 16),
+            return Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(MdiIcons.textSearch, size: 64, color: const Color(0xFFE5E7EB)),
+                  const SizedBox(height: 16),
+                  const Text(
+                    '没有找到相关账单',
+                    style: TextStyle(color: Color(0xFF9CA3AF)),
+                  ),
+                ],
               ),
             );
           }

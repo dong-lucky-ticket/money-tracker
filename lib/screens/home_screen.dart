@@ -9,6 +9,7 @@ import '../utils/icon_mapper.dart';
 
 import '../screens/search_screen.dart';
 
+  // Note: floatingActionButton replacement skipped as it is likely located in the parent Scaffold/MainScreen.
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
 
@@ -144,9 +145,11 @@ class _HomeScreenState extends State<HomeScreen> {
                   children: [
                     // 总览卡片
                     _buildOverviewCard(monthlyExpense, monthlyIncome),
-                    const SizedBox(height: 32),
                     // 流水列表
-                    ...groupedRecords.entries.map((e) => _buildDailyRecordList(e.key, e.value, provider)),
+                    if (records.isEmpty)
+                      _buildEmptyState()
+                    else
+                      ...groupedRecords.entries.map((e) => _buildDailyRecordList(e.key, e.value, provider)),
                   ],
                 );
               }
@@ -248,24 +251,20 @@ class _HomeScreenState extends State<HomeScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+          const SizedBox(height: 24),
           // 日期和汇总
           Padding(
-            padding: const EdgeInsets.only(bottom: 12, left: 4, right: 4),
+            padding: const EdgeInsets.only(bottom: 12.0, left: 4.0, right: 4.0),
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 Text(
                   dateDisplay,
-                  style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w500, color: Color(0xFF6B7280)),
+                  style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14, color: Color(0xFF6B7280)),
                 ),
-                Row(
-                  children: [
-                    if (dayIncome > 0)
-                      Text('收入: ${dayIncome.toStringAsFixed(2)}', style: const TextStyle(fontSize: 12, color: Color(0xFF6B7280))),
-                    if (dayIncome > 0 && dayExpense > 0) const SizedBox(width: 12),
-                    if (dayExpense > 0)
-                      Text('支出: ${dayExpense.toStringAsFixed(2)}', style: const TextStyle(fontSize: 12, color: Color(0xFF6B7280))),
-                  ],
+                Text(
+                  '支出 ${dayExpense.toStringAsFixed(2)}  收入 ${dayIncome.toStringAsFixed(2)}',
+                  style: const TextStyle(color: Color(0xFF9CA3AF), fontSize: 12),
                 ),
               ],
             ),
@@ -344,6 +343,22 @@ class _HomeScreenState extends State<HomeScreen> {
             ),
           ],
         ),
+      ),
+    );
+  }
+
+  Widget _buildEmptyState() {
+    return Container(
+      padding: const EdgeInsets.symmetric(vertical: 60),
+      alignment: Alignment.center,
+      child: Column(
+        children: [
+          Icon(MdiIcons.textBoxRemoveOutline, size: 64, color: const Color(0xFFE5E7EB)),
+          const SizedBox(height: 16),
+          const Text('本月还没有记账哦\n快去记录第一笔账单吧！',
+              textAlign: TextAlign.center,
+              style: TextStyle(color: Color(0xFF9CA3AF), height: 1.5)),
+        ],
       ),
     );
   }

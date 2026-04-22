@@ -35,9 +35,9 @@ class _MainTabScreenState extends State<MainTabScreen> {
           );
         },
         backgroundColor: const Color(0xFF4A90E2),
-        elevation: 8,
+        elevation: 4,
         shape: const CircleBorder(),
-        child: const Icon(Icons.add, size: 32, color: Colors.white),
+        child: const Icon(Icons.add, color: Colors.white, size: 32),
       ) : null,
       floatingActionButtonLocation: FloatingActionButtonLocation.endFloat,
       bottomNavigationBar: Container(

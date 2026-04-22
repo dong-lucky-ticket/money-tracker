@@ -83,15 +83,49 @@ class _AddRecordScreenState extends State<AddRecordScreen> {
     });
   }
 
+  void _showValidationDialog(String message) {
+    showDialog(
+      context: context,
+      builder: (ctx) => Dialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(vertical: 24, horizontal: 24),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Icon(Icons.info_outline, color: Color(0xFFF59E0B), size: 48),
+              const SizedBox(height: 16),
+              Text(message, style: const TextStyle(fontSize: 16, color: Color(0xFF1F2937), fontWeight: FontWeight.w500)),
+              const SizedBox(height: 24),
+              SizedBox(
+                width: double.infinity,
+                child: ElevatedButton(
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color(0xFF4A90E2),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                    elevation: 0,
+                    padding: const EdgeInsets.symmetric(vertical: 12),
+                  ),
+                  onPressed: () => Navigator.pop(ctx),
+                  child: const Text('知道了', style: TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold)),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
   void _saveRecord() {
     if (_selectedCategory == null) {
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('请选择分类')));
+      _showValidationDialog('请选择一个记账分类');
       return;
     }
     
     final amount = double.tryParse(_amountStr) ?? 0.0;
     if (amount <= 0) {
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('请输入金额')));
+      _showValidationDialog('请输入大于 0 的金额');
       return;
     }
 
@@ -173,10 +207,10 @@ class _AddRecordScreenState extends State<AddRecordScreen> {
               child: GridView.builder(
                 padding: const EdgeInsets.all(16),
                 gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                  crossAxisCount: 4,
+                  crossAxisCount: 5,
                   childAspectRatio: 0.8,
-                  crossAxisSpacing: 16,
-                  mainAxisSpacing: 16,
+                  crossAxisSpacing: 12,
+                  mainAxisSpacing: 20,
                 ),
                 itemCount: categories.length + 1,
                 itemBuilder: (context, index) {
@@ -279,6 +313,7 @@ class _AddRecordScreenState extends State<AddRecordScreen> {
                                     contentPadding: EdgeInsets.zero,
                                   ),
                                   style: const TextStyle(fontSize: 14, color: Color(0xFF4B5563)),
+                                  textInputAction: TextInputAction.done,
                                   onSubmitted: (_) {
                                     _remarkFocusNode.unfocus();
                                   },
@@ -362,8 +397,8 @@ class _AddRecordScreenState extends State<AddRecordScreen> {
       child: Column(
         children: [
           Container(
-            width: 48,
-            height: 48,
+            width: 44,
+            height: 44,
             decoration: BoxDecoration(
               color: isSelected ? color : const Color(0xFFF3F4F6),
               shape: BoxShape.circle,
@@ -371,11 +406,20 @@ class _AddRecordScreenState extends State<AddRecordScreen> {
             child: Icon(
               IconMapper.getIcon(cat.iconName),
               color: isSelected ? Colors.white : const Color(0xFF4B5563),
-              size: 28,
+              size: 24,
             ),
           ),
-          const SizedBox(height: 8),
-          Text(cat.name, style: const TextStyle(fontSize: 12, color: Color(0xFF374151))),
+          const SizedBox(height: 6),
+          Text(
+            cat.name, 
+            style: TextStyle(
+              fontSize: 11, 
+              color: isSelected ? const Color(0xFF111827) : const Color(0xFF4B5563),
+              fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+            ),
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+          ),
         ],
       ),
     );
@@ -389,17 +433,17 @@ class _AddRecordScreenState extends State<AddRecordScreen> {
       child: Column(
         children: [
           Container(
-            width: 48,
-            height: 48,
+            width: 44,
+            height: 44,
             decoration: BoxDecoration(
               color: const Color(0xFFF9FAFB),
               shape: BoxShape.circle,
               border: Border.all(color: const Color(0xFFD1D5DB), width: 1),
             ),
-            child: Icon(MdiIcons.plus, color: const Color(0xFF9CA3AF), size: 28),
+            child: Icon(MdiIcons.plus, color: const Color(0xFF9CA3AF), size: 24),
           ),
-          const SizedBox(height: 8),
-          const Text('添加', style: TextStyle(fontSize: 12, color: Color(0xFF6B7280))),
+          const SizedBox(height: 6),
+          const Text('设置', style: TextStyle(fontSize: 11, color: Color(0xFF6B7280))),
         ],
       ),
     );
@@ -407,47 +451,66 @@ class _AddRecordScreenState extends State<AddRecordScreen> {
 
   Widget _buildKeypad() {
     return Container(
-      color: Colors.white,
-      child: GridView.count(
-        shrinkWrap: true,
-        crossAxisCount: 4,
-        childAspectRatio: 1.5,
-        physics: const NeverScrollableScrollPhysics(),
+      color: const Color(0xFFF3F4F6),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
         children: [
-          _buildKey('1'), _buildKey('2'), _buildKey('3'), _buildKey('backspace', icon: MdiIcons.backspaceOutline, color: Colors.red),
-          _buildKey('4'), _buildKey('5'), _buildKey('6'), _buildKey('C', color: Colors.grey),
-          _buildKey('7'), _buildKey('8'), _buildKey('9'), _buildKey('', color: Colors.grey),
-          _buildKey('00'), _buildKey('0'), _buildKey('.'), _buildKey('确定', isAction: true),
+          Row(
+            children: [
+              _buildGridKey('1'), _buildGridKey('2'), _buildGridKey('3'), _buildGridKey('backspace', icon: MdiIcons.backspaceOutline),
+            ],
+          ),
+          Row(
+            children: [
+              _buildGridKey('4'), _buildGridKey('5'), _buildGridKey('6'), _buildGridKey('C'),
+            ],
+          ),
+          Row(
+            children: [
+              Expanded(
+                flex: 3,
+                child: Column(
+                  children: [
+                    Row(children: [ _buildGridKey('7'), _buildGridKey('8'), _buildGridKey('9') ]),
+                    Row(children: [ _buildGridKey('00'), _buildGridKey('0'), _buildGridKey('.') ]),
+                  ],
+                ),
+              ),
+              Expanded(
+                flex: 1,
+                child: _buildKeyWidget('确定', isAction: true, height: 112),
+              ),
+            ],
+          ),
         ],
       ),
     );
   }
 
-  Widget _buildKey(String value, {IconData? icon, Color? color, bool isAction = false}) {
-    if (value.isEmpty) {
-      return Container(
-        decoration: BoxDecoration(
-          color: const Color(0xFFF9FAFB),
-          border: Border.all(color: const Color(0xFFF3F4F6), width: 0.5),
-        ),
-      );
-    }
+  Widget _buildGridKey(String value, {IconData? icon, double height = 56}) {
+    return Expanded(
+      child: _buildKeyWidget(value, icon: icon, height: height, color: const Color(0xFF111827)),
+    );
+  }
+
+  Widget _buildKeyWidget(String value, {IconData? icon, Color? color, bool isAction = false, double height = 56}) {
     return InkWell(
       onTap: isAction ? _saveRecord : () => _onKeypadTap(value),
       child: Container(
+        height: height,
         decoration: BoxDecoration(
-          color: isAction ? const Color(0xFF4A90E2) : (color != null ? const Color(0xFFF9FAFB) : Colors.white),
+          color: isAction ? const Color(0xFF4A90E2) : Colors.white,
           border: Border.all(color: const Color(0xFFF3F4F6), width: 0.5),
         ),
         alignment: Alignment.center,
         child: icon != null
-            ? Icon(icon, color: color)
+            ? Icon(icon, color: value == 'backspace' || value == 'C' ? Colors.redAccent : (color ?? const Color(0xFF4B5563)))
             : Text(
                 value,
                 style: TextStyle(
-                  fontSize: 20,
-                  fontWeight: FontWeight.w500,
-                  color: isAction ? Colors.white : (color ?? const Color(0xFF111827)),
+                  fontSize: isAction ? 18 : 22,
+                  fontWeight: isAction ? FontWeight.bold : FontWeight.w500,
+                  color: isAction ? Colors.white : color,
                 ),
               ),
       ),

@@ -18,7 +18,7 @@ class AddCategoryScreen extends StatefulWidget {
 class _AddCategoryScreenState extends State<AddCategoryScreen> {
   final TextEditingController _nameController = TextEditingController();
   String _selectedIcon = 'gamepad-variant-outline';
-  final Color _themeColor = const Color(0xFFFACC15); // Yellow from image
+  final Color _themeColor = const Color(0xFF4A90E2); // Theme blue
 
   @override
   void initState() {

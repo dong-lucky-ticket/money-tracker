@@ -16,7 +16,7 @@ class ReportScreen extends StatefulWidget {
 }
 
 class _ReportScreenState extends State<ReportScreen> {
-  int _filterIndex = 1; // 0:周, 1:月, 2:年
+  int _filterIndex = 0; // 0:周, 1:月, 2:年
 
   @override
   Widget build(BuildContext context) {
@@ -124,7 +124,7 @@ class _ReportScreenState extends State<ReportScreen> {
                             const Text('支出占比', style: TextStyle(fontWeight: FontWeight.bold, color: Color(0xFF1F2937))),
                             const SizedBox(height: 16),
                             SizedBox(
-                              height: 220,
+                              height: 200,
                               child: PieChart(
                                 PieChartData(
                                   sectionsSpace: 2,
@@ -142,10 +142,116 @@ class _ReportScreenState extends State<ReportScreen> {
                                 ),
                               ),
                             ),
+                            const SizedBox(height: 24),
+                            Center(
+                              child: Wrap(
+                                spacing: 16,
+                                runSpacing: 12,
+                                alignment: WrapAlignment.center,
+                                children: sortedCats.map((e) {
+                                  final cat = expenseRecords.firstWhere((r) => r.category.id == e.key).category;
+                                  final color = _hexToColor(catColor[e.key]!);
+                                  return Row(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      Container(
+                                        width: 10,
+                                        height: 10,
+                                        decoration: BoxDecoration(
+                                          color: color,
+                                          shape: BoxShape.circle,
+                                        ),
+                                      ),
+                                      const SizedBox(width: 6),
+                                      Text(
+                                        cat.name,
+                                        style: const TextStyle(fontSize: 12, color: Color(0xFF4B5563)),
+                                      ),
+                                    ],
+                                  );
+                                }).toList(),
+                              ),
+                            ),
                           ],
                         ),
                       ),
                     
+                    const SizedBox(height: 16),
+                    
+                    // 柱状图区域
+                    if (totalExp > 0)
+                      Container(
+                        padding: const EdgeInsets.all(16),
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(24),
+                          boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.02), blurRadius: 4)],
+                        ),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            const Text('支出分类统计', style: TextStyle(fontWeight: FontWeight.bold, color: Color(0xFF1F2937))),
+                            const SizedBox(height: 24),
+                            SizedBox(
+                              height: 200,
+                              child: BarChart(
+                                BarChartData(
+                                  alignment: BarChartAlignment.spaceAround,
+                                  barTouchData: BarTouchData(enabled: false),
+                                  titlesData: FlTitlesData(
+                                    show: true,
+                                    bottomTitles: AxisTitles(
+                                      sideTitles: SideTitles(
+                                        showTitles: true,
+                                        reservedSize: 28,
+                                        getTitlesWidget: (double value, TitleMeta meta) {
+                                          if (value.toInt() >= 0 && value.toInt() < sortedCats.length) {
+                                            final catId = sortedCats[value.toInt()].key;
+                                            final cat = expenseRecords.firstWhere((r) => r.category.id == catId).category;
+                                            return Padding(
+                                              padding: const EdgeInsets.only(top: 8.0),
+                                              child: Text(
+                                                cat.name,
+                                                style: const TextStyle(fontSize: 10, color: Color(0xFF6B7280)),
+                                              ),
+                                            );
+                                          }
+                                          return const SizedBox();
+                                        },
+                                      ),
+                                    ),
+                                    leftTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
+                                    topTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
+                                    rightTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
+                                  ),
+                                  gridData: const FlGridData(show: false),
+                                  borderData: FlBorderData(show: false),
+                                  barGroups: sortedCats.asMap().entries.map((entry) {
+                                    final index = entry.key;
+                                    final e = entry.value;
+                                    final color = _hexToColor(catColor[e.key]!);
+                                    return BarChartGroupData(
+                                      x: index,
+                                      barRods: [
+                                        BarChartRodData(
+                                          toY: e.value,
+                                          color: color,
+                                          width: 16,
+                                          borderRadius: const BorderRadius.only(
+                                            topLeft: Radius.circular(4),
+                                            topRight: Radius.circular(4),
+                                          ),
+                                        ),
+                                      ],
+                                    );
+                                  }).toList(),
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+
                     const SizedBox(height: 32),
                     
                     // 排行列表
@@ -161,7 +267,7 @@ class _ReportScreenState extends State<ReportScreen> {
                           ),
                           const SizedBox(height: 16),
                           ...sortedCats.map((e) {
-                            final cat = provider.categories.firstWhere((c) => c.id == e.key);
+                            final cat = expenseRecords.firstWhere((r) => r.category.id == e.key).category;
                             final percentage = (e.value / totalExp) * 100;
                             return _buildRankItem(cat, e.value, percentage, catCount[e.key]!);
                           }),

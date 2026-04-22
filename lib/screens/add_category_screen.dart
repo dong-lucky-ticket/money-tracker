@@ -44,6 +44,85 @@ class _AddCategoryScreenState extends State<AddCategoryScreen> {
       return;
     }
 
+    final provider = context.read<DataProvider>();
+
+    // 1. 检查是否已经在当前可用分类列表中
+    final bool isAlreadyActive = provider.categories.any((c) => 
+      c.isExpense == widget.isExpense && 
+      c.name == name && 
+      c.iconName == _selectedIcon
+    );
+
+    if (isAlreadyActive) {
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('该分类已存在，请修改名称或图标')));
+      return;
+    }
+
+    // 2. 检查历史记录中是否存在被删除的同名同图标分类
+    Category? historyCategory;
+    for (var record in provider.records) {
+      if (record.category.isExpense == widget.isExpense &&
+          record.category.name == name &&
+          record.category.iconName == _selectedIcon) {
+        historyCategory = record.category;
+        break;
+      }
+    }
+
+    if (historyCategory != null) {
+      final categoryToRestore = historyCategory;
+      showDialog(
+        context: context,
+        builder: (ctx) {
+          return AlertDialog(
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+            title: const Text('发现历史同名分类', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Color(0xFF111827))),
+            content: const Text(
+              '检测到历史记账数据中曾使用过该分类。\n\n是否与历史数据关联？\n选择【关联】将恢复该分类；\n选择【不关联】则必须修改当前分类的名称或图标才能添加。',
+              style: TextStyle(fontSize: 14, color: Color(0xFF4B5563), height: 1.5),
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(ctx),
+                child: const Text('取消', style: TextStyle(color: Color(0xFF6B7280))),
+              ),
+              TextButton(
+                onPressed: () {
+                  Navigator.pop(ctx);
+                  ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('为了避免数据混乱，请修改分类名称或图标')));
+                },
+                child: const Text('不关联', style: TextStyle(color: Color(0xFF6B7280))),
+              ),
+              ElevatedButton(
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: _themeColor,
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                  elevation: 0,
+                ),
+                onPressed: () {
+                  Navigator.pop(ctx);
+                  // 关联：使用历史ID重新添加到可用分类库
+                  final restoredCat = Category(
+                    id: categoryToRestore.id,
+                    name: categoryToRestore.name,
+                    iconName: categoryToRestore.iconName,
+                    colorHex: categoryToRestore.colorHex,
+                    isExpense: categoryToRestore.isExpense,
+                    sortOrder: 99,
+                  );
+                  provider.addCategory(restoredCat);
+                  Navigator.pop(context);
+                },
+                child: const Text('关联并添加', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+              ),
+            ],
+          );
+        },
+      );
+      return;
+    }
+
+    // 3. 正常新增分类
     final newCat = Category(
       id: const Uuid().v4(),
       name: name,
@@ -52,7 +131,7 @@ class _AddCategoryScreenState extends State<AddCategoryScreen> {
       isExpense: widget.isExpense,
       sortOrder: 99,
     );
-    context.read<DataProvider>().addCategory(newCat);
+    provider.addCategory(newCat);
     Navigator.pop(context);
   }
 

@@ -246,34 +246,31 @@ class _HomeScreenState extends State<HomeScreen> {
     double dayIncome = records.where((r) => !r.isExpense).fold(0.0, (s, r) => s + r.amount);
     double dayExpense = records.where((r) => r.isExpense).fold(0.0, (s, r) => s + r.amount);
 
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 24),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const SizedBox(height: 24),
-          // 日期和汇总
-          Padding(
-            padding: const EdgeInsets.only(bottom: 12.0, left: 4.0, right: 4.0),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Text(
-                  dateDisplay,
-                  style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14, color: Color(0xFF6B7280)),
-                ),
-                Text(
-                  '支出 ${dayExpense.toStringAsFixed(2)}  收入 ${dayIncome.toStringAsFixed(2)}',
-                  style: const TextStyle(color: Color(0xFF9CA3AF), fontSize: 12),
-                ),
-              ],
-            ),
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const SizedBox(height: 16),
+        // 日期和汇总
+        Padding(
+          padding: const EdgeInsets.only(top: 6.0, left: 4.0, right: 4.0),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(
+                dateDisplay,
+                style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14, color: Color(0xFF6B7280)),
+              ),
+              Text(
+                '支出 ${dayExpense.toStringAsFixed(2)}  收入 ${dayIncome.toStringAsFixed(2)}',
+                style: const TextStyle(color: Color(0xFF9CA3AF), fontSize: 12),
+              ),
+            ],
           ),
-          
-          // 记录列表
-          ...records.map((r) => _buildRecordItem(r, provider)),
-        ],
-      ),
+        ),
+        
+        // 记录列表
+        ...records.map((r) => _buildRecordItem(r, provider)),
+      ],
     );
   }
 
@@ -296,7 +293,7 @@ class _HomeScreenState extends State<HomeScreen> {
         child: const Icon(Icons.delete, color: Colors.white),
       ),
       child: Container(
-        margin: const EdgeInsets.only(bottom: 12),
+        margin: const EdgeInsets.only(top: 12),
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
           color: Colors.white,

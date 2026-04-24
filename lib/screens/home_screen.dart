@@ -8,9 +8,9 @@ import '../models/record.dart';
 import '../utils/icon_mapper.dart';
 
 import '../screens/search_screen.dart';
-import 'add_record_screen.dart';
+import '../widgets/edit_record_sheet.dart';
 
-  // Note: floatingActionButton replacement skipped as it is likely located in the parent Scaffold/MainScreen.
+// Note: floatingActionButton replacement skipped as it is likely located in the parent Scaffold/MainScreen.
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
 
@@ -342,19 +342,20 @@ class _HomeScreenState extends State<HomeScreen> {
       ),
       child: GestureDetector(
         onTap: () {
-          // Navigate to AddRecordScreen in edit mode
-          Navigator.push(
-            context,
-            MaterialPageRoute(
-              builder: (_) => AddRecordScreen(editRecord: record),
-            ),
+          if (record.isVoided) return;
+          showModalBottomSheet(
+            context: context,
+            isScrollControlled: true,
+            backgroundColor: Colors.transparent,
+            builder: (_) => EditRecordSheet(record: record, provider: provider),
           );
         },
         child: Container(
           margin: const EdgeInsets.only(top: 12),
           padding: const EdgeInsets.all(16),
           decoration: BoxDecoration(
-            color: record.isVoided ? const Color(0xFFF9FAFB) : Colors.white,
+            // color: record.isVoided ? const Color(0xFFF9FAFB) : Colors.white,
+            color: record.isVoided ? Colors.white.withOpacity(0.75) : Colors.white,
             borderRadius: BorderRadius.circular(16),
             boxShadow: [
               if (!record.isVoided)

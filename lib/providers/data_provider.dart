@@ -93,6 +93,10 @@ class DataProvider with ChangeNotifier {
     notifyListeners();
   }
 
+  void refreshUI() {
+    notifyListeners();
+  }
+
   // --- Category Methods ---
   Future<void> addCategory(Category category) async {
     await _categoriesBox.put(category.id, category);
@@ -134,19 +138,19 @@ class DataProvider with ChangeNotifier {
   double get monthlyExpense {
     final now = DateTime.now();
     return records
-        .where((r) => r.isExpense && r.date.year == now.year && r.date.month == now.month)
+        .where((r) => r.isExpense && !r.isVoided && r.date.year == now.year && r.date.month == now.month)
         .fold(0.0, (sum, item) => sum + item.amount);
   }
 
   double get monthlyIncome {
     final now = DateTime.now();
     return records
-        .where((r) => !r.isExpense && r.date.year == now.year && r.date.month == now.month)
+        .where((r) => !r.isExpense && !r.isVoided && r.date.year == now.year && r.date.month == now.month)
         .fold(0.0, (sum, item) => sum + item.amount);
   }
   
-  double get totalExpense => records.where((r) => r.isExpense).fold(0.0, (sum, item) => sum + item.amount);
-  double get totalIncome => records.where((r) => !r.isExpense).fold(0.0, (sum, item) => sum + item.amount);
+  double get totalExpense => records.where((r) => r.isExpense && !r.isVoided).fold(0.0, (sum, item) => sum + item.amount);
+  double get totalIncome => records.where((r) => !r.isExpense && !r.isVoided).fold(0.0, (sum, item) => sum + item.amount);
   
   int get activeCategoryCount {
     final usedCategoryIds = records.map((e) => e.category.id).toSet();

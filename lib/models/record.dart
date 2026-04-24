@@ -23,6 +23,9 @@ class Record extends HiveObject {
   @HiveField(5)
   bool isExpense;
 
+  @HiveField(6, defaultValue: false)
+  bool isVoided;
+
   Record({
     required this.id,
     required this.amount,
@@ -30,5 +33,6 @@ class Record extends HiveObject {
     required this.remark,
     required this.date,
     required this.isExpense,
+    this.isVoided = false,
   });
 }

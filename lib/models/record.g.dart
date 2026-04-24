@@ -23,13 +23,14 @@ class RecordAdapter extends TypeAdapter<Record> {
       remark: fields[3] as String,
       date: fields[4] as DateTime,
       isExpense: fields[5] as bool,
+      isVoided: fields[6] == null ? false : fields[6] as bool,
     );
   }
 
   @override
   void write(BinaryWriter writer, Record obj) {
     writer
-      ..writeByte(6)
+      ..writeByte(7)
       ..writeByte(0)
       ..write(obj.id)
       ..writeByte(1)
@@ -41,7 +42,9 @@ class RecordAdapter extends TypeAdapter<Record> {
       ..writeByte(4)
       ..write(obj.date)
       ..writeByte(5)
-      ..write(obj.isExpense);
+      ..write(obj.isExpense)
+      ..writeByte(6)
+      ..write(obj.isVoided);
   }
 
   @override

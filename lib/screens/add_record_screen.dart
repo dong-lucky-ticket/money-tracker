@@ -11,7 +11,9 @@ import '../utils/icon_mapper.dart';
 import 'categories_screen.dart';
 
 class AddRecordScreen extends StatefulWidget {
-  const AddRecordScreen({super.key});
+  final Record? editRecord;
+
+  const AddRecordScreen({super.key, this.editRecord});
 
   @override
   State<AddRecordScreen> createState() => _AddRecordScreenState();
@@ -30,6 +32,18 @@ class _AddRecordScreenState extends State<AddRecordScreen> {
   @override
   void initState() {
     super.initState();
+    
+    if (widget.editRecord != null) {
+      _isExpense = widget.editRecord!.isExpense;
+      _amountStr = widget.editRecord!.amount.toString();
+      if (_amountStr.endsWith('.0')) {
+        _amountStr = _amountStr.substring(0, _amountStr.length - 2);
+      }
+      _selectedCategory = widget.editRecord!.category;
+      _selectedDate = widget.editRecord!.date;
+      _remarkController.text = widget.editRecord!.remark;
+    }
+
     _remarkFocusNode.addListener(() {
       if (_remarkFocusNode.hasFocus) {
         setState(() {
@@ -130,12 +144,13 @@ class _AddRecordScreenState extends State<AddRecordScreen> {
     }
 
     final record = Record(
-      id: const Uuid().v4(),
+      id: widget.editRecord?.id ?? const Uuid().v4(),
       amount: amount,
       category: _selectedCategory!,
       remark: _remarkController.text,
       date: _selectedDate,
       isExpense: _isExpense,
+      isVoided: widget.editRecord?.isVoided ?? false,
     );
 
     context.read<DataProvider>().addRecord(record);
@@ -254,13 +269,19 @@ class _AddRecordScreenState extends State<AddRecordScreen> {
                               Row(
                                 children: [
                                   Text(_amountStr, style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: Color(0xFF111827))),
-                                  Container(
-                                    width: 4,
-                                    height: 32,
-                                    margin: const EdgeInsets.only(left: 4),
-                                    decoration: BoxDecoration(
-                                      color: const Color(0xFF4A90E2),
-                                      borderRadius: BorderRadius.circular(2),
+                                  Visibility(
+                                    visible: !_isKeyboardVisible,
+                                    maintainSize: true,    // 保持组件原有的尺寸
+                                    maintainAnimation: true, // 保持组件中的动画状态
+                                    maintainState: true,    // 保持组件中的 State（例如输入框中的文本）
+                                    child: Container(
+                                      width: 4,
+                                      height: 32,
+                                      margin: const EdgeInsets.only(left: 4),
+                                      decoration: BoxDecoration(
+                                        color: const Color(0xFF4A90E2),
+                                        borderRadius: BorderRadius.circular(2),
+                                      ),
                                     ),
                                   ),
                                 ],

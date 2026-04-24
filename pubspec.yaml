@@ -34,7 +34,11 @@ dev_dependencies:
 flutter_launcher_icons:
   android: "launcher_icon"
   ios: false
-  image_path: "assets/icon.png"
+  image_path: "assets/pig.png"
+  # image_path: "assets/wallet.png"
+
+  # 图标配置完成后，如需应用图标更新，需执行命令
+  # flutter pub run flutter_launcher_icons
 
 flutter:
   uses-material-design: true

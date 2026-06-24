@@ -1,4 +1,6 @@
+import 'dart:convert';
 import 'dart:io';
+import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:material_design_icons_flutter/material_design_icons_flutter.dart';
 import 'package:provider/provider.dart';
@@ -11,6 +13,73 @@ import '../providers/data_provider.dart';
 
 class SettingsScreen extends StatelessWidget {
   const SettingsScreen({super.key});
+
+  Future<void> _importFromCSV(
+      BuildContext context, DataProvider provider) async {
+    try {
+      final result = await FilePicker.platform.pickFiles(
+        type: FileType.custom,
+        allowedExtensions: const ['csv'],
+        withData: true,
+      );
+
+      if (result == null || result.files.isEmpty) {
+        return;
+      }
+
+      final pickedFile = result.files.single;
+      final bytes = pickedFile.bytes ??
+          (pickedFile.path != null
+              ? await File(pickedFile.path!).readAsBytes()
+              : null);
+
+      if (bytes == null) {
+        throw const FormatException('无法读取所选文件');
+      }
+
+      final importResult = await provider
+          .importRecordsFromCsv(utf8.decode(bytes, allowMalformed: true));
+
+      if (!context.mounted) return;
+
+      await showDialog(
+        context: context,
+        builder: (dialogContext) {
+          return AlertDialog(
+            title: const Text('导入完成'),
+            content: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text('文件：${pickedFile.name}'),
+                const SizedBox(height: 12),
+                Text('新增记录 ${importResult.importedCount} 条'),
+                Text('更新记录 ${importResult.updatedCount} 条'),
+                Text('跳过无效行 ${importResult.skippedCount} 条'),
+                Text('新增分类 ${importResult.createdCategoryCount} 个'),
+              ],
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(dialogContext),
+                child: const Text('知道了'),
+              ),
+            ],
+          );
+        },
+      );
+    } on FormatException catch (e) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context)
+            .showSnackBar(SnackBar(content: Text('导入失败：${e.message}')));
+      }
+    } catch (e) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context)
+            .showSnackBar(SnackBar(content: Text('导入失败：$e')));
+      }
+    }
+  }
 
   Future<void> _exportToCSV(BuildContext context, DataProvider provider) async {
     try {
@@ -308,6 +377,15 @@ class SettingsScreen extends StatelessWidget {
                       iconColor: Colors.blue,
                       title: '导出数据为 CSV',
                       onTap: () => _exportToCSV(context, provider),
+                    );
+                  }),
+                  Consumer<DataProvider>(builder: (context, provider, child) {
+                    return _buildSettingItem(
+                      icon: MdiIcons.fileImportOutline,
+                      iconColor: Colors.teal,
+                      title: '导入 CSV 数据',
+                      showArrow: true,
+                      onTap: () => _importFromCSV(context, provider),
                     );
                   }),
                   _buildSettingItem(

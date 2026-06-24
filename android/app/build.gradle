@@ -22,6 +22,21 @@ if (flutterVersionName == null) {
     flutterVersionName = '1.0'
 }
 
+def keystoreProperties = new Properties()
+def keystorePropertiesFile = rootProject.file('key.properties')
+if (keystorePropertiesFile.exists()) {
+    keystorePropertiesFile.withInputStream { stream ->
+        keystoreProperties.load(stream)
+    }
+}
+
+def releaseStoreFile = keystoreProperties['storeFile']
+def releaseSigningReady = releaseStoreFile != null &&
+        keystoreProperties['storePassword'] != null &&
+        keystoreProperties['keyAlias'] != null &&
+        keystoreProperties['keyPassword'] != null &&
+        rootProject.file(releaseStoreFile).exists()
+
 android {
     namespace "com.example.jizhangzhuchu"
     compileSdkVersion 34
@@ -51,11 +66,22 @@ android {
         versionName flutterVersionName
     }
 
+    signingConfigs {
+        release {
+            if (releaseSigningReady) {
+                storeFile rootProject.file(releaseStoreFile)
+                storePassword keystoreProperties['storePassword']
+                keyAlias keystoreProperties['keyAlias']
+                keyPassword keystoreProperties['keyPassword']
+            }
+        }
+    }
+
     buildTypes {
         release {
             // TODO: Add your own signing config for the release build.
             // Signing with the debug keys for now, so `flutter run --release` works.
-            signingConfig signingConfigs.debug
+            signingConfig releaseSigningReady ? signingConfigs.release : signingConfigs.debug
 
             // 清除自动设置的过滤器
             ndk.abiFilters.clear()

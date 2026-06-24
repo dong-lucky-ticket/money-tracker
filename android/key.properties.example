@@ -1,0 +1,11 @@
+# Copy this file to android/key.properties and fill in your real signing data.
+# Do not commit android/key.properties or the keystore file.
+storePassword=replace-with-store-password
+keyPassword=replace-with-key-password
+keyAlias=upload
+storeFile=app/upload-keystore.jks
+
+# 生成jks的命令
+# keytool -genkeypair -v -keystore android/app/zhangben-keystore.jks -alias zhangben -keyalg RSA -keysize 2048 -validity 10000
+# 查看包签名信息
+# D:\flutter\envs\SDK\build-tools\34.0.0\apksigner verify -v --print-certs .\app-release.apk

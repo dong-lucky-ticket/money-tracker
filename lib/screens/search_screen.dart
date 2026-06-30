@@ -5,8 +5,10 @@ import 'package:intl/intl.dart';
 
 import '../providers/data_provider.dart';
 import '../models/record.dart';
-import '../utils/icon_mapper.dart';
+import '../theme/app_colors.dart';
+import '../widgets/common/empty_state.dart';
 import '../widgets/edit_record_sheet.dart';
+import '../widgets/record/record_list_item.dart';
 
 class SearchScreen extends StatefulWidget {
   const SearchScreen({super.key});
@@ -45,16 +47,13 @@ class _SearchScreenState extends State<SearchScreen> {
         builder: (context, provider, child) {
           if (_searchQuery.isEmpty) {
             return Center(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Icon(MdiIcons.textSearch, size: 64, color: const Color(0xFFE5E7EB)),
-                  const SizedBox(height: 16),
-                  const Text(
-                    '输入分类或备注进行搜索',
-                    style: TextStyle(color: Color(0xFF9CA3AF)),
-                  ),
-                ],
+              child: EmptyState(
+                icon: Icon(
+                  MdiIcons.textSearch,
+                  size: 64,
+                  color: AppColors.border,
+                ),
+                title: '输入分类或备注进行搜索',
               ),
             );
           }
@@ -66,16 +65,13 @@ class _SearchScreenState extends State<SearchScreen> {
 
           if (filteredRecords.isEmpty) {
             return Center(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Icon(MdiIcons.textSearch, size: 64, color: const Color(0xFFE5E7EB)),
-                  const SizedBox(height: 16),
-                  const Text(
-                    '没有找到相关账单',
-                    style: TextStyle(color: Color(0xFF9CA3AF)),
-                  ),
-                ],
+              child: EmptyState(
+                icon: Icon(
+                  MdiIcons.textSearch,
+                  size: 64,
+                  color: AppColors.border,
+                ),
+                title: '没有找到相关账单',
               ),
             );
           }
@@ -149,129 +145,17 @@ class _SearchScreenState extends State<SearchScreen> {
   }
 
   Widget _buildRecordItem(Record record, DataProvider provider) {
-    final catColor = record.isVoided ? Colors.grey : _hexToColor(record.category.colorHex);
-    final amountColor = record.isVoided
-        ? Colors.grey
-        : (record.isExpense ? const Color(0xFFFF5A5A) : const Color(0xFF28CA7F));
-        
-    return Dismissible(
-      key: Key(record.id),
-      direction: DismissDirection.endToStart,
-      onDismissed: (_) {
-        provider.deleteRecord(record.id);
+    return RecordListItem(
+      record: record,
+      onDelete: () => provider.deleteRecord(record.id),
+      onTap: () {
+        showModalBottomSheet(
+          context: context,
+          isScrollControlled: true,
+          backgroundColor: Colors.transparent,
+          builder: (_) => EditRecordSheet(record: record, provider: provider),
+        );
       },
-      background: Container(
-        margin: const EdgeInsets.only(bottom: 12),
-        decoration: BoxDecoration(
-          color: const Color(0xFFFF5A5A),
-          borderRadius: BorderRadius.circular(16),
-        ),
-        alignment: Alignment.centerRight,
-        padding: const EdgeInsets.only(right: 20),
-        child: const Icon(Icons.delete, color: Colors.white),
-      ),
-      child: GestureDetector(
-        onTap: () {
-          if (record.isVoided) return;
-          showModalBottomSheet(
-            context: context,
-            isScrollControlled: true,
-            backgroundColor: Colors.transparent,
-            builder: (_) => EditRecordSheet(record: record, provider: provider),
-          );
-        },
-        child: Container(
-          margin: const EdgeInsets.only(bottom: 12),
-          padding: const EdgeInsets.all(16),
-          decoration: BoxDecoration(
-            color: record.isVoided ? const Color(0xFFF9FAFB) : Colors.white,
-            borderRadius: BorderRadius.circular(16),
-            boxShadow: [
-              if (!record.isVoided)
-                BoxShadow(
-                  color: Colors.black.withOpacity(0.02),
-                  blurRadius: 4,
-                  offset: const Offset(0, 2),
-                )
-            ],
-          ),
-          child: Row(
-            children: [
-              Container(
-                width: 40,
-                height: 40,
-                decoration: BoxDecoration(
-                  color: catColor.withOpacity(0.15),
-                  shape: BoxShape.circle,
-                ),
-                child: Icon(IconMapper.getIcon(record.category.iconName), color: catColor, size: 24),
-              ),
-              const SizedBox(width: 16),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
-                      children: [
-                        Text(
-                          record.category.name,
-                          style: TextStyle(
-                            fontSize: 14,
-                            fontWeight: FontWeight.bold,
-                            color: record.isVoided ? Colors.grey : const Color(0xFF1F2937),
-                            decoration: record.isVoided ? TextDecoration.lineThrough : null,
-                          )
-                        ),
-                        if (record.isVoided) ...[
-                          const SizedBox(width: 8),
-                          Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                            decoration: BoxDecoration(
-                              color: Colors.grey.shade200,
-                              borderRadius: BorderRadius.circular(4),
-                            ),
-                            child: const Text('已废弃', style: TextStyle(fontSize: 10, color: Colors.grey)),
-                          ),
-                        ]
-                      ],
-                    ),
-                    if (record.remark.isNotEmpty) ...[
-                      const SizedBox(height: 2),
-                      Text(
-                        record.remark,
-                        style: TextStyle(
-                          fontSize: 12,
-                          color: record.isVoided ? Colors.grey.shade400 : const Color(0xFF9CA3AF),
-                          decoration: record.isVoided ? TextDecoration.lineThrough : null,
-                        )
-                      ),
-                    ]
-                  ],
-                ),
-              ),
-              Text(
-                '${record.isExpense ? '-' : '+'}${record.amount.toStringAsFixed(2)}',
-                style: TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.bold,
-                  color: amountColor,
-                  decoration: record.isVoided ? TextDecoration.lineThrough : null,
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
     );
-  }
-
-  Color _hexToColor(String code) {
-    if (code.startsWith('#')) {
-      code = code.substring(1);
-    }
-    if (code.length == 6) {
-      code = 'FF$code';
-    }
-    return Color(int.parse(code, radix: 16));
   }
 }

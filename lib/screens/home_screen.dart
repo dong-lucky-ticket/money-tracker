@@ -5,10 +5,11 @@ import 'package:provider/provider.dart';
 
 import '../providers/data_provider.dart';
 import '../models/record.dart';
-import '../utils/icon_mapper.dart';
-
 import '../screens/search_screen.dart';
+import '../theme/app_colors.dart';
 import '../widgets/edit_record_sheet.dart';
+import '../widgets/common/empty_state.dart';
+import '../widgets/record/record_list_item.dart';
 
 // Note: floatingActionButton replacement skipped as it is likely located in the parent Scaffold/MainScreen.
 class HomeScreen extends StatefulWidget {
@@ -164,7 +165,7 @@ class _HomeScreenState extends State<HomeScreen> {
   Widget _buildOverviewCard(double monthlyExpense, double monthlyIncome) {
     return Container(
       decoration: BoxDecoration(
-        color: const Color(0xFF4A90E2),
+        color: AppColors.primary,
         borderRadius: BorderRadius.circular(24),
         boxShadow: [
           BoxShadow(
@@ -195,7 +196,8 @@ class _HomeScreenState extends State<HomeScreen> {
             children: [
               Text(
                 '本月总支出 (元)',
-                style: TextStyle(color: Colors.white.withOpacity(0.8), fontSize: 14),
+                style:
+                    TextStyle(color: Colors.white.withOpacity(0.8), fontSize: 14),
               ),
               const SizedBox(height: 4),
               Text(
@@ -276,189 +278,61 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Widget _buildRecordItem(Record record, DataProvider provider) {
-    final catColor = record.isVoided ? Colors.grey : _hexToColor(record.category.colorHex);
-    final amountColor = record.isVoided
-        ? Colors.grey
-        : (record.isExpense ? const Color(0xFFFF5A5A) : const Color(0xFF28CA7F));
-    
-    return Dismissible(
-      key: Key(record.id),
-      direction: DismissDirection.horizontal,
-      confirmDismiss: (direction) async {
-        if (direction == DismissDirection.endToStart) {
-          // Swipe left to delete
-          return await showDialog(
-            context: context,
-            builder: (BuildContext context) {
-              return AlertDialog(
-                title: const Text("确认删除"),
-                content: const Text("你确定要删除这条账单吗？"),
-                actions: [
-                  TextButton(
-                    onPressed: () => Navigator.of(context).pop(false),
-                    child: const Text("取消", style: TextStyle(color: Colors.grey)),
-                  ),
-                  TextButton(
-                    onPressed: () => Navigator.of(context).pop(true),
-                    child: const Text("删除", style: TextStyle(color: Colors.red)),
-                  ),
-                ],
-              );
-            },
-          );
-        } else if (direction == DismissDirection.startToEnd) {
-          // Swipe right to toggle void status
-          record.isVoided = !record.isVoided;
-          record.save(); // Save to Hive
-          provider.refreshUI(); // Trigger UI update
-          return false; // Don't dismiss the item
-        }
-        return false;
+    return RecordListItem(
+      record: record,
+      margin: const EdgeInsets.only(top: 12),
+      onTap: () {
+        showModalBottomSheet(
+          context: context,
+          isScrollControlled: true,
+          backgroundColor: Colors.transparent,
+          builder: (_) => EditRecordSheet(record: record, provider: provider),
+        );
       },
-      onDismissed: (direction) {
-        if (direction == DismissDirection.endToStart) {
-          provider.deleteRecord(record.id);
-        }
+      onConfirmDelete: () async {
+        return await showDialog<bool>(
+          context: context,
+          builder: (dialogContext) {
+            return AlertDialog(
+              title: const Text('确认删除'),
+              content: const Text('你确定要删除这条账单吗？'),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.of(dialogContext).pop(false),
+                  child: const Text(
+                    '取消',
+                    style: TextStyle(color: Colors.grey),
+                  ),
+                ),
+                TextButton(
+                  onPressed: () => Navigator.of(dialogContext).pop(true),
+                  child: const Text(
+                    '删除',
+                    style: TextStyle(color: Colors.red),
+                  ),
+                ),
+              ],
+            );
+          },
+        );
       },
-      background: Container(
-        margin: const EdgeInsets.only(bottom: 12),
-        decoration: BoxDecoration(
-          color: record.isVoided ? Colors.green : Colors.orange,
-          borderRadius: BorderRadius.circular(16),
-        ),
-        alignment: Alignment.centerLeft,
-        padding: const EdgeInsets.only(left: 20),
-        child: Icon(record.isVoided ? Icons.restore : Icons.block, color: Colors.white),
-      ),
-      secondaryBackground: Container(
-        margin: const EdgeInsets.only(bottom: 12),
-        decoration: BoxDecoration(
-          color: const Color(0xFFFF5A5A),
-          borderRadius: BorderRadius.circular(16),
-        ),
-        alignment: Alignment.centerRight,
-        padding: const EdgeInsets.only(right: 20),
-        child: const Icon(Icons.delete, color: Colors.white),
-      ),
-      child: GestureDetector(
-        onTap: () {
-          if (record.isVoided) return;
-          showModalBottomSheet(
-            context: context,
-            isScrollControlled: true,
-            backgroundColor: Colors.transparent,
-            builder: (_) => EditRecordSheet(record: record, provider: provider),
-          );
-        },
-        child: Container(
-          margin: const EdgeInsets.only(top: 12),
-          padding: const EdgeInsets.all(16),
-          decoration: BoxDecoration(
-            // color: record.isVoided ? const Color(0xFFF9FAFB) : Colors.white,
-            color: record.isVoided ? Colors.white.withOpacity(0.75) : Colors.white,
-            borderRadius: BorderRadius.circular(16),
-            boxShadow: [
-              if (!record.isVoided)
-                BoxShadow(
-                  color: Colors.black.withOpacity(0.02),
-                  blurRadius: 4,
-                  offset: const Offset(0, 2),
-                )
-            ],
-          ),
-          child: Row(
-            children: [
-              Container(
-                width: 40,
-                height: 40,
-                decoration: BoxDecoration(
-                  color: catColor.withOpacity(0.15),
-                  shape: BoxShape.circle,
-                ),
-                child: Icon(IconMapper.getIcon(record.category.iconName), color: catColor, size: 24),
-              ),
-              const SizedBox(width: 16),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
-                      children: [
-                        Text(
-                          record.category.name,
-                          style: TextStyle(
-                            fontSize: 14,
-                            fontWeight: FontWeight.bold,
-                            color: record.isVoided ? Colors.grey : const Color(0xFF1F2937),
-                            decoration: record.isVoided ? TextDecoration.lineThrough : null,
-                          )
-                        ),
-                        if (record.isVoided) ...[
-                          const SizedBox(width: 8),
-                          Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                            decoration: BoxDecoration(
-                              color: Colors.grey.shade200,
-                              borderRadius: BorderRadius.circular(4),
-                            ),
-                            child: const Text('已废弃', style: TextStyle(fontSize: 10, color: Colors.grey)),
-                          ),
-                        ]
-                      ],
-                    ),
-                    if (record.remark.isNotEmpty) ...[
-                      const SizedBox(height: 2),
-                      Text(
-                        record.remark,
-                        style: TextStyle(
-                          fontSize: 12,
-                          color: record.isVoided ? Colors.grey.shade400 : const Color(0xFF9CA3AF),
-                          decoration: record.isVoided ? TextDecoration.lineThrough : null,
-                        )
-                      ),
-                    ]
-                  ],
-                ),
-              ),
-              Text(
-                '${record.isExpense ? '-' : '+'}${record.amount.toStringAsFixed(2)}',
-                style: TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.bold,
-                  color: amountColor,
-                  decoration: record.isVoided ? TextDecoration.lineThrough : null,
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
+      onDelete: () => provider.deleteRecord(record.id),
+      onToggleVoided: () {
+        record.isVoided = !record.isVoided;
+        record.save();
+        provider.refreshUI();
+      },
     );
   }
 
   Widget _buildEmptyState() {
-    return Container(
-      padding: const EdgeInsets.symmetric(vertical: 60),
-      alignment: Alignment.center,
-      child: Column(
-        children: [
-          Icon(MdiIcons.textBoxRemoveOutline, size: 64, color: const Color(0xFFE5E7EB)),
-          const SizedBox(height: 16),
-          const Text('本月还没有记账哦\n快去记录第一笔账单吧！',
-              textAlign: TextAlign.center,
-              style: TextStyle(color: Color(0xFF9CA3AF), height: 1.5)),
-        ],
+    return EmptyState(
+      icon: Icon(
+        MdiIcons.textBoxRemoveOutline,
+        size: 64,
+        color: AppColors.border,
       ),
+      title: '本月还没有记账哦\n快去记录第一笔账单吧！',
     );
-  }
-
-  Color _hexToColor(String code) {
-    if (code.startsWith('#')) {
-      code = code.substring(1);
-    }
-    if (code.length == 6) {
-      code = 'FF$code';
-    }
-    return Color(int.parse(code, radix: 16));
   }
 }

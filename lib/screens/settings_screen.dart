@@ -3,16 +3,31 @@ import 'dart:io';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:material_design_icons_flutter/material_design_icons_flutter.dart';
-import 'package:provider/provider.dart';
-import 'package:path_provider/path_provider.dart';
 import 'package:csv/csv.dart';
 import 'package:intl/intl.dart';
+import 'package:package_info_plus/package_info_plus.dart';
+import 'package:path_provider/path_provider.dart';
+import 'package:provider/provider.dart';
 import 'package:share_plus/share_plus.dart';
 
 import '../providers/data_provider.dart';
+import '../theme/app_colors.dart';
+import '../widgets/settings/settings_profile_card.dart';
+import '../widgets/settings/settings_section.dart';
+import '../widgets/settings/settings_stats_bar.dart';
 
 class SettingsScreen extends StatelessWidget {
   const SettingsScreen({super.key});
+
+  static final Future<String> _appVersionFuture = _loadAppVersion();
+
+  static Future<String> _loadAppVersion() async {
+    final packageInfo = await PackageInfo.fromPlatform();
+    if (packageInfo.version.isEmpty) {
+      return '--';
+    }
+    return 'v${packageInfo.version}';
+  }
 
   Future<void> _importFromCSV(
       BuildContext context, DataProvider provider) async {
@@ -103,7 +118,7 @@ class SettingsScreen extends StatelessWidget {
       final timestamp = DateFormat('yyyyMMdd_HHmmss').format(DateTime.now());
       final path = '${directory.path}/记账助储_$timestamp.csv';
       final file = File(path);
-      await file.writeAsString(csv);
+      await file.writeAsString(csv, encoding: utf8);
 
       if (context.mounted) {
         final box = context.findRenderObject() as RenderBox?;
@@ -171,8 +186,10 @@ class SettingsScreen extends StatelessWidget {
                 const Padding(
                   padding: EdgeInsets.all(16.0),
                   child: Text('已导出的 CSV 文件',
-                      style:
-                          TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+                      style: TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                      )),
                 ),
                 Expanded(
                   child: files.isEmpty
@@ -281,51 +298,7 @@ class SettingsScreen extends StatelessWidget {
             bottom: false,
             child: Column(
               children: [
-                // 个人资料卡片
-                Container(
-                  color: Colors.white,
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 20, vertical: 32),
-                  child: Row(
-                    children: [
-                      Container(
-                        width: 64,
-                        height: 64,
-                        decoration: BoxDecoration(
-                          shape: BoxShape.circle,
-                          border: Border.all(
-                              color: const Color(0xFF4A90E2), width: 2),
-                        ),
-                        child: const CircleAvatar(
-                          backgroundColor: Color(0xFFF3F4F6),
-                          child: Icon(Icons.person,
-                              size: 32, color: Color(0xFF9CA3AF)),
-                        ),
-                      ),
-                      const SizedBox(width: 20),
-                      const Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text('记账达人',
-                                style: TextStyle(
-                                    fontSize: 20,
-                                    fontWeight: FontWeight.bold,
-                                    color: Color(0xFF111827))),
-                            SizedBox(height: 2),
-                            Text('已坚持记账 248 天',
-                                style: TextStyle(
-                                    fontSize: 14, color: Color(0xFF9CA3AF))),
-                          ],
-                        ),
-                      ),
-                      Icon(MdiIcons.chevronRight,
-                          size: 24, color: const Color(0xFFD1D5DB)),
-                    ],
-                  ),
-                ),
-
-                // 统计概览
+                const SettingsProfileCard(),
                 Consumer<DataProvider>(builder: (context, provider, child) {
                   final now = DateTime.now();
                   final thisMonthCount = provider.records
@@ -333,27 +306,10 @@ class SettingsScreen extends StatelessWidget {
                           r.date.year == now.year && r.date.month == now.month)
                       .length;
 
-                  return Container(
-                    padding:
-                        const EdgeInsets.symmetric(vertical: 16, horizontal: 8),
-                    decoration: const BoxDecoration(
-                      color: Colors.white,
-                      border: Border(
-                        top: BorderSide(color: Color(0xFFF3F4F6)),
-                        bottom: BorderSide(color: Color(0xFFF3F4F6)),
-                      ),
-                    ),
-                    child: Row(
-                      children: [
-                        _buildStatItem(
-                            provider.records.length.toString(), '总记账'),
-                        _buildDivider(),
-                        _buildStatItem(thisMonthCount.toString(), '本月笔数'),
-                        _buildDivider(),
-                        _buildStatItem(
-                            provider.activeCategoryCount.toString(), '活跃分类'),
-                      ],
-                    ),
+                  return SettingsStatsBar(
+                    totalRecords: provider.records.length.toString(),
+                    monthlyRecords: thisMonthCount.toString(),
+                    activeCategories: provider.activeCategoryCount.toString(),
                   );
                 }),
               ],
@@ -368,11 +324,11 @@ class SettingsScreen extends StatelessWidget {
             physics: const BouncingScrollPhysics(),
             children: [
               // 数据管理
-              _buildSectionTitle('数据管理'),
-              _buildSectionContainer(
+              const SettingsSectionTitle(title: '数据管理'),
+              SettingsSectionCard(
                 children: [
                   Consumer<DataProvider>(builder: (context, provider, child) {
-                    return _buildSettingItem(
+                    return SettingsItem(
                       icon: MdiIcons.fileExportOutline,
                       iconColor: Colors.blue,
                       title: '导出数据为 CSV',
@@ -380,7 +336,7 @@ class SettingsScreen extends StatelessWidget {
                     );
                   }),
                   Consumer<DataProvider>(builder: (context, provider, child) {
-                    return _buildSettingItem(
+                    return SettingsItem(
                       icon: MdiIcons.fileImportOutline,
                       iconColor: Colors.teal,
                       title: '导入 CSV 数据',
@@ -388,21 +344,21 @@ class SettingsScreen extends StatelessWidget {
                       onTap: () => _importFromCSV(context, provider),
                     );
                   }),
-                  _buildSettingItem(
+                  SettingsItem(
                     icon: MdiIcons.fileDocumentMultipleOutline,
                     iconColor: Colors.orange,
                     title: '查看已导出的 CSV',
                     showArrow: true,
                     onTap: () => _viewExportedFiles(context),
                   ),
-                  _buildSettingItem(
+                  SettingsItem(
                     icon: MdiIcons.cloudSyncOutline,
                     iconColor: Colors.green,
                     title: '云端备份与恢复',
                     trailingText: '已关闭',
                   ),
                   Consumer<DataProvider>(builder: (context, provider, child) {
-                    return _buildSettingItem(
+                    return SettingsItem(
                       icon: MdiIcons.trashCanOutline,
                       iconColor: Colors.red,
                       title: '清空所有本地账单',
@@ -418,11 +374,11 @@ class SettingsScreen extends StatelessWidget {
               const SizedBox(height: 24),
 
               // 应用设置
-              _buildSectionTitle('应用设置'),
-              _buildSectionContainer(
+              const SettingsSectionTitle(title: '应用设置'),
+              SettingsSectionCard(
                 children: [
                   Consumer<DataProvider>(builder: (context, provider, child) {
-                    return _buildSettingItem(
+                    return SettingsItem(
                       icon: MdiIcons.paletteOutline,
                       iconColor: Colors.purple,
                       title: '主题风格切换',
@@ -431,17 +387,17 @@ class SettingsScreen extends StatelessWidget {
                       onTap: () => provider.toggleTheme(),
                     );
                   }),
-                  _buildSettingItem(
+                  SettingsItem(
                     icon: MdiIcons.bellOutline,
                     iconColor: Colors.orange,
                     title: '记账提醒',
                     customTrailing: Switch(
                       value: true,
                       onChanged: (v) {},
-                      activeColor: const Color(0xFF4A90E2),
+                      activeColor: AppColors.primary,
                     ),
                   ),
-                  _buildSettingItem(
+                  SettingsItem(
                     icon: MdiIcons.shieldLockOutline,
                     iconColor: Colors.indigo,
                     title: '安全锁屏 (FaceID/指纹)',
@@ -454,15 +410,20 @@ class SettingsScreen extends StatelessWidget {
               const SizedBox(height: 24),
 
               // 关于
-              _buildSectionContainer(
+              SettingsSectionCard(
                 children: [
-                  _buildSettingItem(
-                    icon: MdiIcons.informationOutline,
-                    iconColor: Colors.grey,
-                    title: '关于记账助储',
-                    trailingText: 'v1.0.0',
+                  FutureBuilder<String>(
+                    future: _appVersionFuture,
+                    builder: (context, snapshot) {
+                      return SettingsItem(
+                        icon: MdiIcons.informationOutline,
+                        iconColor: Colors.grey,
+                        title: '关于记账助储',
+                        trailingText: snapshot.data ?? '--',
+                      );
+                    },
                   ),
-                  _buildSettingItem(
+                  SettingsItem(
                     icon: MdiIcons.starOutline,
                     iconColor: Colors.yellow.shade700,
                     title: '去商店好评',
@@ -475,111 +436,6 @@ class SettingsScreen extends StatelessWidget {
           ),
         ),
       ],
-    );
-  }
-
-  Widget _buildStatItem(String value, String label) {
-    return Expanded(
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Text(value,
-              style: const TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.bold,
-                  color: Color(0xFF1F2937))),
-          const SizedBox(height: 4),
-          Text(label,
-              style: const TextStyle(
-                  fontSize: 10, color: Color(0xFF9CA3AF), letterSpacing: 1)),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildDivider() {
-    return Container(
-      width: 1,
-      height: 24,
-      color: const Color(0xFFE5E7EB),
-    );
-  }
-
-  Widget _buildSectionTitle(String title) {
-    return Padding(
-      padding: const EdgeInsets.only(left: 24, bottom: 12),
-      child: Text(
-        title,
-        style: const TextStyle(
-            fontSize: 12,
-            fontWeight: FontWeight.bold,
-            color: Color(0xFF9CA3AF),
-            letterSpacing: 2),
-      ),
-    );
-  }
-
-  Widget _buildSectionContainer({required List<Widget> children}) {
-    return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 20),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
-        boxShadow: [
-          BoxShadow(color: Colors.black.withOpacity(0.02), blurRadius: 4)
-        ],
-      ),
-      child: Column(
-        children: children,
-      ),
-    );
-  }
-
-  Widget _buildSettingItem({
-    required IconData icon,
-    required Color iconColor,
-    required String title,
-    Color? titleColor,
-    String? trailingText,
-    bool showArrow = false,
-    Widget? customTrailing,
-    bool isLast = false,
-    VoidCallback? onTap,
-  }) {
-    return InkWell(
-      onTap: onTap,
-      child: Container(
-        padding: const EdgeInsets.all(16),
-        decoration: BoxDecoration(
-          border: isLast
-              ? null
-              : const Border(bottom: BorderSide(color: Color(0xFFF9FAFB))),
-        ),
-        child: Row(
-          children: [
-            Icon(icon, color: iconColor, size: 20),
-            const SizedBox(width: 16),
-            Expanded(
-              child: Text(
-                title,
-                style: TextStyle(
-                    fontSize: 14,
-                    fontWeight: FontWeight.w500,
-                    color: titleColor ?? const Color(0xFF374151)),
-              ),
-            ),
-            if (customTrailing != null)
-              customTrailing
-            else if (trailingText != null)
-              Text(trailingText,
-                  style:
-                      const TextStyle(fontSize: 12, color: Color(0xFFD1D5DB)))
-            else if (showArrow)
-              Icon(MdiIcons.chevronRight,
-                  size: 20, color: const Color(0xFFD1D5DB)),
-          ],
-        ),
-      ),
     );
   }
 }

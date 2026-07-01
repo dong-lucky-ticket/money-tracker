@@ -20,6 +20,14 @@ class SearchScreen extends StatefulWidget {
 class _SearchScreenState extends State<SearchScreen> {
   String _searchQuery = '';
 
+  int _compareRecordTimeline(Record a, Record b) {
+    final updatedCompare = b.updatedAt.compareTo(a.updatedAt);
+    if (updatedCompare != 0) {
+      return updatedCompare;
+    }
+    return b.createdAt.compareTo(a.createdAt);
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -85,11 +93,18 @@ class _SearchScreenState extends State<SearchScreen> {
             }
             groupedRecords[dateStr]!.add(r);
           }
+          for (final grouped in groupedRecords.values) {
+            grouped.sort(_compareRecordTimeline);
+          }
+          final groupedEntries = groupedRecords.entries.toList()
+            ..sort((a, b) => b.key.compareTo(a.key));
 
           return ListView(
             padding: const EdgeInsets.fromLTRB(20, 16, 20, 40),
             physics: const BouncingScrollPhysics(),
-            children: groupedRecords.entries.map((e) => _buildDailyRecordList(e.key, e.value, provider)).toList(),
+            children: groupedEntries
+                .map((e) => _buildDailyRecordList(e.key, e.value, provider))
+                .toList(),
           );
         },
       ),
@@ -109,8 +124,10 @@ class _SearchScreenState extends State<SearchScreen> {
       dateDisplay += ' 昨天';
     }
 
-    double dayIncome = records.where((r) => !r.isExpense).fold(0.0, (s, r) => s + r.amount);
-    double dayExpense = records.where((r) => r.isExpense).fold(0.0, (s, r) => s + r.amount);
+    double dayIncome =
+        records.where((r) => !r.isExpense && !r.isVoided).fold(0.0, (s, r) => s + r.amount);
+    double dayExpense =
+        records.where((r) => r.isExpense && !r.isVoided).fold(0.0, (s, r) => s + r.amount);
 
     return Padding(
       padding: const EdgeInsets.only(bottom: 24),

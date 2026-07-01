@@ -48,6 +48,7 @@ class _EditRecordSheetState extends State<EditRecordSheet> {
     widget.record.amount = amount;
     widget.record.remark = _remarkController.text;
     widget.record.date = _selectedDate;
+    widget.record.updatedAt = DateTime.now();
     widget.record.save(); // 保存到 Hive
     widget.provider.refreshUI(); // 刷新界面
     

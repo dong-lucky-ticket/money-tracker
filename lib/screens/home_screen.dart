@@ -22,6 +22,14 @@ class HomeScreen extends StatefulWidget {
 class _HomeScreenState extends State<HomeScreen> {
   DateTime _selectedMonth = DateTime.now();
 
+  int _compareRecordTimeline(Record a, Record b) {
+    final updatedCompare = b.updatedAt.compareTo(a.updatedAt);
+    if (updatedCompare != 0) {
+      return updatedCompare;
+    }
+    return b.createdAt.compareTo(a.createdAt);
+  }
+
   void _pickMonth() {
     showDialog(
       context: context,
@@ -126,10 +134,20 @@ class _HomeScreenState extends State<HomeScreen> {
           Expanded(
             child: Consumer<DataProvider>(
               builder: (context, provider, child) {
-                final records = provider.records.where((r) => r.date.year == _selectedMonth.year && r.date.month == _selectedMonth.month).toList();
-                
-                final double monthlyExpense = records.where((r) => r.isExpense).fold(0.0, (s, r) => s + r.amount);
-                final double monthlyIncome = records.where((r) => !r.isExpense).fold(0.0, (s, r) => s + r.amount);
+                final records = provider.records
+                    .where((r) =>
+                        r.date.year == _selectedMonth.year &&
+                        r.date.month == _selectedMonth.month)
+                    .toList();
+                final validRecords =
+                    records.where((record) => !record.isVoided).toList();
+
+                final double monthlyExpense = validRecords
+                    .where((r) => r.isExpense)
+                    .fold(0.0, (s, r) => s + r.amount);
+                final double monthlyIncome = validRecords
+                    .where((r) => !r.isExpense)
+                    .fold(0.0, (s, r) => s + r.amount);
 
                 // Group records by date (yyyy-MM-dd)
                 final Map<String, List<Record>> groupedRecords = {};
@@ -140,6 +158,11 @@ class _HomeScreenState extends State<HomeScreen> {
                   }
                   groupedRecords[dateStr]!.add(r);
                 }
+                for (final grouped in groupedRecords.values) {
+                  grouped.sort(_compareRecordTimeline);
+                }
+                final groupedEntries = groupedRecords.entries.toList()
+                  ..sort((a, b) => b.key.compareTo(a.key));
 
                 return ListView(
                   padding: const EdgeInsets.fromLTRB(20, 16, 20, 100),
@@ -151,7 +174,8 @@ class _HomeScreenState extends State<HomeScreen> {
                     if (records.isEmpty)
                       _buildEmptyState()
                     else
-                      ...groupedRecords.entries.map((e) => _buildDailyRecordList(e.key, e.value, provider)),
+                      ...groupedEntries
+                          .map((e) => _buildDailyRecordList(e.key, e.value, provider)),
                   ],
                 );
               }
@@ -319,6 +343,7 @@ class _HomeScreenState extends State<HomeScreen> {
       onDelete: () => provider.deleteRecord(record.id),
       onToggleVoided: () {
         record.isVoided = !record.isVoided;
+        record.updatedAt = DateTime.now();
         record.save();
         provider.refreshUI();
       },

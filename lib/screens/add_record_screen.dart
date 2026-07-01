@@ -154,6 +154,7 @@ class _AddRecordScreenState extends State<AddRecordScreen> {
       return;
     }
 
+    final now = DateTime.now();
     final record = Record(
       id: widget.editRecord?.id ?? const Uuid().v4(),
       amount: amount,
@@ -162,6 +163,8 @@ class _AddRecordScreenState extends State<AddRecordScreen> {
       date: _selectedDate,
       isExpense: _isExpense,
       isVoided: widget.editRecord?.isVoided ?? false,
+      createdAt: widget.editRecord?.createdAt ?? now,
+      updatedAt: now,
     );
 
     context.read<DataProvider>().addRecord(record);

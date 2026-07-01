@@ -26,6 +26,12 @@ class Record extends HiveObject {
   @HiveField(6, defaultValue: false)
   bool isVoided;
 
+  @HiveField(7)
+  DateTime createdAt;
+
+  @HiveField(8)
+  DateTime updatedAt;
+
   Record({
     required this.id,
     required this.amount,
@@ -34,5 +40,8 @@ class Record extends HiveObject {
     required this.date,
     required this.isExpense,
     this.isVoided = false,
-  });
+    DateTime? createdAt,
+    DateTime? updatedAt,
+  })  : createdAt = createdAt ?? date,
+        updatedAt = updatedAt ?? createdAt ?? date;
 }

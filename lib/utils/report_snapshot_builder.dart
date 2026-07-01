@@ -9,6 +9,9 @@ ReportSnapshot buildReportSnapshot({
   required bool isExpenseView,
 }) {
   final filteredRecords = records.where((record) {
+    if (record.isVoided) {
+      return false;
+    }
     if (filterIndex == 1) {
       return record.date.year == targetDate.year &&
           record.date.month == targetDate.month;
@@ -20,8 +23,10 @@ ReportSnapshot buildReportSnapshot({
     return difference >= 0 && difference <= 7;
   }).toList();
 
-  final expenseRecords = filteredRecords.where((record) => record.isExpense).toList();
-  final incomeRecords = filteredRecords.where((record) => !record.isExpense).toList();
+  final expenseRecords =
+      filteredRecords.where((record) => record.isExpense).toList();
+  final incomeRecords =
+      filteredRecords.where((record) => !record.isExpense).toList();
   final totalExpense = expenseRecords.fold(0.0, (sum, item) => sum + item.amount);
   final totalIncome = incomeRecords.fold(0.0, (sum, item) => sum + item.amount);
 

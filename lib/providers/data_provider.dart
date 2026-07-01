@@ -332,6 +332,8 @@ class DataProvider with ChangeNotifier {
 
   // --- Record Methods ---
   Future<void> addRecord(Record record) async {
+    final now = DateTime.now();
+    record.updatedAt = now;
     await _recordsBox.put(record.id, record);
     notifyListeners();
   }
@@ -454,6 +456,8 @@ class DataProvider with ChangeNotifier {
           remark: remark,
           date: _parseImportDate(dateText),
           isExpense: isExpense,
+          createdAt: DateTime.now(),
+          updatedAt: DateTime.now(),
         );
 
         if (recordsToImport.containsKey(recordId) ||
@@ -522,7 +526,8 @@ class DataProvider with ChangeNotifier {
       .fold(0.0, (sum, item) => sum + item.amount);
 
   int get activeCategoryCount {
-    final usedCategoryIds = records.map((e) => e.category.id).toSet();
+    final usedCategoryIds =
+        records.where((record) => !record.isVoided).map((e) => e.category.id).toSet();
     return usedCategoryIds.length;
   }
 

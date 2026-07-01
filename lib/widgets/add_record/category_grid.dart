@@ -32,12 +32,8 @@ class CategoryGrid extends StatelessWidget {
         crossAxisSpacing: 12,
         mainAxisSpacing: 20,
       ),
-      itemCount: categories.length + 1,
+      itemCount: categories.length,
       itemBuilder: (context, index) {
-        if (index == categories.length) {
-          return _AddCategoryButton(onTap: onAddCategory);
-        }
-
         final category = categories[index];
         final isSelected = selectedCategory?.id == category.id;
         final key = categoryKeys.putIfAbsent(category.id, () => GlobalKey());

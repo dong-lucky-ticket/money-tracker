@@ -8,6 +8,10 @@
 - `Hive` 负责本地持久化账单、分类和设置项。
 - UI 以移动端记账流程为核心，强调单手操作、快速新增和可视化统计。
 
+```powershell
+D:\demos\trae\release-server\publish-apk.ps1 -SourceApk "D:\demos\trae\expensetracker\build\app\outputs\apk\release\记账助储_v1.0.0.apk"
+```
+
 ## 项目意图
 
 从现有页面和交互设计来看，这个项目的目标是做一款：

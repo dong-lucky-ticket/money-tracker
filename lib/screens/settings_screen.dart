@@ -12,9 +12,28 @@ import 'package:share_plus/share_plus.dart';
 
 import '../providers/data_provider.dart';
 import '../theme/app_colors.dart';
+import 'categories_screen.dart';
 import '../widgets/settings/settings_profile_card.dart';
 import '../widgets/settings/settings_section.dart';
 import '../widgets/settings/settings_stats_bar.dart';
+
+class SettingsPageScreen extends StatelessWidget {
+  const SettingsPageScreen({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: AppColors.pageBackground,
+      appBar: AppBar(
+        title: const Text('设置'),
+        backgroundColor: Colors.white,
+        foregroundColor: AppColors.textPrimary,
+        elevation: 0,
+      ),
+      body: const SettingsScreen(),
+    );
+  }
+}
 
 class SettingsScreen extends StatelessWidget {
   const SettingsScreen({super.key});
@@ -323,6 +342,29 @@ class SettingsScreen extends StatelessWidget {
             padding: const EdgeInsets.symmetric(vertical: 24),
             physics: const BouncingScrollPhysics(),
             children: [
+              const SettingsSectionTitle(title: '分类管理'),
+              SettingsSectionCard(
+                children: [
+                  SettingsItem(
+                    icon: MdiIcons.formatListBulleted,
+                    iconColor: AppColors.primary,
+                    title: '管理收支分类',
+                    trailingText: '排序、删除、新增',
+                    showArrow: true,
+                    isLast: true,
+                    onTap: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (_) => const CategoriesScreen(),
+                        ),
+                      );
+                    },
+                  ),
+                ],
+              ),
+              const SizedBox(height: 24),
+
               // 数据管理
               const SettingsSectionTitle(title: '数据管理'),
               SettingsSectionCard(

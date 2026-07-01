@@ -35,7 +35,7 @@ class SegmentedSelector<T> extends StatelessWidget {
     this.activeBackgroundColor = AppColors.surface,
     this.activeTextColor = AppColors.textPrimary,
     this.inactiveTextColor = AppColors.textTertiary,
-    this.borderRadius = const BorderRadius.all(Radius.circular(12)),
+    this.borderRadius = const BorderRadius.all(Radius.circular(20)),
   });
 
   @override
@@ -61,7 +61,7 @@ class SegmentedSelector<T> extends StatelessWidget {
                       ? [
                           BoxShadow(
                             color: Colors.black.withOpacity(0.05),
-                            blurRadius: 4,
+                            blurRadius: 16,
                           ),
                         ]
                       : null,

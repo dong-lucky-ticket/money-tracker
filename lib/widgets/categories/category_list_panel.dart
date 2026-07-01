@@ -11,38 +11,46 @@ class CategoryListPanel extends StatelessWidget {
   final List<Category> categories;
   final ValueChanged<List<Category>> onReorder;
   final ValueChanged<Category> onDelete;
+  final bool wrapInCard;
 
   const CategoryListPanel({
     super.key,
     required this.categories,
     required this.onReorder,
     required this.onDelete,
+    this.wrapInCard = true,
   });
 
   @override
   Widget build(BuildContext context) {
+    final listView = ReorderableListView(
+      shrinkWrap: true,
+      physics: const NeverScrollableScrollPhysics(),
+      onReorder: (oldIndex, newIndex) {
+        final updated = List<Category>.from(categories);
+        if (oldIndex < newIndex) {
+          newIndex -= 1;
+        }
+        final item = updated.removeAt(oldIndex);
+        updated.insert(newIndex, item);
+        onReorder(updated);
+      },
+      children: categories.map((category) {
+        return _CategoryListTile(
+          key: Key(category.id),
+          category: category,
+          onDelete: () => onDelete(category),
+        );
+      }).toList(),
+    );
+
+    if (!wrapInCard) {
+      return listView;
+    }
+
     return AppCard(
       padding: EdgeInsets.zero,
-      child: ReorderableListView(
-        shrinkWrap: true,
-        physics: const NeverScrollableScrollPhysics(),
-        onReorder: (oldIndex, newIndex) {
-          final updated = List<Category>.from(categories);
-          if (oldIndex < newIndex) {
-            newIndex -= 1;
-          }
-          final item = updated.removeAt(oldIndex);
-          updated.insert(newIndex, item);
-          onReorder(updated);
-        },
-        children: categories.map((category) {
-          return _CategoryListTile(
-            key: Key(category.id),
-            category: category,
-            onDelete: () => onDelete(category),
-          );
-        }).toList(),
-      ),
+      child: listView,
     );
   }
 }

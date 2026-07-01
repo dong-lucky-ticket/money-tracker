@@ -41,6 +41,8 @@ class IconMapper {
         return MdiIcons.usb;
       case 'car':
         return MdiIcons.carOutline;
+      case 'motorcycle':
+        return MdiIcons.motorbike;
       case 'medical':
         return MdiIcons.medicalBag;
       case 'books':

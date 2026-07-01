@@ -56,7 +56,7 @@ class SegmentedSelector<T> extends StatelessWidget {
                 padding: itemPadding,
                 decoration: BoxDecoration(
                   color: isActive ? activeBackgroundColor : Colors.transparent,
-                  borderRadius: BorderRadius.circular(8),
+                  borderRadius: BorderRadius.circular(16),
                   boxShadow: isActive
                       ? [
                           BoxShadow(

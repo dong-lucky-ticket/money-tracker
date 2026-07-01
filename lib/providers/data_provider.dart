@@ -26,6 +26,16 @@ class DataProvider with ChangeNotifier {
   static const String recordsBoxName = 'recordsBox';
   static const String categoriesBoxName = 'categoriesBox';
   static const String settingsBoxName = 'settingsBox';
+  static const _deprecatedDefaultCategoryKeys = {
+    'expense::娱乐::entertainment',
+    'expense::社交::social',
+    'expense::学习::study',
+    'expense::礼物::gift',
+    'expense::维修::repair',
+    'expense::亲友::relatives',
+    'expense::快递::express',
+    'expense::话费::phone-bill',
+  };
 
   late Box<Record> _recordsBox;
   late Box<Category> _categoriesBox;
@@ -46,15 +56,25 @@ class DataProvider with ChangeNotifier {
 
     _isDarkTheme = _settingsBox.get('isDarkTheme', defaultValue: false);
 
-    // 如果分类太少，自动重新初始化（方便演示更新的分类）
-    if (_categoriesBox.length < 15) {
-      await _categoriesBox.clear();
-      _initDefaultCategories();
-    }
+    await _syncDefaultCategories();
   }
 
-  void _initDefaultCategories() {
-    final defaultCategories = [
+  Future<void> _syncDefaultCategories() async {
+    final defaultCategories = _buildDefaultCategories();
+
+    if (_categoriesBox.isEmpty) {
+      for (final category in defaultCategories) {
+        await _categoriesBox.put(category.id, category);
+      }
+      return;
+    }
+
+    await _removeDeprecatedDefaultCategories();
+    await _addMissingDefaultCategories(defaultCategories);
+  }
+
+  List<Category> _buildDefaultCategories() {
+    return [
       // === 支出 ===
       Category(
           id: const Uuid().v4(),
@@ -107,13 +127,6 @@ class DataProvider with ChangeNotifier {
           sortOrder: 6),
       Category(
           id: const Uuid().v4(),
-          name: '娱乐',
-          iconName: 'entertainment',
-          colorHex: '#A855F7',
-          isExpense: true,
-          sortOrder: 7),
-      Category(
-          id: const Uuid().v4(),
           name: '通讯',
           iconName: 'communication',
           colorHex: '#3B82F6',
@@ -149,13 +162,6 @@ class DataProvider with ChangeNotifier {
           sortOrder: 12),
       Category(
           id: const Uuid().v4(),
-          name: '社交',
-          iconName: 'social',
-          colorHex: '#3B82F6',
-          isExpense: true,
-          sortOrder: 13),
-      Category(
-          id: const Uuid().v4(),
           name: '旅行',
           iconName: 'travel',
           colorHex: '#10B981',
@@ -184,6 +190,13 @@ class DataProvider with ChangeNotifier {
           sortOrder: 17),
       Category(
           id: const Uuid().v4(),
+          name: '摩托',
+          iconName: 'motorcycle',
+          colorHex: '#0EA5E9',
+          isExpense: true,
+          sortOrder: 32),
+      Category(
+          id: const Uuid().v4(),
           name: '医疗',
           iconName: 'medical',
           colorHex: '#EF4444',
@@ -198,25 +211,11 @@ class DataProvider with ChangeNotifier {
           sortOrder: 19),
       Category(
           id: const Uuid().v4(),
-          name: '学习',
-          iconName: 'study',
-          colorHex: '#F59E0B',
-          isExpense: true,
-          sortOrder: 20),
-      Category(
-          id: const Uuid().v4(),
           name: '礼金',
           iconName: 'gift-money',
           colorHex: '#EF4444',
           isExpense: true,
           sortOrder: 21),
-      Category(
-          id: const Uuid().v4(),
-          name: '礼物',
-          iconName: 'gift',
-          colorHex: '#EC4899',
-          isExpense: true,
-          sortOrder: 22),
       Category(
           id: const Uuid().v4(),
           name: '办公',
@@ -226,32 +225,11 @@ class DataProvider with ChangeNotifier {
           sortOrder: 23),
       Category(
           id: const Uuid().v4(),
-          name: '维修',
-          iconName: 'repair',
-          colorHex: '#64748B',
-          isExpense: true,
-          sortOrder: 24),
-      Category(
-          id: const Uuid().v4(),
           name: '彩票',
           iconName: 'lottery',
           colorHex: '#EF4444',
           isExpense: true,
           sortOrder: 25),
-      Category(
-          id: const Uuid().v4(),
-          name: '亲友',
-          iconName: 'relatives',
-          colorHex: '#F97316',
-          isExpense: true,
-          sortOrder: 26),
-      Category(
-          id: const Uuid().v4(),
-          name: '快递',
-          iconName: 'express',
-          colorHex: '#F59E0B',
-          isExpense: true,
-          sortOrder: 27),
       Category(
           id: const Uuid().v4(),
           name: '星愿',
@@ -266,13 +244,6 @@ class DataProvider with ChangeNotifier {
           colorHex: '#3B82F6',
           isExpense: true,
           sortOrder: 29),
-      Category(
-          id: const Uuid().v4(),
-          name: '话费',
-          iconName: 'phone-bill',
-          colorHex: '#14B8A6',
-          isExpense: true,
-          sortOrder: 30),
       Category(
           id: const Uuid().v4(),
           name: '生活缴费',
@@ -325,8 +296,43 @@ class DataProvider with ChangeNotifier {
           isExpense: false,
           sortOrder: 5),
     ];
-    for (var c in defaultCategories) {
-      _categoriesBox.put(c.id, c);
+  }
+
+  Future<void> _removeDeprecatedDefaultCategories() async {
+    final categoriesToDelete = _categoriesBox.values.where((category) {
+      return _deprecatedDefaultCategoryKeys.contains(
+        _defaultCategoryKey(
+          name: category.name,
+          iconName: category.iconName,
+          isExpense: category.isExpense,
+        ),
+      );
+    }).toList();
+
+    for (final category in categoriesToDelete) {
+      await _categoriesBox.delete(category.id);
+    }
+  }
+
+  Future<void> _addMissingDefaultCategories(List<Category> defaultCategories) async {
+    final existingKeys = {
+      for (final category in _categoriesBox.values)
+        _defaultCategoryKey(
+          name: category.name,
+          iconName: category.iconName,
+          isExpense: category.isExpense,
+        ),
+    };
+
+    for (final category in defaultCategories) {
+      final key = _defaultCategoryKey(
+        name: category.name,
+        iconName: category.iconName,
+        isExpense: category.isExpense,
+      );
+      if (!existingKeys.contains(key)) {
+        await _categoriesBox.put(category.id, category);
+      }
     }
   }
 
@@ -594,6 +600,14 @@ class DataProvider with ChangeNotifier {
 
   String _categoryCacheKey(String name, bool isExpense) {
     return '${isExpense ? 'expense' : 'income'}::${name.trim()}';
+  }
+
+  String _defaultCategoryKey({
+    required String name,
+    required String iconName,
+    required bool isExpense,
+  }) {
+    return '${isExpense ? 'expense' : 'income'}::${name.trim()}::${iconName.trim()}';
   }
 
   int _nextCategorySortOrder(bool isExpense) {

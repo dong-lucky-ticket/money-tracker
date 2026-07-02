@@ -90,7 +90,7 @@ class ReportCategoryDetailSheet extends StatelessWidget {
                 Text(
                   '${summary.category.name}明细',
                   style: const TextStyle(
-                    fontSize: 18,
+                    fontSize: 20,
                     fontWeight: FontWeight.bold,
                     color: Color(0xFF1F2937),
                   ),
@@ -115,7 +115,7 @@ class ReportCategoryDetailSheet extends StatelessWidget {
                       Text(
                         periodLabel,
                         style: const TextStyle(
-                          fontSize: 12,
+                          fontSize: 13,
                           color: Color(0xFF6B7280),
                         ),
                       ),
@@ -123,7 +123,7 @@ class ReportCategoryDetailSheet extends StatelessWidget {
                       Text(
                         '￥${summary.amount.toStringAsFixed(2)}',
                         style: TextStyle(
-                          fontSize: 28,
+                          fontSize: 32,
                           fontWeight: FontWeight.bold,
                           color: amountColor,
                         ),
@@ -132,7 +132,7 @@ class ReportCategoryDetailSheet extends StatelessWidget {
                       Text(
                         _buildCompareText(summary),
                         style: const TextStyle(
-                          fontSize: 12,
+                          fontSize: 13,
                           color: Color(0xFF4B5563),
                         ),
                       ),
@@ -179,7 +179,7 @@ class ReportCategoryDetailSheet extends StatelessWidget {
                 const Text(
                   '相关记录',
                   style: TextStyle(
-                    fontSize: 15,
+                    fontSize: 16,
                     fontWeight: FontWeight.bold,
                     color: Color(0xFF1F2937),
                   ),
@@ -210,7 +210,7 @@ class ReportCategoryDetailSheet extends StatelessWidget {
                                 dateText,
                                 style: const TextStyle(
                                   color: Color(0xFF6B7280),
-                                  fontSize: 12,
+                                  fontSize: 13,
                                 ),
                               ),
                               const SizedBox(height: 4),
@@ -220,7 +220,7 @@ class ReportCategoryDetailSheet extends StatelessWidget {
                                   color: record.remark.isEmpty
                                       ? const Color(0xFF9CA3AF)
                                       : const Color(0xFF1F2937),
-                                  fontSize: 14,
+                                  fontSize: 15,
                                 ),
                               ),
                             ],
@@ -230,7 +230,7 @@ class ReportCategoryDetailSheet extends StatelessWidget {
                         Text(
                           record.amount.toStringAsFixed(2),
                           style: TextStyle(
-                            fontSize: 16,
+                            fontSize: 18,
                             fontWeight: FontWeight.bold,
                             color: amountColor,
                           ),
@@ -285,7 +285,7 @@ class _MetricCard extends StatelessWidget {
           Text(
             title,
             style: const TextStyle(
-              fontSize: 12,
+              fontSize: 13,
               color: Color(0xFF6B7280),
             ),
           ),
@@ -293,7 +293,7 @@ class _MetricCard extends StatelessWidget {
           Text(
             value,
             style: const TextStyle(
-              fontSize: 16,
+              fontSize: 18,
               fontWeight: FontWeight.bold,
               color: Color(0xFF1F2937),
             ),

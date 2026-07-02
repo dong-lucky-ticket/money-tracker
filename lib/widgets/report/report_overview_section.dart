@@ -35,6 +35,7 @@ class ReportOverviewSection extends StatelessWidget {
           deltaText: deltaText,
           compareLabel: snapshot.compareLabel,
           periodLabel: snapshot.periodLabel,
+          recordCount: snapshot.viewRecordCount,
         ),
         const SizedBox(height: 16),
         Row(
@@ -60,15 +61,6 @@ class ReportOverviewSection extends StatelessWidget {
                 color: snapshot.balance >= 0
                     ? AppColors.success
                     : AppColors.danger,
-              ),
-            ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: _SecondaryStatCard(
-                title: '本期笔数',
-                value: snapshot.viewRecordCount.toString(),
-                icon: MdiIcons.receiptTextOutline,
-                color: Colors.blue,
               ),
             ),
           ],
@@ -154,7 +146,7 @@ class ReportOverviewSection extends StatelessWidget {
                             child: Text(
                               insight,
                               style: const TextStyle(
-                                fontSize: 13,
+                                fontSize: 14,
                                 height: 1.5,
                                 color: AppColors.textSecondary,
                               ),
@@ -181,6 +173,7 @@ class _PrimarySummaryCard extends StatelessWidget {
   final String deltaText;
   final String compareLabel;
   final String periodLabel;
+  final int recordCount;
 
   const _PrimarySummaryCard({
     required this.title,
@@ -189,6 +182,7 @@ class _PrimarySummaryCard extends StatelessWidget {
     required this.deltaText,
     required this.compareLabel,
     required this.periodLabel,
+    required this.recordCount,
   });
 
   @override
@@ -212,7 +206,7 @@ class _PrimarySummaryCard extends StatelessWidget {
                 child: Text(
                   periodLabel,
                   style: TextStyle(
-                    fontSize: 12,
+                    fontSize: 13,
                     fontWeight: FontWeight.w600,
                     color: color,
                   ),
@@ -222,7 +216,7 @@ class _PrimarySummaryCard extends StatelessWidget {
               Text(
                 '对比$compareLabel',
                 style: const TextStyle(
-                  fontSize: 12,
+                  fontSize: 13,
                   color: AppColors.textMuted,
                 ),
               ),
@@ -232,7 +226,7 @@ class _PrimarySummaryCard extends StatelessWidget {
           Text(
             title,
             style: const TextStyle(
-              fontSize: 13,
+              fontSize: 15,
               color: AppColors.textMuted,
             ),
           ),
@@ -240,7 +234,7 @@ class _PrimarySummaryCard extends StatelessWidget {
           Text(
             '￥${amount.toStringAsFixed(2)}',
             style: TextStyle(
-              fontSize: 32,
+              fontSize: 36,
               fontWeight: FontWeight.bold,
               color: color,
             ),
@@ -249,9 +243,27 @@ class _PrimarySummaryCard extends StatelessWidget {
           Text(
             deltaText,
             style: const TextStyle(
-              fontSize: 12,
+              fontSize: 13,
               color: AppColors.textSecondary,
             ),
+          ),
+          const SizedBox(height: 8),
+          Row(
+            children: [
+              Icon(
+                MdiIcons.receiptTextOutline,
+                size: 16,
+                color: AppColors.textMuted,
+              ),
+              const SizedBox(width: 6),
+              Text(
+                '本期 $recordCount 笔',
+                style: const TextStyle(
+                  fontSize: 13,
+                  color: AppColors.textMuted,
+                ),
+              ),
+            ],
           ),
         ],
       ),
@@ -280,22 +292,36 @@ class _SecondaryStatCard extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Icon(icon, size: 18, color: color),
-          const SizedBox(height: 12),
-          Text(
-            title,
-            style: const TextStyle(
-              fontSize: 12,
-              color: AppColors.textMuted,
-            ),
+          Row(
+            children: [
+              Icon(icon, size: 18, color: color),
+              const SizedBox(width: 6),
+              Expanded(
+                child: Text(
+                  title,
+                  style: const TextStyle(
+                    fontSize: 13,
+                    color: AppColors.textMuted,
+                  ),
+                ),
+              ),
+            ],
           ),
-          const SizedBox(height: 4),
-          Text(
-            value,
-            style: const TextStyle(
-              fontSize: 16,
-              fontWeight: FontWeight.bold,
-              color: AppColors.textPrimary,
+          const SizedBox(height: 10),
+          SizedBox(
+            width: double.infinity,
+            child: FittedBox(
+              fit: BoxFit.scaleDown,
+              alignment: Alignment.centerLeft,
+              child: Text(
+                value,
+                maxLines: 1,
+                style: const TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                  color: AppColors.textPrimary,
+                ),
+              ),
             ),
           ),
         ],
@@ -331,24 +357,36 @@ class _InsightMetricCard extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Icon(icon, size: 18, color: color),
-          const SizedBox(height: 12),
-          Text(
-            title,
-            style: const TextStyle(
-              fontSize: 11,
-              color: AppColors.textTertiary,
-            ),
+          Row(
+            children: [
+              Icon(icon, size: 16, color: color),
+              const SizedBox(width: 6),
+              Expanded(
+                child: Text(
+                  title,
+                  style: const TextStyle(
+                    fontSize: 12,
+                    color: AppColors.textTertiary,
+                  ),
+                ),
+              ),
+            ],
           ),
-          const SizedBox(height: 4),
-          Text(
-            value,
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-            style: TextStyle(
-              fontSize: 15,
-              fontWeight: FontWeight.bold,
-              color: color,
+          const SizedBox(height: 8),
+          SizedBox(
+            width: double.infinity,
+            child: FittedBox(
+              fit: BoxFit.scaleDown,
+              alignment: Alignment.centerLeft,
+              child: Text(
+                value,
+                maxLines: 1,
+                style: TextStyle(
+                  fontSize: 17,
+                  fontWeight: FontWeight.bold,
+                  color: color,
+                ),
+              ),
             ),
           ),
           const SizedBox(height: 4),
@@ -357,7 +395,7 @@ class _InsightMetricCard extends StatelessWidget {
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
             style: const TextStyle(
-              fontSize: 10,
+              fontSize: 12,
               color: AppColors.textMuted,
             ),
           ),

@@ -42,7 +42,7 @@ class ReportHeader extends StatelessWidget {
                       const Text(
                         '收支报表',
                         style: TextStyle(
-                          fontSize: 18,
+                          fontSize: 20,
                           fontWeight: FontWeight.bold,
                           color: AppColors.textPrimary,
                         ),
@@ -51,7 +51,7 @@ class ReportHeader extends StatelessWidget {
                       Text(
                         periodLabel,
                         style: const TextStyle(
-                          fontSize: 12,
+                          fontSize: 13,
                           color: AppColors.textMuted,
                         ),
                       ),

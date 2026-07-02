@@ -38,6 +38,7 @@ class ReportTrendChart extends StatelessWidget {
           Text(
             filterIndex == 2 ? '$typeName月度走势' : '$typeName趋势',
             style: const TextStyle(
+              fontSize: 16,
               fontWeight: FontWeight.bold,
               color: Color(0xFF1F2937),
             ),
@@ -73,7 +74,7 @@ class ReportTrendChart extends StatelessWidget {
                       text: trendTooltipLabels[spot.x.toInt()] ?? '',
                       style: const TextStyle(
                         color: Colors.white70,
-                        fontSize: 10,
+                        fontSize: 12,
                       ),
                     ),
                   ],
@@ -206,7 +207,7 @@ class ReportTrendChart extends StatelessWidget {
               child: Text(
                 text,
                 style: const TextStyle(
-                  fontSize: 10,
+                  fontSize: 12,
                   color: AppColors.textTertiary,
                 ),
               ),
@@ -227,7 +228,7 @@ class ReportTrendChart extends StatelessWidget {
                   ? '${(value / 1000).toStringAsFixed(1)}k'
                   : value.toInt().toString(),
               style: const TextStyle(
-                fontSize: 10,
+                fontSize: 12,
                 color: AppColors.textMuted,
               ),
             );

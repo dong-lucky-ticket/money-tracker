@@ -35,6 +35,7 @@ class ReportRankList extends StatelessWidget {
             Text(
               '$typeName排行',
               style: const TextStyle(
+                fontSize: 16,
                 fontWeight: FontWeight.bold,
                 color: Color(0xFF1F2937),
               ),
@@ -188,7 +189,7 @@ class _RankItem extends StatelessWidget {
                       Text(
                         '占比 ${percentage.toStringAsFixed(1)}%',
                         style: const TextStyle(
-                          fontSize: 10,
+                          fontSize: 12,
                           color: AppColors.textMuted,
                         ),
                       ),
@@ -196,7 +197,7 @@ class _RankItem extends StatelessWidget {
                       Text(
                         '${summary.count} 笔',
                         style: const TextStyle(
-                          fontSize: 10,
+                          fontSize: 12,
                           color: AppColors.textMuted,
                         ),
                       ),
@@ -212,7 +213,7 @@ class _RankItem extends StatelessWidget {
                   child: Text(
                     deltaText,
                     style: TextStyle(
-                      fontSize: 10,
+                      fontSize: 12,
                       fontWeight: FontWeight.w600,
                       color: deltaColor,
                     ),

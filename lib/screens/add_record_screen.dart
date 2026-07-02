@@ -206,6 +206,17 @@ class _AddRecordScreenState extends State<AddRecordScreen> {
     });
   }
 
+  void _handleAmountFieldTap() {
+    if (_remarkFocusNode.hasFocus) {
+      _remarkFocusNode.unfocus();
+    }
+    if (_isKeyboardVisible) {
+      setState(() {
+        _isKeyboardVisible = false;
+      });
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final categories = context
@@ -258,6 +269,7 @@ class _AddRecordScreenState extends State<AddRecordScreen> {
               remarkController: _remarkController,
               remarkFocusNode: _remarkFocusNode,
               isKeyboardVisible: _isKeyboardVisible,
+              onAmountTap: _handleAmountFieldTap,
               onDateChanged: (date) {
                 setState(() => _selectedDate = date);
               },

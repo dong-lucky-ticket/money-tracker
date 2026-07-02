@@ -20,7 +20,63 @@ class HomeScreen extends StatefulWidget {
 }
 
 class _HomeScreenState extends State<HomeScreen> {
-  DateTime _selectedMonth = DateTime.now();
+  DataProvider? _provider;
+  DateTime _selectedMonth = _monthOnly(DateTime.now());
+
+  static DateTime _monthOnly(DateTime date) {
+    return DateTime(date.year, date.month);
+  }
+
+  static bool _isSameMonth(DateTime a, DateTime b) {
+    return a.year == b.year && a.month == b.month;
+  }
+
+  DateTime _resolveDisplayMonth(DataProvider provider) {
+    final records = provider.records;
+    if (records.isEmpty) {
+      return _monthOnly(DateTime.now());
+    }
+    return _monthOnly(records.first.date);
+  }
+
+  void _syncSelectedMonthWithRecords({bool force = false}) {
+    final provider = _provider;
+    if (provider == null) {
+      return;
+    }
+
+    final targetMonth = _resolveDisplayMonth(provider);
+    if (force || !_isSameMonth(_selectedMonth, targetMonth)) {
+      setState(() {
+        _selectedMonth = targetMonth;
+      });
+    }
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    final provider = context.read<DataProvider>();
+    if (!identical(_provider, provider)) {
+      _provider?.removeListener(_handleProviderChanged);
+      _provider = provider;
+      _provider?.addListener(_handleProviderChanged);
+      _selectedMonth = _resolveDisplayMonth(provider);
+    }
+  }
+
+  void _handleProviderChanged() {
+    if (!mounted) {
+      return;
+    }
+    _syncSelectedMonthWithRecords();
+  }
+
+  @override
+  void dispose() {
+    _provider?.removeListener(_handleProviderChanged);
+    super.dispose();
+  }
 
   int _compareRecordTimeline(Record a, Record b) {
     final updatedCompare = b.updatedAt.compareTo(a.updatedAt);

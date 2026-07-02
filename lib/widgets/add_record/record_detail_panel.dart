@@ -10,6 +10,7 @@ class RecordDetailPanel extends StatelessWidget {
   final TextEditingController remarkController;
   final FocusNode remarkFocusNode;
   final bool isKeyboardVisible;
+  final VoidCallback onAmountTap;
   final ValueChanged<DateTime> onDateChanged;
 
   const RecordDetailPanel({
@@ -19,6 +20,7 @@ class RecordDetailPanel extends StatelessWidget {
     required this.remarkController,
     required this.remarkFocusNode,
     required this.isKeyboardVisible,
+    required this.onAmountTap,
     required this.onDateChanged,
   });
 
@@ -38,52 +40,56 @@ class RecordDetailPanel extends StatelessWidget {
           children: [
             Padding(
               padding: const EdgeInsets.fromLTRB(24, 16, 24, 0),
-              child: Container(
-                decoration: BoxDecoration(
-                  border: Border(
-                    bottom: BorderSide(color: Colors.grey.shade200, width: 1),
-                  ),
-                ),
-                padding: const EdgeInsets.only(bottom: 12),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  crossAxisAlignment: CrossAxisAlignment.end,
-                  children: [
-                    const Text(
-                      '金额 (CNY)',
-                      style: TextStyle(
-                        color: AppColors.textMuted,
-                        fontSize: 14,
-                      ),
+              child: InkWell(
+                onTap: onAmountTap,
+                borderRadius: BorderRadius.circular(12),
+                child: Container(
+                  decoration: BoxDecoration(
+                    border: Border(
+                      bottom: BorderSide(color: Colors.grey.shade200, width: 1),
                     ),
-                    Row(
-                      children: [
-                        Text(
-                          amountText,
-                          style: const TextStyle(
-                            fontSize: 24,
-                            fontWeight: FontWeight.bold,
-                            color: AppColors.textPrimary,
-                          ),
+                  ),
+                  padding: const EdgeInsets.only(bottom: 12),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    crossAxisAlignment: CrossAxisAlignment.end,
+                    children: [
+                      const Text(
+                        '金额 (CNY)',
+                        style: TextStyle(
+                          color: AppColors.textMuted,
+                          fontSize: 14,
                         ),
-                        Visibility(
-                          visible: !isKeyboardVisible,
-                          maintainSize: true,
-                          maintainAnimation: true,
-                          maintainState: true,
-                          child: Container(
-                            width: 4,
-                            height: 32,
-                            margin: const EdgeInsets.only(left: 4),
-                            decoration: BoxDecoration(
-                              color: AppColors.primary,
-                              borderRadius: BorderRadius.circular(2),
+                      ),
+                      Row(
+                        children: [
+                          Text(
+                            amountText,
+                            style: const TextStyle(
+                              fontSize: 24,
+                              fontWeight: FontWeight.bold,
+                              color: AppColors.textPrimary,
                             ),
                           ),
-                        ),
-                      ],
-                    ),
-                  ],
+                          Visibility(
+                            visible: !isKeyboardVisible,
+                            maintainSize: true,
+                            maintainAnimation: true,
+                            maintainState: true,
+                            child: Container(
+                              width: 4,
+                              height: 32,
+                              margin: const EdgeInsets.only(left: 4),
+                              decoration: BoxDecoration(
+                                color: AppColors.primary,
+                                borderRadius: BorderRadius.circular(2),
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
                 ),
               ),
             ),

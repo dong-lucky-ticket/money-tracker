@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:material_design_icons_flutter/material_design_icons_flutter.dart';
 
 import '../../models/category.dart';
 import '../../theme/app_colors.dart';
@@ -93,47 +92,6 @@ class _CategoryGridItem extends StatelessWidget {
             ),
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _AddCategoryButton extends StatelessWidget {
-  final VoidCallback onTap;
-
-  const _AddCategoryButton({
-    required this.onTap,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: onTap,
-      child: Column(
-        children: [
-          Container(
-            width: 44,
-            height: 44,
-            decoration: BoxDecoration(
-              color: AppColors.surfaceMuted,
-              shape: BoxShape.circle,
-              border: Border.all(color: const Color(0xFFD1D5DB), width: 1),
-            ),
-            child: Icon(
-              MdiIcons.plus,
-              color: AppColors.textMuted,
-              size: 24,
-            ),
-          ),
-          const SizedBox(height: 6),
-          const Text(
-            '设置',
-            style: TextStyle(
-              fontSize: 11,
-              color: AppColors.textTertiary,
-            ),
           ),
         ],
       ),

@@ -7,6 +7,7 @@ import '../common/segmented_selector.dart';
 class ReportHeader extends StatelessWidget {
   final bool isExpenseView;
   final int filterIndex;
+  final String periodLabel;
   final VoidCallback onPickDate;
   final ValueChanged<bool> onTypeChanged;
   final ValueChanged<int> onFilterChanged;
@@ -15,6 +16,7 @@ class ReportHeader extends StatelessWidget {
     super.key,
     required this.isExpenseView,
     required this.filterIndex,
+    required this.periodLabel,
     required this.onPickDate,
     required this.onTypeChanged,
     required this.onFilterChanged,
@@ -35,13 +37,25 @@ class ReportHeader extends StatelessWidget {
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
                   const SizedBox(width: 24),
-                  const Text(
-                    '收支报表',
-                    style: TextStyle(
-                      fontSize: 18,
-                      fontWeight: FontWeight.bold,
-                      color: AppColors.textPrimary,
-                    ),
+                  Column(
+                    children: [
+                      const Text(
+                        '收支报表',
+                        style: TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.bold,
+                          color: AppColors.textPrimary,
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        periodLabel,
+                        style: const TextStyle(
+                          fontSize: 12,
+                          color: AppColors.textMuted,
+                        ),
+                      ),
+                    ],
                   ),
                   GestureDetector(
                     onTap: onPickDate,

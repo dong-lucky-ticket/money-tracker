@@ -5,7 +5,6 @@ import '../models/report_snapshot.dart';
 import '../providers/data_provider.dart';
 import '../utils/report_snapshot_builder.dart';
 import '../widgets/report/report_category_detail_sheet.dart';
-import '../widgets/report/report_distribution_section.dart';
 import '../widgets/report/report_header.dart';
 import '../widgets/report/report_overview_section.dart';
 import '../widgets/report/report_rank_list.dart';
@@ -42,7 +41,14 @@ class _ReportScreenState extends State<ReportScreen> {
   ) {
     final records = snapshot.viewRecords
         .where((record) => record.category.id == summary.category.id)
-        .toList();
+        .toList()
+      ..sort((a, b) {
+        final updatedCompare = b.updatedAt.compareTo(a.updatedAt);
+        if (updatedCompare != 0) {
+          return updatedCompare;
+        }
+        return b.createdAt.compareTo(a.createdAt);
+      });
     if (records.isEmpty) {
       return;
     }
@@ -51,32 +57,35 @@ class _ReportScreenState extends State<ReportScreen> {
       context,
       summary: summary,
       records: records,
+      viewTotal: snapshot.viewTotal,
+      periodLabel: snapshot.periodLabel,
       amountColor: snapshot.valueColor,
     );
   }
 
   @override
   Widget build(BuildContext context) {
-    return Column(
-      children: [
-        ReportHeader(
-          isExpenseView: _isExpenseView,
+    return Consumer<DataProvider>(
+      builder: (context, provider, child) {
+        final snapshot = buildReportSnapshot(
+          records: provider.records,
+          targetDate: _selectedDate,
           filterIndex: _filterIndex,
-          onPickDate: _pickDate,
-          onTypeChanged: (value) => setState(() => _isExpenseView = value),
-          onFilterChanged: (value) => setState(() => _filterIndex = value),
-        ),
-        Expanded(
-          child: Consumer<DataProvider>(
-            builder: (context, provider, child) {
-              final snapshot = buildReportSnapshot(
-                records: provider.records,
-                targetDate: _selectedDate,
-                filterIndex: _filterIndex,
-                isExpenseView: _isExpenseView,
-              );
+          isExpenseView: _isExpenseView,
+        );
 
-              return ListView(
+        return Column(
+          children: [
+            ReportHeader(
+              isExpenseView: _isExpenseView,
+              filterIndex: _filterIndex,
+              periodLabel: snapshot.periodLabel,
+              onPickDate: _pickDate,
+              onTypeChanged: (value) => setState(() => _isExpenseView = value),
+              onFilterChanged: (value) => setState(() => _filterIndex = value),
+            ),
+            Expanded(
+              child: ListView(
                 padding: const EdgeInsets.fromLTRB(20, 16, 20, 100),
                 physics: const BouncingScrollPhysics(),
                 children: [
@@ -86,26 +95,11 @@ class _ReportScreenState extends State<ReportScreen> {
                     ReportTrendChart(
                       typeName: snapshot.typeName,
                       trendData: snapshot.trendData,
+                      trendAxisLabels: snapshot.trendAxisLabels,
+                      trendTooltipLabels: snapshot.trendTooltipLabels,
                       maxX: snapshot.maxX,
                       filterIndex: _filterIndex,
                       color: snapshot.valueColor,
-                    ),
-                    const SizedBox(height: 16),
-                    ReportPieChartCard(
-                      typeName: snapshot.typeName,
-                      viewTotal: snapshot.viewTotal,
-                      categories: snapshot.categories,
-                      onCategoryTap: (summary) {
-                        _showCategoryDetails(summary, snapshot);
-                      },
-                    ),
-                    const SizedBox(height: 16),
-                    ReportBarChartCard(
-                      typeName: snapshot.typeName,
-                      categories: snapshot.categories,
-                      onCategoryTap: (summary) {
-                        _showCategoryDetails(summary, snapshot);
-                      },
                     ),
                     const SizedBox(height: 32),
                     ReportRankList(
@@ -113,17 +107,18 @@ class _ReportScreenState extends State<ReportScreen> {
                       viewTotal: snapshot.viewTotal,
                       valueColor: snapshot.valueColor,
                       typeName: snapshot.typeName,
+                      isExpenseView: snapshot.isExpenseView,
                       onTapCategory: (summary) {
                         _showCategoryDetails(summary, snapshot);
                       },
                     ),
                   ],
                 ],
-              );
-            },
-          ),
-        ),
-      ],
+              ),
+            ),
+          ],
+        );
+      },
     );
   }
 }

@@ -246,7 +246,7 @@ ReportSnapshot buildReportSnapshot({
         trendTooltipLabels[index] = '${day.month}月${day.day}日';
       } else if (filterIndex == 1) {
         trendAxisLabels[index] = index.toString();
-        trendTooltipLabels[index] = '${targetDay.month}月${index}日';
+        trendTooltipLabels[index] = '${targetDay.month}月$index日';
       } else {
         trendAxisLabels[index] = index.toString();
         trendTooltipLabels[index] = '$index月';

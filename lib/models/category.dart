@@ -22,6 +22,9 @@ class Category extends HiveObject {
   @HiveField(5)
   int sortOrder;
 
+  @HiveField(6, defaultValue: '')
+  String groupId;
+
   Category({
     required this.id,
     required this.name,
@@ -29,5 +32,6 @@ class Category extends HiveObject {
     required this.colorHex,
     required this.isExpense,
     this.sortOrder = 0,
+    this.groupId = '',
   });
 }

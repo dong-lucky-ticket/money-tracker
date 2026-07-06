@@ -219,11 +219,15 @@ class _AddRecordScreenState extends State<AddRecordScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final categories = context
-        .watch<DataProvider>()
-        .categories
-        .where((c) => c.isExpense == _isExpense)
+    final provider = context.watch<DataProvider>();
+    final categories =
+        provider.categories.where((c) => c.isExpense == _isExpense).toList();
+    final categoryGroups = provider.categoryGroups
+        .where((group) => group.isExpense == _isExpense)
         .toList();
+    final recentCategories = provider.recentCategories(
+      isExpense: _isExpense,
+    );
     if (_selectedCategory != null &&
         !categories.any((c) => c.id == _selectedCategory!.id)) {
       _selectedCategory = null;
@@ -249,6 +253,8 @@ class _AddRecordScreenState extends State<AddRecordScreen> {
           Expanded(
             child: CategoryGrid(
               categories: categories,
+              categoryGroups: categoryGroups,
+              recentCategories: recentCategories,
               selectedCategory: _selectedCategory,
               categoryKeys: _categoryKeys,
               onCategorySelected: _handleCategorySelected,

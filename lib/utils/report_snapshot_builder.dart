@@ -1,8 +1,10 @@
 import '../models/category.dart';
+import '../models/category_group.dart';
 import '../models/record.dart';
 import '../models/report_snapshot.dart';
 
-DateTime _dateOnly(DateTime value) => DateTime(value.year, value.month, value.day);
+DateTime _dateOnly(DateTime value) =>
+    DateTime(value.year, value.month, value.day);
 
 String _weekdayLabel(int weekday) {
   const labels = ['一', '二', '三', '四', '五', '六', '日'];
@@ -44,7 +46,8 @@ List<Record> _recordsInRange(
   }).toList();
 }
 
-({DateTime start, DateTime end}) _currentRange(DateTime targetDay, int filterIndex) {
+({DateTime start, DateTime end}) _currentRange(
+    DateTime targetDay, int filterIndex) {
   if (filterIndex == 0) {
     return (
       start: targetDay.subtract(const Duration(days: 6)),
@@ -63,7 +66,8 @@ List<Record> _recordsInRange(
   );
 }
 
-({DateTime start, DateTime end}) _previousRange(DateTime targetDay, int filterIndex) {
+({DateTime start, DateTime end}) _previousRange(
+    DateTime targetDay, int filterIndex) {
   if (filterIndex == 0) {
     final currentStart = targetDay.subtract(const Duration(days: 6));
     return (
@@ -120,10 +124,12 @@ List<String> _buildInsights({
     }
 
     if (trendData.isNotEmpty) {
-      final peak = trendData.entries.reduce((a, b) => a.value >= b.value ? a : b);
+      final peak =
+          trendData.entries.reduce((a, b) => a.value >= b.value ? a : b);
       final label = trendTooltipLabels[peak.key] ?? '';
       final unit = filterIndex == 2 ? '月份' : '日期';
-      insights.add('$label是本期$typeName最高$unit，金额${peak.value.toStringAsFixed(2)}');
+      insights
+          .add('$label是本期$typeName最高$unit，金额${peak.value.toStringAsFixed(2)}');
     }
   }
 
@@ -132,6 +138,7 @@ List<String> _buildInsights({
 
 ReportSnapshot buildReportSnapshot({
   required List<Record> records,
+  required List<CategoryGroup> categoryGroups,
   required DateTime targetDate,
   required int filterIndex,
   required bool isExpenseView,
@@ -175,20 +182,32 @@ ReportSnapshot buildReportSnapshot({
   final countByCategory = <String, int>{};
   final previousAmountByCategory = <String, double>{};
   final categoryById = <String, Category>{};
+  final amountByGroup = <String, double>{};
+  final countByGroup = <String, int>{};
+  final previousAmountByGroup = <String, double>{};
+  final groupById = <String, CategoryGroup>{
+    for (final group in categoryGroups) group.id: group,
+  };
 
   for (final record in viewRecords) {
     final categoryId = record.category.id;
+    final groupId = record.category.groupId;
     amountByCategory[categoryId] =
         (amountByCategory[categoryId] ?? 0) + record.amount;
     countByCategory[categoryId] = (countByCategory[categoryId] ?? 0) + 1;
     categoryById[categoryId] = record.category;
+    amountByGroup[groupId] = (amountByGroup[groupId] ?? 0) + record.amount;
+    countByGroup[groupId] = (countByGroup[groupId] ?? 0) + 1;
   }
 
   for (final record in previousViewRecords) {
     final categoryId = record.category.id;
+    final groupId = record.category.groupId;
     previousAmountByCategory[categoryId] =
         (previousAmountByCategory[categoryId] ?? 0) + record.amount;
     categoryById[categoryId] = record.category;
+    previousAmountByGroup[groupId] =
+        (previousAmountByGroup[groupId] ?? 0) + record.amount;
   }
 
   final categoryIds = {
@@ -207,6 +226,32 @@ ReportSnapshot buildReportSnapshot({
           category: categoryById[categoryId]!,
           amount: amount,
           count: countByCategory[categoryId] ?? 0,
+          previousAmount: previousAmount,
+          deltaAmount: deltaAmount,
+          deltaRate: deltaRate,
+        );
+      })
+      .where((summary) => summary.amount > 0)
+      .toList()
+    ..sort((a, b) => b.amount.compareTo(a.amount));
+
+  final groupIds = {
+    ...amountByGroup.keys,
+    ...previousAmountByGroup.keys,
+  };
+
+  final groups = groupIds
+      .map((groupId) {
+        final amount = amountByGroup[groupId] ?? 0.0;
+        final previousAmount = previousAmountByGroup[groupId] ?? 0.0;
+        final deltaAmount = amount - previousAmount;
+        final deltaRate =
+            previousAmount > 0 ? deltaAmount / previousAmount : null;
+        return ReportGroupSummary(
+          group: groupById[groupId],
+          fallbackName: groupId.isEmpty ? '未分组' : '未命名大类',
+          amount: amount,
+          count: countByGroup[groupId] ?? 0,
           previousAmount: previousAmount,
           deltaAmount: deltaAmount,
           deltaRate: deltaRate,
@@ -296,6 +341,7 @@ ReportSnapshot buildReportSnapshot({
     averageAmount: averageAmount,
     maxRecord: maxRecord,
     categories: categories,
+    groups: groups,
     trendData: trendData,
     trendAxisLabels: trendAxisLabels,
     trendTooltipLabels: trendTooltipLabels,

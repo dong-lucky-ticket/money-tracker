@@ -5,6 +5,7 @@ import 'package:provider/provider.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 
 import 'models/category.dart';
+import 'models/category_group.dart';
 import 'models/record.dart';
 import 'providers/data_provider.dart';
 import 'screens/main_tab_screen.dart';
@@ -20,6 +21,7 @@ void main() async {
 
   await Hive.initFlutter();
   Hive.registerAdapter(CategoryAdapter());
+  Hive.registerAdapter(CategoryGroupAdapter());
   Hive.registerAdapter(RecordAdapter());
 
   final dataProvider = DataProvider();
@@ -41,7 +43,7 @@ class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final dataProvider = context.watch<DataProvider>();
-    
+
     return MaterialApp(
       title: '记账助储',
       debugShowCheckedModeBanner: false,

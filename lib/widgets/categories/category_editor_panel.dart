@@ -24,12 +24,34 @@ class _CategoryEditorPanelState extends State<CategoryEditorPanel> {
   final TextEditingController _nameController = TextEditingController();
   final Color _themeColor = const Color(0xFF4A90E2);
   String _selectedIcon = 'gamepad-variant-outline';
+  String _selectedGroupId = '';
 
   @override
   void initState() {
     super.initState();
     _selectedIcon =
         widget.isExpense ? 'silverware-fork-knife' : 'cash-multiple';
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+
+    final availableGroups = context
+        .read<DataProvider>()
+        .categoryGroups
+        .where((group) => group.isExpense == widget.isExpense)
+        .toList();
+
+    if (availableGroups.isEmpty) {
+      return;
+    }
+
+    final currentExists =
+        availableGroups.any((group) => group.id == _selectedGroupId);
+    if (!currentExists) {
+      _selectedGroupId = availableGroups.first.id;
+    }
   }
 
   @override
@@ -54,6 +76,7 @@ class _CategoryEditorPanelState extends State<CategoryEditorPanel> {
       colorHex: historyCategory.colorHex,
       isExpense: historyCategory.isExpense,
       sortOrder: 99,
+      groupId: historyCategory.groupId,
     );
     provider.addCategory(restoredCategory);
     widget.onClose();
@@ -67,6 +90,11 @@ class _CategoryEditorPanelState extends State<CategoryEditorPanel> {
     }
     if (name.length > 4) {
       _showMessage('类别名称不能超过4个字');
+      return;
+    }
+
+    if (_selectedGroupId.isEmpty) {
+      _showMessage('请选择一个大类');
       return;
     }
 
@@ -168,6 +196,7 @@ class _CategoryEditorPanelState extends State<CategoryEditorPanel> {
       colorHex: widget.isExpense ? '#F97316' : '#10B981',
       isExpense: widget.isExpense,
       sortOrder: 99,
+      groupId: _selectedGroupId,
     );
     provider.addCategory(category);
     widget.onClose();
@@ -176,6 +205,11 @@ class _CategoryEditorPanelState extends State<CategoryEditorPanel> {
   @override
   Widget build(BuildContext context) {
     final bottomInset = MediaQuery.of(context).viewInsets.bottom;
+    final availableGroups = context
+        .watch<DataProvider>()
+        .categoryGroups
+        .where((group) => group.isExpense == widget.isExpense)
+        .toList();
 
     return Material(
       color: Colors.white,
@@ -269,6 +303,59 @@ class _CategoryEditorPanelState extends State<CategoryEditorPanel> {
                         border: InputBorder.none,
                         counterText: '',
                         contentPadding: EdgeInsets.symmetric(vertical: 12),
+                      ),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 16),
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 32),
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 16),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFF9FAFB),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: DropdownButtonFormField<String>(
+                      value: availableGroups.any(
+                        (group) => group.id == _selectedGroupId,
+                      )
+                          ? _selectedGroupId
+                          : null,
+                      items: availableGroups
+                          .map(
+                            (group) => DropdownMenuItem<String>(
+                              value: group.id,
+                              child: Text(group.name),
+                            ),
+                          )
+                          .toList(),
+                      onChanged: (value) {
+                        if (value == null) {
+                          return;
+                        }
+                        setState(() {
+                          _selectedGroupId = value;
+                        });
+                      },
+                      decoration: const InputDecoration(
+                        labelText: '所属大类',
+                        labelStyle: TextStyle(
+                          color: Color(0xFF6B7280),
+                          fontSize: 14,
+                        ),
+                        border: InputBorder.none,
+                      ),
+                      borderRadius: BorderRadius.circular(12),
+                      icon: const Icon(
+                        Icons.keyboard_arrow_down_rounded,
+                        color: Color(0xFF9CA3AF),
+                      ),
+                      dropdownColor: Colors.white,
+                      isExpanded: true,
+                      style: const TextStyle(
+                        color: Color(0xFF111827),
+                        fontSize: 14,
                       ),
                     ),
                   ),

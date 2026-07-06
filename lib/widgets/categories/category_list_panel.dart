@@ -9,6 +9,7 @@ import '../common/app_card.dart';
 
 class CategoryListPanel extends StatelessWidget {
   final List<Category> categories;
+  final Map<String, String> groupNamesById;
   final ValueChanged<List<Category>> onReorder;
   final ValueChanged<Category> onDelete;
   final bool wrapInCard;
@@ -16,6 +17,7 @@ class CategoryListPanel extends StatelessWidget {
   const CategoryListPanel({
     super.key,
     required this.categories,
+    this.groupNamesById = const {},
     required this.onReorder,
     required this.onDelete,
     this.wrapInCard = true,
@@ -39,6 +41,7 @@ class CategoryListPanel extends StatelessWidget {
         return _CategoryListTile(
           key: Key(category.id),
           category: category,
+          groupName: groupNamesById[category.groupId],
           onDelete: () => onDelete(category),
         );
       }).toList(),
@@ -57,11 +60,13 @@ class CategoryListPanel extends StatelessWidget {
 
 class _CategoryListTile extends StatelessWidget {
   final Category category;
+  final String? groupName;
   final VoidCallback onDelete;
 
   const _CategoryListTile({
     super.key,
     required this.category,
+    this.groupName,
     required this.onDelete,
   });
 
@@ -94,12 +99,27 @@ class _CategoryListTile extends StatelessWidget {
           ),
           const SizedBox(width: 16),
           Expanded(
-            child: Text(
-              category.name,
-              style: const TextStyle(
-                fontWeight: FontWeight.w500,
-                color: Color(0xFF1F2937),
-              ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  category.name,
+                  style: const TextStyle(
+                    fontWeight: FontWeight.w500,
+                    color: Color(0xFF1F2937),
+                  ),
+                ),
+                if (groupName != null && groupName!.isNotEmpty) ...[
+                  const SizedBox(height: 2),
+                  Text(
+                    groupName!,
+                    style: const TextStyle(
+                      fontSize: 12,
+                      color: AppColors.textMuted,
+                    ),
+                  ),
+                ],
+              ],
             ),
           ),
           GestureDetector(

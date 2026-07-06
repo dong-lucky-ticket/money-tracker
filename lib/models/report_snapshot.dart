@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import 'category.dart';
+import 'category_group.dart';
 import 'record.dart';
 
 class ReportCategorySummary {
@@ -21,6 +22,28 @@ class ReportCategorySummary {
   });
 }
 
+class ReportGroupSummary {
+  final CategoryGroup? group;
+  final String fallbackName;
+  final double amount;
+  final int count;
+  final double previousAmount;
+  final double deltaAmount;
+  final double? deltaRate;
+
+  const ReportGroupSummary({
+    required this.group,
+    required this.fallbackName,
+    required this.amount,
+    required this.count,
+    required this.previousAmount,
+    required this.deltaAmount,
+    required this.deltaRate,
+  });
+
+  String get displayName => group?.name ?? fallbackName;
+}
+
 class ReportSnapshot {
   final List<Record> expenseRecords;
   final List<Record> incomeRecords;
@@ -34,6 +57,7 @@ class ReportSnapshot {
   final double averageAmount;
   final Record? maxRecord;
   final List<ReportCategorySummary> categories;
+  final List<ReportGroupSummary> groups;
   final Map<int, double> trendData;
   final Map<int, String> trendAxisLabels;
   final Map<int, String> trendTooltipLabels;
@@ -58,6 +82,7 @@ class ReportSnapshot {
     required this.averageAmount,
     required this.maxRecord,
     required this.categories,
+    required this.groups,
     required this.trendData,
     required this.trendAxisLabels,
     required this.trendTooltipLabels,

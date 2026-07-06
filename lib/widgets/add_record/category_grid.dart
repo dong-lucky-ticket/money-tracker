@@ -1,12 +1,15 @@
 import 'package:flutter/material.dart';
 
 import '../../models/category.dart';
+import '../../models/category_group.dart';
 import '../../theme/app_colors.dart';
 import '../../utils/color_utils.dart';
 import '../../utils/icon_mapper.dart';
 
 class CategoryGrid extends StatelessWidget {
   final List<Category> categories;
+  final List<CategoryGroup> categoryGroups;
+  final List<Category> recentCategories;
   final Category? selectedCategory;
   final Map<String, GlobalKey> categoryKeys;
   final ValueChanged<Category> onCategorySelected;
@@ -15,6 +18,8 @@ class CategoryGrid extends StatelessWidget {
   const CategoryGrid({
     super.key,
     required this.categories,
+    required this.categoryGroups,
+    required this.recentCategories,
     required this.selectedCategory,
     required this.categoryKeys,
     required this.onCategorySelected,
@@ -23,27 +28,160 @@ class CategoryGrid extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return GridView.builder(
-      padding: const EdgeInsets.all(16),
-      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-        crossAxisCount: 5,
-        childAspectRatio: 0.8,
-        crossAxisSpacing: 12,
-        mainAxisSpacing: 20,
-      ),
-      itemCount: categories.length,
-      itemBuilder: (context, index) {
-        final category = categories[index];
-        final isSelected = selectedCategory?.id == category.id;
-        final key = categoryKeys.putIfAbsent(category.id, () => GlobalKey());
+    final groupedCategories = <String, List<Category>>{
+      for (final group in categoryGroups) group.id: [],
+    };
+    final ungroupedCategories = <Category>[];
 
-        return _CategoryGridItem(
-          key: key,
-          category: category,
-          isSelected: isSelected,
-          onTap: () => onCategorySelected(category),
-        );
-      },
+    for (final category in categories) {
+      final bucket = groupedCategories[category.groupId];
+      if (bucket != null) {
+        bucket.add(category);
+      } else {
+        ungroupedCategories.add(category);
+      }
+    }
+
+    final visibleGroups = categoryGroups
+        .where((group) => (groupedCategories[group.id] ?? const []).isNotEmpty)
+        .toList();
+
+    return ListView(
+      padding: const EdgeInsets.fromLTRB(16, 12, 16, 24),
+      children: [
+        if (recentCategories.isNotEmpty) ...[
+          _CategoryGroupSection(
+            title: '最近使用',
+            categories: recentCategories,
+            selectedCategory: selectedCategory,
+            categoryKeys: categoryKeys,
+            onCategorySelected: onCategorySelected,
+          ),
+          const SizedBox(height: 20),
+        ],
+        for (final group in visibleGroups) ...[
+          _CategoryGroupSection(
+            title: group.name,
+            categories: groupedCategories[group.id] ?? const [],
+            selectedCategory: selectedCategory,
+            categoryKeys: categoryKeys,
+            onCategorySelected: onCategorySelected,
+          ),
+          const SizedBox(height: 20),
+        ],
+        if (ungroupedCategories.isNotEmpty) ...[
+          _CategoryGroupSection(
+            title: '未分组',
+            categories: ungroupedCategories,
+            selectedCategory: selectedCategory,
+            categoryKeys: categoryKeys,
+            onCategorySelected: onCategorySelected,
+          ),
+          const SizedBox(height: 20),
+        ],
+        _CategoryManagementButton(onTap: onAddCategory),
+      ],
+    );
+  }
+}
+
+class _CategoryGroupSection extends StatelessWidget {
+  final String title;
+  final List<Category> categories;
+  final Category? selectedCategory;
+  final Map<String, GlobalKey> categoryKeys;
+  final ValueChanged<Category> onCategorySelected;
+
+  const _CategoryGroupSection({
+    required this.title,
+    required this.categories,
+    required this.selectedCategory,
+    required this.categoryKeys,
+    required this.onCategorySelected,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 4),
+          child: Text(
+            title,
+            style: const TextStyle(
+              fontSize: 12,
+              fontWeight: FontWeight.bold,
+              color: AppColors.textMuted,
+              letterSpacing: 1.2,
+            ),
+          ),
+        ),
+        const SizedBox(height: 14),
+        GridView.builder(
+          shrinkWrap: true,
+          physics: const NeverScrollableScrollPhysics(),
+          gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+            crossAxisCount: 5,
+            childAspectRatio: 0.8,
+            crossAxisSpacing: 12,
+            mainAxisSpacing: 20,
+          ),
+          itemCount: categories.length,
+          itemBuilder: (context, index) {
+            final category = categories[index];
+            final isSelected = selectedCategory?.id == category.id;
+            final key =
+                categoryKeys.putIfAbsent(category.id, () => GlobalKey());
+
+            return _CategoryGridItem(
+              key: key,
+              category: category,
+              isSelected: isSelected,
+              onTap: () => onCategorySelected(category),
+            );
+          },
+        ),
+      ],
+    );
+  }
+}
+
+class _CategoryManagementButton extends StatelessWidget {
+  final VoidCallback onTap;
+
+  const _CategoryManagementButton({required this.onTap});
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.symmetric(vertical: 14),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: AppColors.border),
+        ),
+        child: const Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(
+              Icons.settings_outlined,
+              color: AppColors.textMuted,
+              size: 18,
+            ),
+            SizedBox(width: 6),
+            Text(
+              '分类管理',
+              style: TextStyle(
+                fontWeight: FontWeight.w500,
+                color: AppColors.textMuted,
+              ),
+            ),
+          ],
+        ),
+      ),
     );
   }
 }

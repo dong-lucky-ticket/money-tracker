@@ -4,6 +4,7 @@ import 'package:hive/hive.dart';
 import 'package:intl/intl.dart';
 import 'package:uuid/uuid.dart';
 import '../models/category.dart';
+import '../models/category_group.dart';
 import '../models/record.dart';
 
 class CsvImportResult {
@@ -25,6 +26,7 @@ class CsvImportResult {
 class DataProvider with ChangeNotifier {
   static const String recordsBoxName = 'recordsBox';
   static const String categoriesBoxName = 'categoriesBox';
+  static const String categoryGroupsBoxName = 'categoryGroupsBox';
   static const String settingsBoxName = 'settingsBox';
   static const _deprecatedDefaultCategoryKeys = {
     'expense::娱乐::entertainment',
@@ -39,10 +41,13 @@ class DataProvider with ChangeNotifier {
 
   late Box<Record> _recordsBox;
   late Box<Category> _categoriesBox;
+  late Box<CategoryGroup> _categoryGroupsBox;
   late Box _settingsBox;
 
   List<Record> get records =>
       _recordsBox.values.toList()..sort((a, b) => b.date.compareTo(a.date));
+  List<CategoryGroup> get categoryGroups => _categoryGroupsBox.values.toList()
+    ..sort((a, b) => a.sortOrder.compareTo(b.sortOrder));
   List<Category> get categories => _categoriesBox.values.toList()
     ..sort((a, b) => a.sortOrder.compareTo(b.sortOrder));
 
@@ -52,11 +57,44 @@ class DataProvider with ChangeNotifier {
   Future<void> init() async {
     _recordsBox = await Hive.openBox<Record>(recordsBoxName);
     _categoriesBox = await Hive.openBox<Category>(categoriesBoxName);
+    _categoryGroupsBox =
+        await Hive.openBox<CategoryGroup>(categoryGroupsBoxName);
     _settingsBox = await Hive.openBox(settingsBoxName);
 
     _isDarkTheme = _settingsBox.get('isDarkTheme', defaultValue: false);
 
+    await _syncDefaultCategoryGroups();
     await _syncDefaultCategories();
+  }
+
+  Future<void> _syncDefaultCategoryGroups() async {
+    final defaultGroups = buildDefaultCategoryGroups();
+
+    for (final group in defaultGroups) {
+      final existing = _categoryGroupsBox.get(group.id);
+      if (existing == null) {
+        await _categoryGroupsBox.put(group.id, group);
+        continue;
+      }
+
+      var changed = false;
+      if (existing.name != group.name) {
+        existing.name = group.name;
+        changed = true;
+      }
+      if (existing.isExpense != group.isExpense) {
+        existing.isExpense = group.isExpense;
+        changed = true;
+      }
+      if (existing.sortOrder != group.sortOrder) {
+        existing.sortOrder = group.sortOrder;
+        changed = true;
+      }
+
+      if (changed) {
+        await _categoryGroupsBox.put(existing.id, existing);
+      }
+    }
   }
 
   Future<void> _syncDefaultCategories() async {
@@ -66,15 +104,16 @@ class DataProvider with ChangeNotifier {
       for (final category in defaultCategories) {
         await _categoriesBox.put(category.id, category);
       }
-      return;
+    } else {
+      await _removeDeprecatedDefaultCategories();
+      await _addMissingDefaultCategories(defaultCategories);
     }
 
-    await _removeDeprecatedDefaultCategories();
-    await _addMissingDefaultCategories(defaultCategories);
+    await _backfillCategoryGroupIds();
   }
 
   List<Category> _buildDefaultCategories() {
-    return [
+    final categories = [
       // === 支出 ===
       Category(
           id: const Uuid().v4(),
@@ -296,6 +335,12 @@ class DataProvider with ChangeNotifier {
           isExpense: false,
           sortOrder: 5),
     ];
+
+    for (final category in categories) {
+      _ensureCategoryGroupId(category);
+    }
+
+    return categories;
   }
 
   Future<void> _removeDeprecatedDefaultCategories() async {
@@ -314,7 +359,8 @@ class DataProvider with ChangeNotifier {
     }
   }
 
-  Future<void> _addMissingDefaultCategories(List<Category> defaultCategories) async {
+  Future<void> _addMissingDefaultCategories(
+      List<Category> defaultCategories) async {
     final existingKeys = {
       for (final category in _categoriesBox.values)
         _defaultCategoryKey(
@@ -355,8 +401,34 @@ class DataProvider with ChangeNotifier {
 
   // --- Category Methods ---
   Future<void> addCategory(Category category) async {
+    _ensureCategoryGroupId(category);
     await _categoriesBox.put(category.id, category);
     notifyListeners();
+  }
+
+  // --- Category Group Methods ---
+  Future<void> addCategoryGroup(CategoryGroup group) async {
+    if (group.sortOrder < 0) {
+      group.sortOrder = _nextCategoryGroupSortOrder(group.isExpense);
+    }
+    await _categoryGroupsBox.put(group.id, group);
+    notifyListeners();
+  }
+
+  Future<void> updateCategoryGroup(CategoryGroup group) async {
+    await _categoryGroupsBox.put(group.id, group);
+    notifyListeners();
+  }
+
+  Future<void> reorderCategoryGroups(List<CategoryGroup> newOrderList) async {
+    for (int i = 0; i < newOrderList.length; i++) {
+      newOrderList[i].sortOrder = i;
+    }
+    notifyListeners();
+
+    for (final group in newOrderList) {
+      await _categoryGroupsBox.put(group.id, group);
+    }
   }
 
   Future<void> deleteCategory(String id) async {
@@ -449,6 +521,7 @@ class DataProvider with ChangeNotifier {
             isExpense: isExpense,
             sortOrder: _nextCategorySortOrder(isExpense),
           );
+          _ensureCategoryGroupId(category);
           await _categoriesBox.put(category.id, category);
           categoryCache[cacheKey] = category;
           createdCategoryCount++;
@@ -532,9 +605,49 @@ class DataProvider with ChangeNotifier {
       .fold(0.0, (sum, item) => sum + item.amount);
 
   int get activeCategoryCount {
-    final usedCategoryIds =
-        records.where((record) => !record.isVoided).map((e) => e.category.id).toSet();
+    final usedCategoryIds = records
+        .where((record) => !record.isVoided)
+        .map((e) => e.category.id)
+        .toSet();
     return usedCategoryIds.length;
+  }
+
+  List<Category> recentCategories({
+    required bool isExpense,
+    int limit = 4,
+  }) {
+    final activeCategories = {
+      for (final category in _categoriesBox.values)
+        if (category.isExpense == isExpense) category.id: category,
+    };
+
+    final sortedRecords = _recordsBox.values
+        .where((record) => !record.isVoided && record.isExpense == isExpense)
+        .toList()
+      ..sort((a, b) {
+        final updatedCompare = b.updatedAt.compareTo(a.updatedAt);
+        if (updatedCompare != 0) {
+          return updatedCompare;
+        }
+        return b.date.compareTo(a.date);
+      });
+
+    final result = <Category>[];
+    final seenIds = <String>{};
+
+    for (final record in sortedRecords) {
+      final currentCategory = activeCategories[record.category.id];
+      if (currentCategory == null || !seenIds.add(currentCategory.id)) {
+        continue;
+      }
+
+      result.add(currentCategory);
+      if (result.length >= limit) {
+        break;
+      }
+    }
+
+    return result;
   }
 
   bool _isEmptyRow(List<dynamic> row) {
@@ -610,12 +723,104 @@ class DataProvider with ChangeNotifier {
     return '${isExpense ? 'expense' : 'income'}::${name.trim()}::${iconName.trim()}';
   }
 
+  Future<void> _backfillCategoryGroupIds() async {
+    for (final category in _categoriesBox.values) {
+      if (category.groupId.isNotEmpty) {
+        continue;
+      }
+
+      _ensureCategoryGroupId(category);
+      await _categoriesBox.put(category.id, category);
+    }
+  }
+
+  void _ensureCategoryGroupId(Category category) {
+    if (category.groupId.isNotEmpty) {
+      return;
+    }
+
+    category.groupId = _resolveCategoryGroupId(category);
+  }
+
+  String _resolveCategoryGroupId(Category category) {
+    switch (_categoryTypeKey(category.iconName, category.isExpense)) {
+      case 'expense::food':
+      case 'expense::vegetables':
+      case 'expense::fruit':
+      case 'expense::snacks':
+        return CategoryGroupIds.expenseFood;
+      case 'expense::daily':
+      case 'expense::communication':
+      case 'expense::housing':
+      case 'expense::office':
+      case 'expense::repair':
+      case 'expense::express':
+      case 'expense::phone-bill':
+      case 'expense::utility':
+        return CategoryGroupIds.expenseHome;
+      case 'expense::transport':
+      case 'expense::car':
+      case 'expense::motorcycle':
+      case 'expense::train':
+      case 'expense::travel':
+        return CategoryGroupIds.expenseTransport;
+      case 'expense::shopping':
+      case 'expense::clothing':
+      case 'expense::digital':
+        return CategoryGroupIds.expenseShopping;
+      case 'expense::child':
+      case 'expense::elders':
+      case 'expense::gift-money':
+      case 'expense::gift':
+      case 'expense::relatives':
+        return CategoryGroupIds.expenseFamily;
+      case 'expense::medical':
+      case 'expense::books':
+      case 'expense::study':
+        return CategoryGroupIds.expenseHealth;
+      case 'expense::lottery':
+      case 'expense::wish':
+      case 'expense::alcohol':
+      case 'expense::social':
+      case 'expense::entertainment':
+        return CategoryGroupIds.expenseEntertainment;
+      case 'income::salary':
+      case 'income::part-time':
+        return CategoryGroupIds.incomeWork;
+      case 'income::investment':
+        return CategoryGroupIds.incomeInvestment;
+      case 'income::gift-money-income':
+        return CategoryGroupIds.incomeRelationship;
+      case 'income::lottery-income':
+      case 'income::other':
+        return CategoryGroupIds.incomeWindfall;
+      default:
+        return category.isExpense
+            ? CategoryGroupIds.expenseHome
+            : CategoryGroupIds.incomeWindfall;
+    }
+  }
+
+  String _categoryTypeKey(String iconName, bool isExpense) {
+    return '${isExpense ? 'expense' : 'income'}::${iconName.trim()}';
+  }
+
   int _nextCategorySortOrder(bool isExpense) {
     var maxSortOrder = -1;
     for (final category in _categoriesBox.values) {
       if (category.isExpense == isExpense &&
           category.sortOrder > maxSortOrder) {
         maxSortOrder = category.sortOrder;
+      }
+    }
+    return maxSortOrder + 1;
+  }
+
+  int _nextCategoryGroupSortOrder(bool isExpense) {
+    var maxSortOrder = -1;
+    for (final group in _categoryGroupsBox.values) {
+      if (group.isExpense == isExpense && group.sortOrder > maxSortOrder) {
+        maxSortOrder = group.sortOrder;
       }
     }
     return maxSortOrder + 1;

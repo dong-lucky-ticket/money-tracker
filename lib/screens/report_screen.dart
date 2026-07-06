@@ -5,6 +5,7 @@ import '../models/report_snapshot.dart';
 import '../providers/data_provider.dart';
 import '../utils/report_snapshot_builder.dart';
 import '../widgets/report/report_category_detail_sheet.dart';
+import '../widgets/report/report_group_summary_section.dart';
 import '../widgets/report/report_header.dart';
 import '../widgets/report/report_overview_section.dart';
 import '../widgets/report/report_rank_list.dart';
@@ -69,6 +70,7 @@ class _ReportScreenState extends State<ReportScreen> {
       builder: (context, provider, child) {
         final snapshot = buildReportSnapshot(
           records: provider.records,
+          categoryGroups: provider.categoryGroups,
           targetDate: _selectedDate,
           filterIndex: _filterIndex,
           isExpenseView: _isExpenseView,
@@ -102,6 +104,12 @@ class _ReportScreenState extends State<ReportScreen> {
                       color: snapshot.valueColor,
                     ),
                     const SizedBox(height: 32),
+                    ReportGroupSummarySection(
+                      groups: snapshot.groups,
+                      viewTotal: snapshot.viewTotal,
+                      valueColor: snapshot.valueColor,
+                    ),
+                    if (snapshot.groups.isNotEmpty) const SizedBox(height: 32),
                     ReportRankList(
                       categories: snapshot.categories,
                       viewTotal: snapshot.viewTotal,

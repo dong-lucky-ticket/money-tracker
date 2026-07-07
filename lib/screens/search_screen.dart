@@ -111,11 +111,16 @@ class _SearchScreenState extends State<SearchScreen> {
     );
   }
 
-  Widget _buildDailyRecordList(String dateStr, List<Record> records, DataProvider provider) {
+  Widget _buildDailyRecordList(
+      String dateStr, List<Record> records, DataProvider provider) {
     final date = DateTime.parse(dateStr);
     final today = DateTime.now();
-    final isToday = date.year == today.year && date.month == today.month && date.day == today.day;
-    final isYesterday = date.year == today.year && date.month == today.month && date.day == today.day - 1;
+    final isToday = date.year == today.year &&
+        date.month == today.month &&
+        date.day == today.day;
+    final isYesterday = date.year == today.year &&
+        date.month == today.month &&
+        date.day == today.day - 1;
 
     String dateDisplay = DateFormat('M月d日').format(date);
     if (isToday) {
@@ -124,10 +129,12 @@ class _SearchScreenState extends State<SearchScreen> {
       dateDisplay += ' 昨天';
     }
 
-    double dayIncome =
-        records.where((r) => !r.isExpense && !r.isVoided).fold(0.0, (s, r) => s + r.amount);
-    double dayExpense =
-        records.where((r) => r.isExpense && !r.isVoided).fold(0.0, (s, r) => s + r.amount);
+    double dayIncome = records
+        .where((r) => !r.isExpense && !r.isVoided)
+        .fold(0.0, (s, r) => s + r.amount);
+    double dayExpense = records
+        .where((r) => r.isExpense && !r.isVoided)
+        .fold(0.0, (s, r) => s + r.amount);
 
     return Padding(
       padding: const EdgeInsets.only(bottom: 24),
@@ -141,15 +148,23 @@ class _SearchScreenState extends State<SearchScreen> {
               children: [
                 Text(
                   dateDisplay,
-                  style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w500, color: Color(0xFF6B7280)),
+                  style: const TextStyle(
+                      fontSize: 12,
+                      fontWeight: FontWeight.w500,
+                      color: Color(0xFF6B7280)),
                 ),
                 Row(
                   children: [
                     if (dayIncome > 0)
-                      Text('收入: ${dayIncome.toStringAsFixed(2)}', style: const TextStyle(fontSize: 12, color: Color(0xFF6B7280))),
-                    if (dayIncome > 0 && dayExpense > 0) const SizedBox(width: 12),
+                      Text('收入: ${dayIncome.toStringAsFixed(2)}',
+                          style: const TextStyle(
+                              fontSize: 12, color: Color(0xFF6B7280))),
+                    if (dayIncome > 0 && dayExpense > 0)
+                      const SizedBox(width: 12),
                     if (dayExpense > 0)
-                      Text('支出: ${dayExpense.toStringAsFixed(2)}', style: const TextStyle(fontSize: 12, color: Color(0xFF6B7280))),
+                      Text('支出: ${dayExpense.toStringAsFixed(2)}',
+                          style: const TextStyle(
+                              fontSize: 12, color: Color(0xFF6B7280))),
                   ],
                 ),
               ],

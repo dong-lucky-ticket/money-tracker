@@ -47,7 +47,8 @@ class ReportCategoryDetailSheet extends StatelessWidget {
   Widget build(BuildContext context) {
     final color = colorFromHex(summary.category.colorHex);
     final share = viewTotal > 0 ? summary.amount / viewTotal * 100 : 0.0;
-    final averageAmount = summary.count > 0 ? summary.amount / summary.count : 0.0;
+    final averageAmount =
+        summary.count > 0 ? summary.amount / summary.count : 0.0;
 
     return Container(
       height: MediaQuery.of(context).size.height * 0.78,

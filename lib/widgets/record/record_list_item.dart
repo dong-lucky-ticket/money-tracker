@@ -90,9 +90,8 @@ class RecordListItem extends StatelessWidget {
           margin: margin,
           padding: const EdgeInsets.all(16),
           decoration: BoxDecoration(
-            color: record.isVoided
-                ? Colors.white.withOpacity(0.75)
-                : Colors.white,
+            color:
+                record.isVoided ? Colors.white.withOpacity(0.75) : Colors.white,
             borderRadius: BorderRadius.circular(16),
             boxShadow: [
               if (!record.isVoided)

@@ -72,8 +72,7 @@ class SegmentedSelector<T> extends StatelessWidget {
                   style: TextStyle(
                     fontSize: 14,
                     fontWeight: FontWeight.bold,
-                    color:
-                        isActive ? activeTextColor : inactiveTextColor,
+                    color: isActive ? activeTextColor : inactiveTextColor,
                   ),
                 ),
               ),

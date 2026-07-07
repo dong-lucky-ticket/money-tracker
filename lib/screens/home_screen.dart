@@ -103,18 +103,27 @@ class _HomeScreenState extends State<HomeScreen> {
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
-                        IconButton(icon: const Icon(Icons.chevron_left), onPressed: () => setStateDialog(() => tempYear--)),
-                        Text('$tempYear年', style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-                        IconButton(icon: const Icon(Icons.chevron_right), onPressed: () => setStateDialog(() => tempYear++)),
+                        IconButton(
+                            icon: const Icon(Icons.chevron_left),
+                            onPressed: () => setStateDialog(() => tempYear--)),
+                        Text('$tempYear年',
+                            style: const TextStyle(
+                                fontSize: 18, fontWeight: FontWeight.bold)),
+                        IconButton(
+                            icon: const Icon(Icons.chevron_right),
+                            onPressed: () => setStateDialog(() => tempYear++)),
                       ],
                     ),
                     Expanded(
                       child: GridView.builder(
-                        gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(crossAxisCount: 3, childAspectRatio: 2),
+                        gridDelegate:
+                            const SliverGridDelegateWithFixedCrossAxisCount(
+                                crossAxisCount: 3, childAspectRatio: 2),
                         itemCount: 12,
                         itemBuilder: (context, index) {
                           int month = index + 1;
-                          bool isSelected = tempYear == _selectedMonth.year && month == _selectedMonth.month;
+                          bool isSelected = tempYear == _selectedMonth.year &&
+                              month == _selectedMonth.month;
                           return InkWell(
                             onTap: () {
                               setState(() {
@@ -126,10 +135,16 @@ class _HomeScreenState extends State<HomeScreen> {
                               alignment: Alignment.center,
                               margin: const EdgeInsets.all(4),
                               decoration: BoxDecoration(
-                                color: isSelected ? const Color(0xFF4A90E2) : Colors.transparent,
+                                color: isSelected
+                                    ? const Color(0xFF4A90E2)
+                                    : Colors.transparent,
                                 borderRadius: BorderRadius.circular(8),
                               ),
-                              child: Text('$month月', style: TextStyle(color: isSelected ? Colors.white : Colors.black87)),
+                              child: Text('$month月',
+                                  style: TextStyle(
+                                      color: isSelected
+                                          ? Colors.white
+                                          : Colors.black87)),
                             ),
                           );
                         },
@@ -169,7 +184,8 @@ class _HomeScreenState extends State<HomeScreen> {
                         ),
                       ),
                       const SizedBox(width: 4),
-                      Icon(MdiIcons.chevronDown, color: const Color(0xFF6B7280)),
+                      Icon(MdiIcons.chevronDown,
+                          color: const Color(0xFF6B7280)),
                     ],
                   ),
                 ),
@@ -177,65 +193,65 @@ class _HomeScreenState extends State<HomeScreen> {
                   onTap: () {
                     Navigator.push(
                       context,
-                      MaterialPageRoute(builder: (context) => const SearchScreen()),
+                      MaterialPageRoute(
+                          builder: (context) => const SearchScreen()),
                     );
                   },
-                  child: Icon(MdiIcons.magnify, size: 28, color: const Color(0xFF4B5563)),
+                  child: Icon(MdiIcons.magnify,
+                      size: 28, color: const Color(0xFF4B5563)),
                 ),
               ],
             ),
           ),
-          
+
           // 主内容滚动区
           Expanded(
-            child: Consumer<DataProvider>(
-              builder: (context, provider, child) {
-                final records = provider.records
-                    .where((r) =>
-                        r.date.year == _selectedMonth.year &&
-                        r.date.month == _selectedMonth.month)
-                    .toList();
-                final validRecords =
-                    records.where((record) => !record.isVoided).toList();
+            child: Consumer<DataProvider>(builder: (context, provider, child) {
+              final records = provider.records
+                  .where((r) =>
+                      r.date.year == _selectedMonth.year &&
+                      r.date.month == _selectedMonth.month)
+                  .toList();
+              final validRecords =
+                  records.where((record) => !record.isVoided).toList();
 
-                final double monthlyExpense = validRecords
-                    .where((r) => r.isExpense)
-                    .fold(0.0, (s, r) => s + r.amount);
-                final double monthlyIncome = validRecords
-                    .where((r) => !r.isExpense)
-                    .fold(0.0, (s, r) => s + r.amount);
+              final double monthlyExpense = validRecords
+                  .where((r) => r.isExpense)
+                  .fold(0.0, (s, r) => s + r.amount);
+              final double monthlyIncome = validRecords
+                  .where((r) => !r.isExpense)
+                  .fold(0.0, (s, r) => s + r.amount);
 
-                // Group records by date (yyyy-MM-dd)
-                final Map<String, List<Record>> groupedRecords = {};
-                for (var r in records) {
-                  final dateStr = DateFormat('yyyy-MM-dd').format(r.date);
-                  if (!groupedRecords.containsKey(dateStr)) {
-                    groupedRecords[dateStr] = [];
-                  }
-                  groupedRecords[dateStr]!.add(r);
+              // Group records by date (yyyy-MM-dd)
+              final Map<String, List<Record>> groupedRecords = {};
+              for (var r in records) {
+                final dateStr = DateFormat('yyyy-MM-dd').format(r.date);
+                if (!groupedRecords.containsKey(dateStr)) {
+                  groupedRecords[dateStr] = [];
                 }
-                for (final grouped in groupedRecords.values) {
-                  grouped.sort(_compareRecordTimeline);
-                }
-                final groupedEntries = groupedRecords.entries.toList()
-                  ..sort((a, b) => b.key.compareTo(a.key));
-
-                return ListView(
-                  padding: const EdgeInsets.fromLTRB(20, 16, 20, 100),
-                  physics: const BouncingScrollPhysics(),
-                  children: [
-                    // 总览卡片
-                    _buildOverviewCard(monthlyExpense, monthlyIncome),
-                    // 流水列表
-                    if (records.isEmpty)
-                      _buildEmptyState()
-                    else
-                      ...groupedEntries
-                          .map((e) => _buildDailyRecordList(e.key, e.value, provider)),
-                  ],
-                );
+                groupedRecords[dateStr]!.add(r);
               }
-            ),
+              for (final grouped in groupedRecords.values) {
+                grouped.sort(_compareRecordTimeline);
+              }
+              final groupedEntries = groupedRecords.entries.toList()
+                ..sort((a, b) => b.key.compareTo(a.key));
+
+              return ListView(
+                padding: const EdgeInsets.fromLTRB(20, 16, 20, 100),
+                physics: const BouncingScrollPhysics(),
+                children: [
+                  // 总览卡片
+                  _buildOverviewCard(monthlyExpense, monthlyIncome),
+                  // 流水列表
+                  if (records.isEmpty)
+                    _buildEmptyState()
+                  else
+                    ...groupedEntries.map(
+                        (e) => _buildDailyRecordList(e.key, e.value, provider)),
+                ],
+              );
+            }),
           ),
         ],
       ),
@@ -276,13 +292,16 @@ class _HomeScreenState extends State<HomeScreen> {
             children: [
               Text(
                 '本月总支出 (元)',
-                style:
-                    TextStyle(color: Colors.white.withOpacity(0.8), fontSize: 14),
+                style: TextStyle(
+                    color: Colors.white.withOpacity(0.8), fontSize: 14),
               ),
               const SizedBox(height: 4),
               Text(
                 '￥${monthlyExpense.toStringAsFixed(2)}',
-                style: const TextStyle(color: Colors.white, fontSize: 30, fontWeight: FontWeight.bold),
+                style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 30,
+                    fontWeight: FontWeight.bold),
               ),
               const SizedBox(height: 24),
               Row(
@@ -290,18 +309,32 @@ class _HomeScreenState extends State<HomeScreen> {
                   Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text('本月收入', style: TextStyle(color: Colors.white.withOpacity(0.8), fontSize: 12)),
+                      Text('本月收入',
+                          style: TextStyle(
+                              color: Colors.white.withOpacity(0.8),
+                              fontSize: 12)),
                       const SizedBox(height: 2),
-                      Text(monthlyIncome.toStringAsFixed(2), style: const TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.w600)),
+                      Text(monthlyIncome.toStringAsFixed(2),
+                          style: const TextStyle(
+                              color: Colors.white,
+                              fontSize: 18,
+                              fontWeight: FontWeight.w600)),
                     ],
                   ),
                   const SizedBox(width: 32),
                   Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text('本月结余', style: TextStyle(color: Colors.white.withOpacity(0.8), fontSize: 12)),
+                      Text('本月结余',
+                          style: TextStyle(
+                              color: Colors.white.withOpacity(0.8),
+                              fontSize: 12)),
                       const SizedBox(height: 2),
-                      Text((monthlyIncome - monthlyExpense).toStringAsFixed(2), style: const TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.w600)),
+                      Text((monthlyIncome - monthlyExpense).toStringAsFixed(2),
+                          style: const TextStyle(
+                              color: Colors.white,
+                              fontSize: 18,
+                              fontWeight: FontWeight.w600)),
                     ],
                   ),
                 ],
@@ -313,11 +346,16 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  Widget _buildDailyRecordList(String dateStr, List<Record> records, DataProvider provider) {
+  Widget _buildDailyRecordList(
+      String dateStr, List<Record> records, DataProvider provider) {
     final date = DateTime.parse(dateStr);
     final today = DateTime.now();
-    final isToday = date.year == today.year && date.month == today.month && date.day == today.day;
-    final isYesterday = date.year == today.year && date.month == today.month && date.day == today.day - 1;
+    final isToday = date.year == today.year &&
+        date.month == today.month &&
+        date.day == today.day;
+    final isYesterday = date.year == today.year &&
+        date.month == today.month &&
+        date.day == today.day - 1;
 
     String dateDisplay = DateFormat('M月d日').format(date);
     if (isToday) {
@@ -326,8 +364,12 @@ class _HomeScreenState extends State<HomeScreen> {
       dateDisplay += ' 昨天';
     }
 
-    double dayIncome = records.where((r) => !r.isExpense && !r.isVoided).fold(0.0, (s, r) => s + r.amount);
-    double dayExpense = records.where((r) => r.isExpense && !r.isVoided).fold(0.0, (s, r) => s + r.amount);
+    double dayIncome = records
+        .where((r) => !r.isExpense && !r.isVoided)
+        .fold(0.0, (s, r) => s + r.amount);
+    double dayExpense = records
+        .where((r) => r.isExpense && !r.isVoided)
+        .fold(0.0, (s, r) => s + r.amount);
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -341,7 +383,10 @@ class _HomeScreenState extends State<HomeScreen> {
             children: [
               Text(
                 dateDisplay,
-                style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14, color: Color(0xFF6B7280)),
+                style: const TextStyle(
+                    fontWeight: FontWeight.bold,
+                    fontSize: 14,
+                    color: Color(0xFF6B7280)),
               ),
               Text(
                 '支出 ${dayExpense.toStringAsFixed(2)}  收入 ${dayIncome.toStringAsFixed(2)}',
@@ -350,7 +395,7 @@ class _HomeScreenState extends State<HomeScreen> {
             ],
           ),
         ),
-        
+
         // 记录列表
         ...records.map((r) => _buildRecordItem(r, provider)),
       ],

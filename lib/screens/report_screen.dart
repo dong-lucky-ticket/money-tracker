@@ -589,6 +589,12 @@ class _ReportAdvancedFilterSheetState
   void _sanitizeSelectedCategories() {
     final validGroupIds = _visibleGroups.map((item) => item.id).toSet();
     _selectedGroupIds = _selectedGroupIds.intersection(validGroupIds);
+    if (_selectedGroupIds.length > 1) {
+      final firstMatchedGroup = _visibleGroups
+          .map((group) => group.id)
+          .firstWhere(_selectedGroupIds.contains);
+      _selectedGroupIds = {firstMatchedGroup};
+    }
     final validCategoryIds = _visibleCategories.map((item) => item.id).toSet();
     _selectedCategoryIds = _selectedCategoryIds.intersection(validCategoryIds);
   }
@@ -598,7 +604,9 @@ class _ReportAdvancedFilterSheetState
       if (_selectedGroupIds.contains(id)) {
         _selectedGroupIds.remove(id);
       } else {
-        _selectedGroupIds.add(id);
+        _selectedGroupIds
+          ..clear()
+          ..add(id);
       }
       _sanitizeSelectedCategories();
     });
@@ -726,7 +734,7 @@ class _ReportAdvancedFilterSheetState
                     const SizedBox(height: 16),
                     const _FilterSectionTitle(
                       title: '大类',
-                      subtitle: '可多选，先缩小大类范围',
+                      subtitle: '单选，先缩小大类范围',
                     ),
                     const SizedBox(height: 8),
                     _FixedWidthFilterChipWrap(

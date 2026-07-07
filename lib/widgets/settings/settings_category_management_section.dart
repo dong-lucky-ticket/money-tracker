@@ -392,23 +392,56 @@ class _SettingsCategoryManagementSectionState
                 final categories = provider.categories
                     .where((category) => category.isExpense == _isExpense)
                     .toList();
-                final groupNamesById = {
-                  for (final group in provider.categoryGroups
-                      .where((group) => group.isExpense == _isExpense))
-                    group.id: group.name,
+                final groups = provider.categoryGroups
+                    .where((group) => group.isExpense == _isExpense)
+                    .toList();
+                final groupedCategories = <String, List<Category>>{
+                  for (final group in groups) group.id: [],
                 };
+                final ungroupedCategories = <Category>[];
+
+                for (final category in categories) {
+                  final bucket = groupedCategories[category.groupId];
+                  if (bucket != null) {
+                    bucket.add(category);
+                  } else {
+                    ungroupedCategories.add(category);
+                  }
+                }
 
                 return Column(
                   children: [
-                    CategoryListPanel(
-                      categories: categories,
-                      groupNamesById: groupNamesById,
-                      onReorder: provider.reorderCategories,
-                      onDelete: (category) {
-                        _confirmDelete(context, category, provider);
-                      },
-                      wrapInCard: false,
-                    ),
+                    for (final group in groups)
+                      if ((groupedCategories[group.id] ?? const []).isNotEmpty)
+                        _CategoryGroupSection(
+                          title: group.name,
+                          categories: groupedCategories[group.id] ?? const [],
+                          onReorder: (updated) {
+                            provider.reorderCategoriesInGroup(
+                              groupId: group.id,
+                              isExpense: _isExpense,
+                              newOrderList: updated,
+                            );
+                          },
+                          onDelete: (category) {
+                            _confirmDelete(context, category, provider);
+                          },
+                        ),
+                    if (ungroupedCategories.isNotEmpty)
+                      _CategoryGroupSection(
+                        title: '未分组',
+                        categories: ungroupedCategories,
+                        onReorder: (updated) {
+                          provider.reorderCategoriesInGroup(
+                            groupId: '',
+                            isExpense: _isExpense,
+                            newOrderList: updated,
+                          );
+                        },
+                        onDelete: (category) {
+                          _confirmDelete(context, category, provider);
+                        },
+                      ),
                     Container(
                       padding: const EdgeInsets.fromLTRB(16, 16, 16, 12),
                       decoration: const BoxDecoration(
@@ -501,6 +534,58 @@ class _SettingsCategoryManagementSectionState
               },
             ),
           ],
+        ),
+      ],
+    );
+  }
+}
+
+class _CategoryGroupSection extends StatelessWidget {
+  final String title;
+  final List<Category> categories;
+  final ValueChanged<List<Category>> onReorder;
+  final ValueChanged<Category> onDelete;
+
+  const _CategoryGroupSection({
+    required this.title,
+    required this.categories,
+    required this.onReorder,
+    required this.onDelete,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Padding(
+          padding: const EdgeInsets.fromLTRB(16, 14, 16, 8),
+          child: Row(
+            children: [
+              Text(
+                title,
+                style: const TextStyle(
+                  fontSize: 13,
+                  fontWeight: FontWeight.w700,
+                  color: AppColors.textPrimary,
+                ),
+              ),
+              const SizedBox(width: 8),
+              Text(
+                '${categories.length} 项',
+                style: const TextStyle(
+                  fontSize: 11,
+                  color: AppColors.textMuted,
+                ),
+              ),
+            ],
+          ),
+        ),
+        CategoryListPanel(
+          categories: categories,
+          onReorder: onReorder,
+          onDelete: onDelete,
+          wrapInCard: false,
         ),
       ],
     );

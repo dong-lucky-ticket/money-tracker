@@ -1,25 +1,31 @@
 import 'package:flutter/material.dart';
 import 'package:material_design_icons_flutter/material_design_icons_flutter.dart';
 
+import '../../models/report_filter.dart';
+import '../../models/report_time_range.dart';
 import '../../theme/app_colors.dart';
 import '../common/segmented_selector.dart';
 
 class ReportHeader extends StatelessWidget {
-  final bool isExpenseView;
-  final int filterIndex;
+  final ReportRecordType recordType;
+  final ReportTimeRange selectedRange;
   final String periodLabel;
+  final bool hasAdvancedFilters;
   final VoidCallback onPickDate;
-  final ValueChanged<bool> onTypeChanged;
-  final ValueChanged<int> onFilterChanged;
+  final VoidCallback onPickRange;
+  final VoidCallback onOpenFilters;
+  final ValueChanged<ReportRecordType> onTypeChanged;
 
   const ReportHeader({
     super.key,
-    required this.isExpenseView,
-    required this.filterIndex,
+    required this.recordType,
+    required this.selectedRange,
     required this.periodLabel,
+    required this.hasAdvancedFilters,
     required this.onPickDate,
+    required this.onPickRange,
+    required this.onOpenFilters,
     required this.onTypeChanged,
-    required this.onFilterChanged,
   });
 
   @override
@@ -57,13 +63,51 @@ class ReportHeader extends StatelessWidget {
                       ),
                     ],
                   ),
-                  GestureDetector(
-                    onTap: onPickDate,
-                    child: Icon(
-                      MdiIcons.calendarMonthOutline,
-                      size: 24,
-                      color: AppColors.textSecondary,
-                    ),
+                  Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      GestureDetector(
+                        onTap: onOpenFilters,
+                        child: Stack(
+                          clipBehavior: Clip.none,
+                          children: [
+                            Icon(
+                              MdiIcons.tuneVariant,
+                              size: 22,
+                              color: hasAdvancedFilters
+                                  ? const Color(0xFF4A90E2)
+                                  : AppColors.textSecondary,
+                            ),
+                            if (hasAdvancedFilters)
+                              const Positioned(
+                                right: -2,
+                                top: -2,
+                                child: SizedBox(
+                                  width: 8,
+                                  height: 8,
+                                  child: DecoratedBox(
+                                    decoration: BoxDecoration(
+                                      color: Color(0xFF4A90E2),
+                                      shape: BoxShape.circle,
+                                    ),
+                                  ),
+                                ),
+                              ),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(width: 14),
+                      GestureDetector(
+                        onTap: onPickDate,
+                        child: Icon(
+                          selectedRange.isCustom
+                              ? MdiIcons.calendarRangeOutline
+                              : MdiIcons.calendarMonthOutline,
+                          size: 24,
+                          color: AppColors.textSecondary,
+                        ),
+                      ),
+                    ],
                   ),
                 ],
               ),
@@ -74,25 +118,56 @@ class ReportHeader extends StatelessWidget {
               child: Row(
                 children: [
                   Expanded(
-                    child: SegmentedSelector<bool>(
-                      value: isExpenseView,
+                    child: SegmentedSelector<ReportRecordType>(
+                      value: recordType,
                       onChanged: onTypeChanged,
                       options: const [
-                        SegmentedOption(value: true, label: '支出'),
-                        SegmentedOption(value: false, label: '收入'),
+                        SegmentedOption(
+                          value: ReportRecordType.expense,
+                          label: '支出',
+                        ),
+                        SegmentedOption(
+                          value: ReportRecordType.income,
+                          label: '收入',
+                        ),
+                        SegmentedOption(
+                          value: ReportRecordType.all,
+                          label: '全部',
+                        ),
                       ],
                     ),
                   ),
                   const SizedBox(width: 16),
                   Expanded(
-                    child: SegmentedSelector<int>(
-                      value: filterIndex,
-                      onChanged: onFilterChanged,
-                      options: const [
-                        SegmentedOption(value: 0, label: '周'),
-                        SegmentedOption(value: 1, label: '月'),
-                        SegmentedOption(value: 2, label: '年'),
-                      ],
+                    child: OutlinedButton(
+                      onPressed: onPickRange,
+                      style: OutlinedButton.styleFrom(
+                        foregroundColor: AppColors.textPrimary,
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 14,
+                          vertical: 13,
+                        ),
+                        side: const BorderSide(color: Color(0xFFE5E7EB)),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(16),
+                        ),
+                      ),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Text(
+                            selectedRange.selectionLabel,
+                            style: const TextStyle(
+                              fontSize: 14,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                          const Icon(
+                            Icons.keyboard_arrow_down_rounded,
+                            size: 20,
+                          ),
+                        ],
+                      ),
                     ),
                   ),
                 ],

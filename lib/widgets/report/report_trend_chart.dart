@@ -1,6 +1,7 @@
 import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
 
+import '../../models/report_time_range.dart';
 import '../../theme/app_colors.dart';
 import '../common/app_card.dart';
 
@@ -10,7 +11,7 @@ class ReportTrendChart extends StatelessWidget {
   final Map<int, String> trendAxisLabels;
   final Map<int, String> trendTooltipLabels;
   final int maxX;
-  final int filterIndex;
+  final ReportTrendMode trendMode;
   final Color color;
 
   const ReportTrendChart({
@@ -20,7 +21,7 @@ class ReportTrendChart extends StatelessWidget {
     required this.trendAxisLabels,
     required this.trendTooltipLabels,
     required this.maxX,
-    required this.filterIndex,
+    required this.trendMode,
     required this.color,
   });
 
@@ -36,7 +37,9 @@ class ReportTrendChart extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            filterIndex == 2 ? '$typeName月度走势' : '$typeName趋势',
+            trendMode == ReportTrendMode.monthly
+                ? '$typeName月度走势'
+                : '$typeName趋势',
             style: const TextStyle(
               fontSize: 16,
               fontWeight: FontWeight.bold,
@@ -46,7 +49,7 @@ class ReportTrendChart extends StatelessWidget {
           const SizedBox(height: 24),
           SizedBox(
             height: 220,
-            child: filterIndex == 2
+            child: trendMode == ReportTrendMode.monthly
                 ? _buildBarChart(interval)
                 : _buildLineChart(interval),
           ),
@@ -108,7 +111,7 @@ class ReportTrendChart extends StatelessWidget {
             barWidth: 3,
             isStrokeCapRound: true,
             dotData: FlDotData(
-              show: filterIndex == 0,
+              show: maxX <= 14,
               getDotPainter: (spot, percent, barData, index) {
                 return FlDotCirclePainter(
                   radius: 4,
@@ -139,7 +142,7 @@ class ReportTrendChart extends StatelessWidget {
     return BarChart(
       BarChartData(
         alignment: BarChartAlignment.spaceAround,
-        maxY: maxValueWithPadding(),
+        maxY: _maxValueWithPadding(),
         barTouchData: BarTouchData(
           enabled: true,
           touchTooltipData: BarTouchTooltipData(
@@ -196,7 +199,7 @@ class ReportTrendChart extends StatelessWidget {
         sideTitles: SideTitles(
           showTitles: true,
           reservedSize: 28,
-          interval: filterIndex == 1 ? 7 : 1,
+          interval: _bottomTitleInterval(),
           getTitlesWidget: (value, meta) {
             if (value.toInt() == 0 || value.toInt() > maxX) {
               return const SizedBox();
@@ -244,7 +247,24 @@ class ReportTrendChart extends StatelessWidget {
     );
   }
 
-  double maxValueWithPadding() {
+  double _bottomTitleInterval() {
+    if (trendMode == ReportTrendMode.monthly) {
+      return 1;
+    }
+
+    if (maxX > 60) {
+      return 10;
+    }
+    if (maxX > 31) {
+      return 7;
+    }
+    if (maxX > 14) {
+      return 5;
+    }
+    return 1;
+  }
+
+  double _maxValueWithPadding() {
     final maxValue = trendData.values.fold<double>(0, (max, value) {
       return value > max ? value : max;
     });

@@ -3,6 +3,8 @@ import 'package:flutter/material.dart';
 import 'category.dart';
 import 'category_group.dart';
 import 'record.dart';
+import 'report_filter.dart';
+import 'report_time_range.dart';
 
 class ReportCategorySummary {
   final Category category;
@@ -62,7 +64,8 @@ class ReportSnapshot {
   final Map<int, String> trendAxisLabels;
   final Map<int, String> trendTooltipLabels;
   final int maxX;
-  final bool isExpenseView;
+  final ReportTrendMode trendMode;
+  final ReportRecordType recordType;
   final int viewRecordCount;
   final String periodLabel;
   final String compareLabel;
@@ -87,7 +90,8 @@ class ReportSnapshot {
     required this.trendAxisLabels,
     required this.trendTooltipLabels,
     required this.maxX,
-    required this.isExpenseView,
+    required this.trendMode,
+    required this.recordType,
     required this.viewRecordCount,
     required this.periodLabel,
     required this.compareLabel,
@@ -95,10 +99,33 @@ class ReportSnapshot {
     required this.insights,
   });
 
-  String get typeName => isExpenseView ? '支出' : '收入';
+  bool get isExpenseView => recordType == ReportRecordType.expense;
 
-  Color get valueColor =>
-      isExpenseView ? const Color(0xFFFF5A5A) : const Color(0xFF28CA7F);
+  bool get isIncomeView => recordType == ReportRecordType.income;
+
+  bool get isMixedView => recordType == ReportRecordType.all;
+
+  String get typeName {
+    switch (recordType) {
+      case ReportRecordType.expense:
+        return '支出';
+      case ReportRecordType.income:
+        return '收入';
+      case ReportRecordType.all:
+        return '收支';
+    }
+  }
+
+  Color get valueColor {
+    switch (recordType) {
+      case ReportRecordType.expense:
+        return const Color(0xFFFF5A5A);
+      case ReportRecordType.income:
+        return const Color(0xFF28CA7F);
+      case ReportRecordType.all:
+        return const Color(0xFF4A90E2);
+    }
+  }
 
   double get balance => totalIncome - totalExpense;
 }

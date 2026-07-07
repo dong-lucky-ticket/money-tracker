@@ -163,130 +163,144 @@ class DataProvider with ChangeNotifier {
           sortOrder: 0),
       Category(
           id: const Uuid().v4(),
-          name: '购物',
-          iconName: 'shopping',
-          colorHex: '#EF4444',
-          isExpense: true,
-          sortOrder: 1),
-      Category(
-          id: const Uuid().v4(),
-          name: '日用',
-          iconName: 'daily',
-          colorHex: '#3B82F6',
-          isExpense: true,
-          sortOrder: 2),
-      Category(
-          id: const Uuid().v4(),
-          name: '交通',
-          iconName: 'transport',
-          colorHex: '#14B8A6',
-          isExpense: true,
-          sortOrder: 3),
-      Category(
-          id: const Uuid().v4(),
           name: '蔬菜',
           iconName: 'vegetables',
           colorHex: '#10B981',
           isExpense: true,
-          sortOrder: 4),
+          sortOrder: 1),
       Category(
           id: const Uuid().v4(),
           name: '水果',
           iconName: 'fruit',
           colorHex: '#F59E0B',
           isExpense: true,
-          sortOrder: 5),
+          sortOrder: 2),
       Category(
           id: const Uuid().v4(),
           name: '零食',
           iconName: 'snacks',
           colorHex: '#EC4899',
           isExpense: true,
-          sortOrder: 6),
+          sortOrder: 3),
       Category(
           id: const Uuid().v4(),
           name: '话费',
           iconName: 'phone-bill',
           colorHex: '#3B82F6',
           isExpense: true,
-          sortOrder: 8),
-      Category(
-          id: const Uuid().v4(),
-          name: '服饰',
-          iconName: 'clothing',
-          colorHex: '#EC4899',
-          isExpense: true,
-          sortOrder: 9),
+          sortOrder: 4),
       Category(
           id: const Uuid().v4(),
           name: '住房',
           iconName: 'housing',
           colorHex: '#F59E0B',
           isExpense: true,
-          sortOrder: 10),
+          sortOrder: 5),
       Category(
           id: const Uuid().v4(),
-          name: '孩子',
-          iconName: 'child',
-          colorHex: '#14B8A6',
+          name: '办公',
+          iconName: 'office',
+          colorHex: '#64748B',
           isExpense: true,
-          sortOrder: 11),
+          sortOrder: 6),
       Category(
           id: const Uuid().v4(),
-          name: '长辈',
-          iconName: 'elders',
+          name: '水费',
+          iconName: 'water-outline',
+          colorHex: '#3B82F6',
+          isExpense: true,
+          sortOrder: 7),
+      Category(
+          id: const Uuid().v4(),
+          name: '电费',
+          iconName: 'lightning-bolt-outline',
+          colorHex: '#F59E0B',
+          isExpense: true,
+          sortOrder: 8),
+      Category(
+          id: const Uuid().v4(),
+          name: '燃气费',
+          iconName: 'fire',
           colorHex: '#EF4444',
           isExpense: true,
-          sortOrder: 12),
+          sortOrder: 9),
+      Category(
+          id: const Uuid().v4(),
+          name: '交通',
+          iconName: 'transport',
+          colorHex: '#14B8A6',
+          isExpense: true,
+          sortOrder: 10),
       Category(
           id: const Uuid().v4(),
           name: '旅行',
           iconName: 'travel',
           colorHex: '#10B981',
           isExpense: true,
-          sortOrder: 14),
-      Category(
-          id: const Uuid().v4(),
-          name: '烟酒',
-          iconName: 'alcohol',
-          colorHex: '#EF4444',
-          isExpense: true,
-          sortOrder: 15),
-      Category(
-          id: const Uuid().v4(),
-          name: '数码',
-          iconName: 'digital',
-          colorHex: '#6366F1',
-          isExpense: true,
-          sortOrder: 16),
+          sortOrder: 11),
       Category(
           id: const Uuid().v4(),
           name: '汽车',
           iconName: 'car',
           colorHex: '#3B82F6',
           isExpense: true,
-          sortOrder: 17),
+          sortOrder: 12),
       Category(
           id: const Uuid().v4(),
           name: '摩托',
           iconName: 'motorcycle',
           colorHex: '#0EA5E9',
           isExpense: true,
-          sortOrder: 32),
+          sortOrder: 13),
       Category(
           id: const Uuid().v4(),
-          name: '医疗',
-          iconName: 'medical',
+          name: '火车高铁',
+          iconName: 'train',
+          colorHex: '#3B82F6',
+          isExpense: true,
+          sortOrder: 14),
+      Category(
+          id: const Uuid().v4(),
+          name: '购物',
+          iconName: 'shopping',
           colorHex: '#EF4444',
+          isExpense: true,
+          sortOrder: 15),
+      Category(
+          id: const Uuid().v4(),
+          name: '日用',
+          iconName: 'daily',
+          colorHex: '#3B82F6',
+          isExpense: true,
+          sortOrder: 16),
+      Category(
+          id: const Uuid().v4(),
+          name: '服饰',
+          iconName: 'clothing',
+          colorHex: '#EC4899',
+          isExpense: true,
+          sortOrder: 17),
+      Category(
+          id: const Uuid().v4(),
+          name: '数码',
+          iconName: 'digital',
+          colorHex: '#6366F1',
           isExpense: true,
           sortOrder: 18),
       Category(
           id: const Uuid().v4(),
-          name: '书籍',
-          iconName: 'books',
-          colorHex: '#8B5CF6',
+          name: '孩子',
+          iconName: 'child',
+          colorHex: '#14B8A6',
           isExpense: true,
           sortOrder: 19),
+      Category(
+          id: const Uuid().v4(),
+          name: '长辈',
+          iconName: 'elders',
+          colorHex: '#EF4444',
+          isExpense: true,
+          sortOrder: 20),
       Category(
           id: const Uuid().v4(),
           name: '礼金',
@@ -296,11 +310,25 @@ class DataProvider with ChangeNotifier {
           sortOrder: 21),
       Category(
           id: const Uuid().v4(),
-          name: '办公',
-          iconName: 'office',
-          colorHex: '#64748B',
+          name: '医疗',
+          iconName: 'medical',
+          colorHex: '#EF4444',
+          isExpense: true,
+          sortOrder: 22),
+      Category(
+          id: const Uuid().v4(),
+          name: '书籍',
+          iconName: 'books',
+          colorHex: '#8B5CF6',
           isExpense: true,
           sortOrder: 23),
+      Category(
+          id: const Uuid().v4(),
+          name: '烟酒',
+          iconName: 'alcohol',
+          colorHex: '#EF4444',
+          isExpense: true,
+          sortOrder: 24),
       Category(
           id: const Uuid().v4(),
           name: '彩票',
@@ -314,35 +342,7 @@ class DataProvider with ChangeNotifier {
           iconName: 'wish',
           colorHex: '#A855F7',
           isExpense: true,
-          sortOrder: 28),
-      Category(
-          id: const Uuid().v4(),
-          name: '火车高铁',
-          iconName: 'train',
-          colorHex: '#3B82F6',
-          isExpense: true,
-          sortOrder: 29),
-      Category(
-          id: const Uuid().v4(),
-          name: '水费',
-          iconName: 'water-outline',
-          colorHex: '#3B82F6',
-          isExpense: true,
-          sortOrder: 31),
-      Category(
-          id: const Uuid().v4(),
-          name: '电费',
-          iconName: 'lightning-bolt-outline',
-          colorHex: '#F59E0B',
-          isExpense: true,
-          sortOrder: 33),
-      Category(
-          id: const Uuid().v4(),
-          name: '燃气费',
-          iconName: 'fire',
-          colorHex: '#EF4444',
-          isExpense: true,
-          sortOrder: 34),
+          sortOrder: 26),
 
       // === 收入 ===
       Category(
@@ -525,6 +525,21 @@ class DataProvider with ChangeNotifier {
     // 2. 随后在后台异步持久化到本地存储
     for (var cat in newOrderList) {
       await _categoriesBox.put(cat.id, cat);
+    }
+  }
+
+  Future<void> reorderCategoriesInGroup({
+    required String groupId,
+    required bool isExpense,
+    required List<Category> newOrderList,
+  }) async {
+    for (int i = 0; i < newOrderList.length; i++) {
+      newOrderList[i].sortOrder = i;
+    }
+    notifyListeners();
+
+    for (final category in newOrderList) {
+      await _categoriesBox.put(category.id, category);
     }
   }
 

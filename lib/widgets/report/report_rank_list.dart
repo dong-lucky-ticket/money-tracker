@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:material_design_icons_flutter/material_design_icons_flutter.dart';
 
+import '../../models/report_filter.dart';
 import '../../models/report_snapshot.dart';
 import '../../theme/app_colors.dart';
 import '../../utils/color_utils.dart';
@@ -11,7 +12,7 @@ class ReportRankList extends StatelessWidget {
   final double viewTotal;
   final Color valueColor;
   final String typeName;
-  final bool isExpenseView;
+  final ReportRecordType recordType;
   final ValueChanged<ReportCategorySummary> onTapCategory;
 
   const ReportRankList({
@@ -20,7 +21,7 @@ class ReportRankList extends StatelessWidget {
     required this.viewTotal,
     required this.valueColor,
     required this.typeName,
-    required this.isExpenseView,
+    required this.recordType,
     required this.onTapCategory,
   });
 
@@ -59,12 +60,13 @@ class ReportRankList extends StatelessWidget {
         ),
         const SizedBox(height: 16),
         ...categories.map((summary) {
-          final percentage = viewTotal > 0 ? (summary.amount / viewTotal) * 100 : 0.0;
+          final percentage =
+              viewTotal > 0 ? (summary.amount / viewTotal) * 100 : 0.0;
           return _RankItem(
             summary: summary,
             percentage: percentage,
             valueColor: valueColor,
-            isExpenseView: isExpenseView,
+            recordType: recordType,
             onTap: () => onTapCategory(summary),
           );
         }),
@@ -77,14 +79,14 @@ class _RankItem extends StatelessWidget {
   final ReportCategorySummary summary;
   final double percentage;
   final Color valueColor;
-  final bool isExpenseView;
+  final ReportRecordType recordType;
   final VoidCallback onTap;
 
   const _RankItem({
     required this.summary,
     required this.percentage,
     required this.valueColor,
-    required this.isExpenseView,
+    required this.recordType,
     required this.onTap,
   });
 
@@ -205,7 +207,8 @@ class _RankItem extends StatelessWidget {
                   ),
                 ),
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                   decoration: BoxDecoration(
                     color: deltaColor.withOpacity(0.08),
                     borderRadius: BorderRadius.circular(999),
@@ -249,6 +252,10 @@ class _RankItem extends StatelessWidget {
     if (summary.deltaAmount > 0) {
       return valueColor;
     }
-    return isExpenseView ? AppColors.success : AppColors.danger;
+    return switch (recordType) {
+      ReportRecordType.expense => AppColors.success,
+      ReportRecordType.income => AppColors.danger,
+      ReportRecordType.all => AppColors.danger,
+    };
   }
 }

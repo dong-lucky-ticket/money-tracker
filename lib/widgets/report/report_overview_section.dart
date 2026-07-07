@@ -16,15 +16,27 @@ class ReportOverviewSection extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final primaryTitle = snapshot.isExpenseView ? '本期总支出' : '本期总收入';
-    final secondaryTitle = snapshot.isExpenseView ? '本期总收入' : '本期总支出';
-    final secondaryValue =
-        snapshot.isExpenseView ? snapshot.totalIncome : snapshot.totalExpense;
+    final primaryTitle = snapshot.isMixedView
+        ? '本期总流水'
+        : snapshot.isExpenseView
+            ? '本期总支出'
+            : '本期总收入';
+    final secondaryTitle = snapshot.isMixedView
+        ? '本期总支出'
+        : snapshot.isExpenseView
+            ? '本期总收入'
+            : '本期总支出';
+    final secondaryValue = snapshot.isMixedView
+        ? snapshot.totalExpense
+        : snapshot.isExpenseView
+            ? snapshot.totalIncome
+            : snapshot.totalExpense;
     final deltaRate = snapshot.viewDeltaRate;
     final deltaText = deltaRate == null
         ? '暂无${snapshot.compareLabel}可对比数据'
         : '较${snapshot.compareLabel}${snapshot.viewDeltaAmount >= 0 ? '增加' : '减少'} ${(deltaRate.abs() * 100).toStringAsFixed(1)}%';
-    final topCategory = snapshot.categories.isEmpty ? null : snapshot.categories.first;
+    final topCategory =
+        snapshot.categories.isEmpty ? null : snapshot.categories.first;
 
     return Column(
       children: [
@@ -44,12 +56,16 @@ class ReportOverviewSection extends StatelessWidget {
               child: _SecondaryStatCard(
                 title: secondaryTitle,
                 value: secondaryValue.toStringAsFixed(2),
-                icon: snapshot.isExpenseView
+                icon: snapshot.isMixedView
                     ? MdiIcons.arrowDownBoldCircleOutline
-                    : MdiIcons.arrowUpBoldCircleOutline,
-                color: snapshot.isExpenseView
-                    ? AppColors.success
-                    : AppColors.danger,
+                    : snapshot.isExpenseView
+                        ? MdiIcons.arrowDownBoldCircleOutline
+                        : MdiIcons.arrowUpBoldCircleOutline,
+                color: snapshot.isMixedView
+                    ? AppColors.danger
+                    : snapshot.isExpenseView
+                        ? AppColors.success
+                        : AppColors.danger,
               ),
             ),
             const SizedBox(width: 12),
@@ -91,7 +107,8 @@ class ReportOverviewSection extends StatelessWidget {
               Expanded(
                 child: _InsightMetricCard(
                   title: '最大单笔',
-                  value: snapshot.maxRecord?.amount.toStringAsFixed(2) ?? '0.00',
+                  value:
+                      snapshot.maxRecord?.amount.toStringAsFixed(2) ?? '0.00',
                   subtitle: snapshot.maxRecord?.category.name ?? '--',
                   icon: MdiIcons.arrowUpBoldCircleOutline,
                   color: Colors.orange,
@@ -198,7 +215,8 @@ class _PrimarySummaryCard extends StatelessWidget {
           Row(
             children: [
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
                 decoration: BoxDecoration(
                   color: color.withOpacity(0.12),
                   borderRadius: BorderRadius.circular(999),

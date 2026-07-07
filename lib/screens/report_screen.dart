@@ -3,12 +3,14 @@ import 'package:provider/provider.dart';
 
 import '../models/category.dart';
 import '../models/category_group.dart';
+import '../models/record.dart';
 import '../models/report_filter.dart';
 import '../models/report_snapshot.dart';
 import '../models/report_time_range.dart';
 import '../providers/data_provider.dart';
 import '../utils/report_snapshot_builder.dart';
 import '../widgets/report/report_category_detail_sheet.dart';
+import '../widgets/report/report_group_detail_sheet.dart';
 import '../widgets/report/report_group_summary_section.dart';
 import '../widgets/report/report_header.dart';
 import '../widgets/report/report_overview_section.dart';
@@ -263,16 +265,7 @@ class _ReportScreenState extends State<ReportScreen> {
     ReportCategorySummary summary,
     ReportSnapshot snapshot,
   ) {
-    final records = snapshot.viewRecords
-        .where((record) => record.category.id == summary.category.id)
-        .toList()
-      ..sort((a, b) {
-        final updatedCompare = b.updatedAt.compareTo(a.updatedAt);
-        if (updatedCompare != 0) {
-          return updatedCompare;
-        }
-        return b.createdAt.compareTo(a.createdAt);
-      });
+    final records = _sortedRecordsByCategory(snapshot, summary.category.id);
     if (records.isEmpty) {
       return;
     }
@@ -285,6 +278,64 @@ class _ReportScreenState extends State<ReportScreen> {
       periodLabel: snapshot.periodLabel,
       amountColor: snapshot.valueColor,
     );
+  }
+
+  void _showGroupDetails(
+    ReportGroupSummary summary,
+    ReportSnapshot snapshot,
+  ) {
+    final groupId = summary.group?.id ?? '';
+    final categories = snapshot.categories.where((categorySummary) {
+      return categorySummary.category.groupId == groupId;
+    }).toList()
+      ..sort((a, b) => b.amount.compareTo(a.amount));
+    final records = _sortedRecordsByGroup(snapshot, groupId);
+
+    if (categories.isEmpty || records.isEmpty) {
+      return;
+    }
+
+    ReportGroupDetailSheet.show(
+      context,
+      summary: summary,
+      categories: categories,
+      records: records,
+      viewTotal: snapshot.viewTotal,
+      periodLabel: snapshot.periodLabel,
+      amountColor: snapshot.valueColor,
+    );
+  }
+
+  List<Record> _sortedRecordsByCategory(
+    ReportSnapshot snapshot,
+    String categoryId,
+  ) {
+    return snapshot.viewRecords
+        .where((record) => record.category.id == categoryId)
+        .toList()
+      ..sort((a, b) {
+        final updatedCompare = b.updatedAt.compareTo(a.updatedAt);
+        if (updatedCompare != 0) {
+          return updatedCompare;
+        }
+        return b.createdAt.compareTo(a.createdAt);
+      });
+  }
+
+  List<Record> _sortedRecordsByGroup(
+    ReportSnapshot snapshot,
+    String groupId,
+  ) {
+    return snapshot.viewRecords
+        .where((record) => record.category.groupId == groupId)
+        .toList()
+      ..sort((a, b) {
+        final updatedCompare = b.updatedAt.compareTo(a.updatedAt);
+        if (updatedCompare != 0) {
+          return updatedCompare;
+        }
+        return b.createdAt.compareTo(a.createdAt);
+      });
   }
 
   @override
@@ -356,6 +407,9 @@ class _ReportScreenState extends State<ReportScreen> {
                       groups: snapshot.groups,
                       viewTotal: snapshot.viewTotal,
                       valueColor: snapshot.valueColor,
+                      onTapGroup: (summary) {
+                        _showGroupDetails(summary, snapshot);
+                      },
                     ),
                     if (snapshot.groups.isNotEmpty) const SizedBox(height: 32),
                     ReportRankList(
@@ -675,39 +729,17 @@ class _ReportAdvancedFilterSheetState
                       subtitle: '可多选，先缩小大类范围',
                     ),
                     const SizedBox(height: 8),
-                    Wrap(
-                      spacing: 6,
-                      runSpacing: 6,
+                    _FixedWidthFilterChipWrap(
+                      columnCount: 4,
                       children: _visibleGroups
                           .map(
-                            (group) => FilterChip(
-                              label: Text(group.name),
+                            (group) => _FixedWidthFilterTile(
+                              label: group.name,
                               selected: _selectedGroupIds.contains(group.id),
-                              onSelected: (_) => _toggleGroup(group.id),
-                              backgroundColor: Colors.white,
-                              selectedColor: const Color(0xFFF3F8FF),
-                              showCheckmark: false,
-                              side: BorderSide(
-                                color: _selectedGroupIds.contains(group.id)
-                                    ? const Color(0xFFBFDBFE)
-                                    : const Color(0xFFE5E7EB),
-                              ),
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 8,
-                                vertical: 2,
-                              ),
-                              materialTapTargetSize:
-                                  MaterialTapTargetSize.shrinkWrap,
-                              labelStyle: TextStyle(
-                                fontSize: 12,
-                                color: _selectedGroupIds.contains(group.id)
-                                    ? const Color(0xFF1D4ED8)
-                                    : const Color(0xFF334155),
-                                fontWeight: _selectedGroupIds.contains(group.id)
-                                    ? FontWeight.w600
-                                    : FontWeight.w500,
-                              ),
-                              visualDensity: VisualDensity.compact,
+                              onTap: () => _toggleGroup(group.id),
+                              selectedBackgroundColor: const Color(0xFFF3F8FF),
+                              selectedBorderColor: const Color(0xFFBFDBFE),
+                              selectedTextColor: const Color(0xFF1D4ED8),
                             ),
                           )
                           .toList(),
@@ -729,43 +761,14 @@ class _ReportAdvancedFilterSheetState
                         ),
                       )
                     else
-                      Wrap(
-                        spacing: 6,
-                        runSpacing: 6,
+                      _FixedWidthFilterChipWrap(
                         children: visibleCategories
                             .map(
-                              (category) => FilterChip(
-                                label: Text(category.name),
+                              (category) => _FixedWidthFilterTile(
+                                label: category.name,
                                 selected:
                                     _selectedCategoryIds.contains(category.id),
-                                onSelected: (_) => _toggleCategory(category.id),
-                                backgroundColor: Colors.white,
-                                selectedColor: const Color(0xFFF8FAFC),
-                                showCheckmark: false,
-                                side: BorderSide(
-                                  color:
-                                      _selectedCategoryIds.contains(category.id)
-                                          ? const Color(0xFFCBD5E1)
-                                          : const Color(0xFFE5E7EB),
-                                ),
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: 8,
-                                  vertical: 2,
-                                ),
-                                materialTapTargetSize:
-                                    MaterialTapTargetSize.shrinkWrap,
-                                labelStyle: TextStyle(
-                                  fontSize: 12,
-                                  color:
-                                      _selectedCategoryIds.contains(category.id)
-                                          ? const Color(0xFF0F172A)
-                                          : const Color(0xFF334155),
-                                  fontWeight:
-                                      _selectedCategoryIds.contains(category.id)
-                                          ? FontWeight.w600
-                                          : FontWeight.w500,
-                                ),
-                                visualDensity: VisualDensity.compact,
+                                onTap: () => _toggleCategory(category.id),
                               ),
                             )
                             .toList(),
@@ -848,6 +851,99 @@ class _FilterSectionTitle extends StatelessWidget {
           ),
         ),
       ],
+    );
+  }
+}
+
+class _FixedWidthFilterChipWrap extends StatelessWidget {
+  final List<Widget> children;
+  final int? columnCount;
+
+  const _FixedWidthFilterChipWrap({
+    required this.children,
+    this.columnCount,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        const spacing = 6.0;
+        const targetItemWidth = 74.0;
+        final resolvedColumnCount = columnCount ??
+            (constraints.maxWidth / targetItemWidth).floor().clamp(1, 5);
+        final itemWidth =
+            (constraints.maxWidth - spacing * (resolvedColumnCount - 1)) /
+                resolvedColumnCount;
+
+        return Wrap(
+          spacing: spacing,
+          runSpacing: spacing,
+          children: children
+              .map(
+                (child) => SizedBox(
+                  width: itemWidth,
+                  child: child,
+                ),
+              )
+              .toList(),
+        );
+      },
+    );
+  }
+}
+
+class _FixedWidthFilterTile extends StatelessWidget {
+  final String label;
+  final bool selected;
+  final VoidCallback onTap;
+  final Color selectedBackgroundColor;
+  final Color selectedBorderColor;
+  final Color selectedTextColor;
+
+  const _FixedWidthFilterTile({
+    required this.label,
+    required this.selected,
+    required this.onTap,
+    this.selectedBackgroundColor = const Color(0xFFF8FAFC),
+    this.selectedBorderColor = const Color(0xFFCBD5E1),
+    this.selectedTextColor = const Color(0xFF0F172A),
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(12),
+        child: Ink(
+          height: 36,
+          decoration: BoxDecoration(
+            color: selected ? selectedBackgroundColor : Colors.white,
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(
+              color: selected ? selectedBorderColor : const Color(0xFFE5E7EB),
+            ),
+          ),
+          child: Center(
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 8),
+              child: Text(
+                label,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  fontSize: 12,
+                  color: selected ? selectedTextColor : const Color(0xFF334155),
+                  fontWeight: selected ? FontWeight.w600 : FontWeight.w500,
+                ),
+              ),
+            ),
+          ),
+        ),
+      ),
     );
   }
 }

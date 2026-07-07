@@ -53,7 +53,7 @@ class DataProvider with ChangeNotifier {
   static const String settingsBoxName = 'settingsBox';
   static const String recordGroupMigrationVersionKey =
       'recordGroupMigrationVersion';
-  static const int currentRecordGroupMigrationVersion = 4;
+  static const int currentRecordGroupMigrationVersion = 5;
   static const _deprecatedDefaultCategoryKeys = {
     'expense::娱乐::entertainment',
     'expense::社交::social',
@@ -254,7 +254,7 @@ class DataProvider with ChangeNotifier {
           sortOrder: 13),
       Category(
           id: const Uuid().v4(),
-          name: '火车高铁',
+          name: '铁路',
           iconName: 'train',
           colorHex: '#3B82F6',
           isExpense: true,
@@ -426,6 +426,12 @@ class DataProvider with ChangeNotifier {
       if (_isLegacyCommunicationCategory(category)) {
         category.name = '话费';
         category.iconName = 'phone-bill';
+        changed = true;
+      }
+
+      if (_isLegacyRailCategory(category)) {
+        category.name = '铁路';
+        category.iconName = 'train';
         changed = true;
       }
 
@@ -790,7 +796,7 @@ class DataProvider with ChangeNotifier {
     onProgress?.call(
       DataSyncProgress(
         message: '正在同步历史记录',
-        detail: '检查并补齐历史记录的大类信息',
+        detail: '检查并补齐历史记录的大类与分类信息',
         processed: 0,
         total: total,
       ),
@@ -803,7 +809,7 @@ class DataProvider with ChangeNotifier {
       );
 
       if (normalizedLegacyCategory != null &&
-          record.category.id != normalizedLegacyCategory.id) {
+          !_isSameCategorySnapshot(record.category, normalizedLegacyCategory)) {
         record.category = normalizedLegacyCategory;
         changed = true;
       }
@@ -822,6 +828,10 @@ class DataProvider with ChangeNotifier {
       final currentCategory = _categoriesBox.get(record.category.id);
       if (currentCategory != null) {
         _ensureCategoryGroupId(currentCategory);
+        if (!_isSameCategorySnapshot(record.category, currentCategory)) {
+          record.category = currentCategory;
+          changed = true;
+        }
         if (record.category.groupId != currentCategory.groupId) {
           record.category.groupId = currentCategory.groupId;
           changed = true;
@@ -982,6 +992,10 @@ class DataProvider with ChangeNotifier {
       return _findCategoryByName('话费', isExpense: true);
     }
 
+    if (_isLegacyRailCategory(category)) {
+      return _findCategoryByName('铁路', isExpense: true);
+    }
+
     return null;
   }
 
@@ -1001,6 +1015,14 @@ class DataProvider with ChangeNotifier {
     return category.iconName == 'communication' || category.name == '通讯';
   }
 
+  bool _isLegacyRailCategory(Category category) {
+    if (!category.isExpense) {
+      return false;
+    }
+
+    return category.iconName == 'train' && category.name == '火车高铁';
+  }
+
   bool _isDefaultDailyCategory(Category category) {
     if (!category.isExpense) {
       return false;
@@ -1017,6 +1039,16 @@ class DataProvider with ChangeNotifier {
     }
 
     return null;
+  }
+
+  bool _isSameCategorySnapshot(Category a, Category b) {
+    return a.id == b.id &&
+        a.name == b.name &&
+        a.iconName == b.iconName &&
+        a.colorHex == b.colorHex &&
+        a.groupId == b.groupId &&
+        a.isExpense == b.isExpense &&
+        a.sortOrder == b.sortOrder;
   }
 
   void _ensureCategoryGroupId(Category category) {

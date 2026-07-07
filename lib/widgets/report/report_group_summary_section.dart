@@ -7,12 +7,14 @@ class ReportGroupSummarySection extends StatelessWidget {
   final List<ReportGroupSummary> groups;
   final double viewTotal;
   final Color valueColor;
+  final ValueChanged<ReportGroupSummary> onTapGroup;
 
   const ReportGroupSummarySection({
     super.key,
     required this.groups,
     required this.viewTotal,
     required this.valueColor,
+    required this.onTapGroup,
   });
 
   @override
@@ -34,7 +36,7 @@ class ReportGroupSummarySection extends StatelessWidget {
         ),
         const SizedBox(height: 6),
         const Text(
-          '先看整体结构，再往下看具体分类排行',
+          '点击大类可继续查看分类统计与明细记录',
           style: TextStyle(
             fontSize: 12,
             color: AppColors.textMuted,
@@ -48,6 +50,7 @@ class ReportGroupSummarySection extends StatelessWidget {
             summary: summary,
             percentage: percentage,
             valueColor: valueColor,
+            onTap: () => onTapGroup(summary),
           );
         }),
       ],
@@ -59,11 +62,13 @@ class _GroupSummaryCard extends StatelessWidget {
   final ReportGroupSummary summary;
   final double percentage;
   final Color valueColor;
+  final VoidCallback onTap;
 
   const _GroupSummaryCard({
     required this.summary,
     required this.percentage,
     required this.valueColor,
+    required this.onTap,
   });
 
   @override
@@ -71,79 +76,96 @@ class _GroupSummaryCard extends StatelessWidget {
     final deltaText = _buildDeltaText(summary);
     final deltaColor = _buildDeltaColor(summary, valueColor);
 
-    return Container(
-      margin: const EdgeInsets.only(bottom: 12),
-      padding: const EdgeInsets.all(14),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: AppColors.surfaceMuted),
-      ),
-      child: Column(
-        children: [
-          Row(
-            children: [
-              Expanded(
-                child: Text(
-                  summary.displayName,
-                  style: const TextStyle(
-                    fontSize: 15,
-                    fontWeight: FontWeight.bold,
-                    color: AppColors.textPrimary,
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        margin: const EdgeInsets.only(bottom: 12),
+        padding: const EdgeInsets.all(14),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: AppColors.surfaceMuted),
+        ),
+        child: Column(
+          children: [
+            Row(
+              children: [
+                Expanded(
+                  child: Row(
+                    children: [
+                      Flexible(
+                        child: Text(
+                          summary.displayName,
+                          overflow: TextOverflow.ellipsis,
+                          style: const TextStyle(
+                            fontSize: 15,
+                            fontWeight: FontWeight.bold,
+                            color: AppColors.textPrimary,
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 4),
+                      const Icon(
+                        Icons.chevron_right_rounded,
+                        size: 18,
+                        color: Color(0xFFD1D5DB),
+                      ),
+                    ],
                   ),
                 ),
-              ),
-              const SizedBox(width: 12),
-              Text(
-                summary.amount.toStringAsFixed(2),
-                style: TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.bold,
-                  color: valueColor,
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 10),
-          ClipRRect(
-            borderRadius: BorderRadius.circular(4),
-            child: LinearProgressIndicator(
-              value: percentage / 100,
-              backgroundColor: AppColors.surfaceSoft,
-              valueColor: AlwaysStoppedAnimation<Color>(valueColor),
-              minHeight: 6,
-            ),
-          ),
-          const SizedBox(height: 8),
-          Row(
-            children: [
-              Expanded(
-                child: Text(
-                  '占比 ${percentage.toStringAsFixed(1)}%  ·  ${summary.count} 笔',
-                  style: const TextStyle(
-                    fontSize: 12,
-                    color: AppColors.textMuted,
-                  ),
-                ),
-              ),
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                decoration: BoxDecoration(
-                  color: deltaColor.withOpacity(0.08),
-                  borderRadius: BorderRadius.circular(999),
-                ),
-                child: Text(
-                  deltaText,
+                const SizedBox(width: 12),
+                Text(
+                  summary.amount.toStringAsFixed(2),
                   style: TextStyle(
-                    fontSize: 12,
-                    fontWeight: FontWeight.w600,
-                    color: deltaColor,
+                    fontSize: 16,
+                    fontWeight: FontWeight.bold,
+                    color: valueColor,
                   ),
                 ),
+              ],
+            ),
+            const SizedBox(height: 10),
+            ClipRRect(
+              borderRadius: BorderRadius.circular(4),
+              child: LinearProgressIndicator(
+                value: percentage / 100,
+                backgroundColor: AppColors.surfaceSoft,
+                valueColor: AlwaysStoppedAnimation<Color>(valueColor),
+                minHeight: 6,
               ),
-            ],
-          ),
-        ],
+            ),
+            const SizedBox(height: 8),
+            Row(
+              children: [
+                Expanded(
+                  child: Text(
+                    '占比 ${percentage.toStringAsFixed(1)}%  ·  ${summary.count} 笔',
+                    style: const TextStyle(
+                      fontSize: 12,
+                      color: AppColors.textMuted,
+                    ),
+                  ),
+                ),
+                Container(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                  decoration: BoxDecoration(
+                    color: deltaColor.withOpacity(0.08),
+                    borderRadius: BorderRadius.circular(999),
+                  ),
+                  child: Text(
+                    deltaText,
+                    style: TextStyle(
+                      fontSize: 12,
+                      fontWeight: FontWeight.w600,
+                      color: deltaColor,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ),
       ),
     );
   }

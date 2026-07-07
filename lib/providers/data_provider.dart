@@ -324,25 +324,32 @@ class DataProvider with ChangeNotifier {
           sortOrder: 23),
       Category(
           id: const Uuid().v4(),
+          name: '考试',
+          iconName: 'study',
+          colorHex: '#2563EB',
+          isExpense: true,
+          sortOrder: 24),
+      Category(
+          id: const Uuid().v4(),
           name: '烟酒',
           iconName: 'alcohol',
           colorHex: '#EF4444',
           isExpense: true,
-          sortOrder: 24),
+          sortOrder: 25),
       Category(
           id: const Uuid().v4(),
           name: '彩票',
           iconName: 'lottery',
           colorHex: '#EF4444',
           isExpense: true,
-          sortOrder: 25),
+          sortOrder: 26),
       Category(
           id: const Uuid().v4(),
           name: '星愿',
           iconName: 'wish',
           colorHex: '#A855F7',
           isExpense: true,
-          sortOrder: 26),
+          sortOrder: 27),
 
       // === 收入 ===
       Category(

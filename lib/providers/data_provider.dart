@@ -23,11 +23,37 @@ class CsvImportResult {
   int get processedCount => importedCount + updatedCount;
 }
 
+class DataSyncProgress {
+  final String message;
+  final String? detail;
+  final int processed;
+  final int total;
+  final bool isIndeterminate;
+
+  const DataSyncProgress({
+    required this.message,
+    this.detail,
+    this.processed = 0,
+    this.total = 0,
+    this.isIndeterminate = false,
+  });
+
+  double? get value {
+    if (isIndeterminate || total <= 0) {
+      return null;
+    }
+    return processed / total;
+  }
+}
+
 class DataProvider with ChangeNotifier {
   static const String recordsBoxName = 'recordsBox';
   static const String categoriesBoxName = 'categoriesBox';
   static const String categoryGroupsBoxName = 'categoryGroupsBox';
   static const String settingsBoxName = 'settingsBox';
+  static const String recordGroupMigrationVersionKey =
+      'recordGroupMigrationVersion';
+  static const int currentRecordGroupMigrationVersion = 4;
   static const _deprecatedDefaultCategoryKeys = {
     'expense::娱乐::entertainment',
     'expense::社交::social',
@@ -37,6 +63,7 @@ class DataProvider with ChangeNotifier {
     'expense::亲友::relatives',
     'expense::快递::express',
     'expense::话费::phone-bill',
+    'expense::生活缴费::utility',
   };
 
   late Box<Record> _recordsBox;
@@ -54,7 +81,17 @@ class DataProvider with ChangeNotifier {
   bool _isDarkTheme = false;
   bool get isDarkTheme => _isDarkTheme;
 
-  Future<void> init() async {
+  Future<void> init({
+    ValueChanged<DataSyncProgress>? onProgress,
+  }) async {
+    onProgress?.call(
+      const DataSyncProgress(
+        message: '正在准备本地数据',
+        detail: '初始化账本与分类信息',
+        isIndeterminate: true,
+      ),
+    );
+
     _recordsBox = await Hive.openBox<Record>(recordsBoxName);
     _categoriesBox = await Hive.openBox<Category>(categoriesBoxName);
     _categoryGroupsBox =
@@ -65,6 +102,7 @@ class DataProvider with ChangeNotifier {
 
     await _syncDefaultCategoryGroups();
     await _syncDefaultCategories();
+    await _migrateRecordCategoryGroups(onProgress: onProgress);
   }
 
   Future<void> _syncDefaultCategoryGroups() async {
@@ -105,6 +143,7 @@ class DataProvider with ChangeNotifier {
         await _categoriesBox.put(category.id, category);
       }
     } else {
+      await _syncLegacyDefaultCategories();
       await _removeDeprecatedDefaultCategories();
       await _addMissingDefaultCategories(defaultCategories);
     }
@@ -166,8 +205,8 @@ class DataProvider with ChangeNotifier {
           sortOrder: 6),
       Category(
           id: const Uuid().v4(),
-          name: '通讯',
-          iconName: 'communication',
+          name: '话费',
+          iconName: 'phone-bill',
           colorHex: '#3B82F6',
           isExpense: true,
           sortOrder: 8),
@@ -285,11 +324,25 @@ class DataProvider with ChangeNotifier {
           sortOrder: 29),
       Category(
           id: const Uuid().v4(),
-          name: '生活缴费',
-          iconName: 'utility',
+          name: '水费',
+          iconName: 'water-outline',
           colorHex: '#3B82F6',
           isExpense: true,
           sortOrder: 31),
+      Category(
+          id: const Uuid().v4(),
+          name: '电费',
+          iconName: 'lightning-bolt-outline',
+          colorHex: '#F59E0B',
+          isExpense: true,
+          sortOrder: 33),
+      Category(
+          id: const Uuid().v4(),
+          name: '燃气费',
+          iconName: 'fire',
+          colorHex: '#EF4444',
+          isExpense: true,
+          sortOrder: 34),
 
       // === 收入 ===
       Category(
@@ -356,6 +409,31 @@ class DataProvider with ChangeNotifier {
 
     for (final category in categoriesToDelete) {
       await _categoriesBox.delete(category.id);
+    }
+  }
+
+  Future<void> _syncLegacyDefaultCategories() async {
+    for (final category in _categoriesBox.values) {
+      var changed = false;
+
+      if (_isLegacyCommunicationCategory(category)) {
+        category.name = '话费';
+        category.iconName = 'phone-bill';
+        changed = true;
+      }
+
+      if (_isDefaultDailyCategory(category) &&
+          category.groupId != CategoryGroupIds.expenseShopping) {
+        category.groupId = CategoryGroupIds.expenseShopping;
+        changed = true;
+      }
+
+      if (!changed) {
+        continue;
+      }
+
+      _ensureCategoryGroupId(category);
+      await _categoriesBox.put(category.id, category);
     }
   }
 
@@ -650,6 +728,124 @@ class DataProvider with ChangeNotifier {
     return result;
   }
 
+  Future<void> _migrateRecordCategoryGroups({
+    ValueChanged<DataSyncProgress>? onProgress,
+  }) async {
+    final records = _recordsBox.values.toList();
+    final storedVersion = _settingsBox.get(
+      recordGroupMigrationVersionKey,
+      defaultValue: 0,
+    ) as int;
+    final hasMissingGroupId = records.any(
+      (record) => record.category.groupId.isEmpty,
+    );
+
+    if (storedVersion >= currentRecordGroupMigrationVersion &&
+        !hasMissingGroupId) {
+      return;
+    }
+
+    if (records.isEmpty) {
+      await _settingsBox.put(
+        recordGroupMigrationVersionKey,
+        currentRecordGroupMigrationVersion,
+      );
+      onProgress?.call(
+        const DataSyncProgress(
+          message: '本地数据已就绪',
+          detail: '未发现需要补齐的历史记录',
+          processed: 1,
+          total: 1,
+        ),
+      );
+      return;
+    }
+
+    var processed = 0;
+    var updated = 0;
+    final total = records.length;
+
+    onProgress?.call(
+      DataSyncProgress(
+        message: '正在同步历史记录',
+        detail: '检查并补齐历史记录的大类信息',
+        processed: 0,
+        total: total,
+      ),
+    );
+
+    for (final record in records) {
+      var changed = false;
+      final normalizedLegacyCategory = _resolveLegacyRecordCategory(
+        category: record.category,
+      );
+
+      if (normalizedLegacyCategory != null &&
+          record.category.id != normalizedLegacyCategory.id) {
+        record.category = normalizedLegacyCategory;
+        changed = true;
+      }
+
+      final mappedUtilityCategory = _resolveUtilityCategoryFromRemark(
+        category: record.category,
+        remark: record.remark,
+      );
+
+      if (mappedUtilityCategory != null &&
+          record.category.id != mappedUtilityCategory.id) {
+        record.category = mappedUtilityCategory;
+        changed = true;
+      }
+
+      final currentCategory = _categoriesBox.get(record.category.id);
+      if (currentCategory != null) {
+        _ensureCategoryGroupId(currentCategory);
+        if (record.category.groupId != currentCategory.groupId) {
+          record.category.groupId = currentCategory.groupId;
+          changed = true;
+        }
+      } else {
+        final resolvedGroupId = _resolveCategoryGroupId(record.category);
+        if (record.category.groupId != resolvedGroupId) {
+          record.category.groupId = resolvedGroupId;
+          changed = true;
+        }
+      }
+
+      if (changed) {
+        await record.save();
+        updated++;
+      }
+
+      processed++;
+      if (onProgress != null &&
+          (processed == 1 || processed == total || processed % 10 == 0)) {
+        onProgress(
+          DataSyncProgress(
+            message: '正在同步历史记录',
+            detail: '已处理 $processed / $total，已补齐 $updated 条记录',
+            processed: processed,
+            total: total,
+          ),
+        );
+      }
+    }
+
+    await _settingsBox.put(
+      recordGroupMigrationVersionKey,
+      currentRecordGroupMigrationVersion,
+    );
+
+    onProgress?.call(
+      DataSyncProgress(
+        message: '本地数据已就绪',
+        detail: updated > 0 ? '已补齐 $updated 条历史记录的大类信息' : '历史记录的大类信息已是最新状态',
+        processed: total,
+        total: total,
+      ),
+    );
+  }
+
   bool _isEmptyRow(List<dynamic> row) {
     return row.every((cell) => cell.toString().trim().isEmpty);
   }
@@ -734,6 +930,73 @@ class DataProvider with ChangeNotifier {
     }
   }
 
+  Category? _resolveUtilityCategoryFromRemark({
+    required Category category,
+    required String remark,
+  }) {
+    if (!_isLegacyUtilityCategory(category)) {
+      return null;
+    }
+
+    if (remark.contains('水费')) {
+      return _findCategoryByName('水费', isExpense: true);
+    }
+
+    if (remark.contains('电费')) {
+      return _findCategoryByName('电费', isExpense: true);
+    }
+
+    if (remark.contains('燃气费') || remark.contains('燃气')) {
+      return _findCategoryByName('燃气费', isExpense: true);
+    }
+
+    return null;
+  }
+
+  Category? _resolveLegacyRecordCategory({
+    required Category category,
+  }) {
+    if (_isLegacyCommunicationCategory(category)) {
+      return _findCategoryByName('话费', isExpense: true);
+    }
+
+    return null;
+  }
+
+  bool _isLegacyUtilityCategory(Category category) {
+    if (!category.isExpense) {
+      return false;
+    }
+
+    return category.iconName == 'utility' || category.name == '生活缴费';
+  }
+
+  bool _isLegacyCommunicationCategory(Category category) {
+    if (!category.isExpense) {
+      return false;
+    }
+
+    return category.iconName == 'communication' || category.name == '通讯';
+  }
+
+  bool _isDefaultDailyCategory(Category category) {
+    if (!category.isExpense) {
+      return false;
+    }
+
+    return category.iconName == 'daily' || category.name == '日用';
+  }
+
+  Category? _findCategoryByName(String name, {required bool isExpense}) {
+    for (final category in _categoriesBox.values) {
+      if (category.isExpense == isExpense && category.name == name) {
+        return category;
+      }
+    }
+
+    return null;
+  }
+
   void _ensureCategoryGroupId(Category category) {
     if (category.groupId.isNotEmpty) {
       return;
@@ -749,7 +1012,6 @@ class DataProvider with ChangeNotifier {
       case 'expense::fruit':
       case 'expense::snacks':
         return CategoryGroupIds.expenseFood;
-      case 'expense::daily':
       case 'expense::communication':
       case 'expense::housing':
       case 'expense::office':
@@ -757,6 +1019,9 @@ class DataProvider with ChangeNotifier {
       case 'expense::express':
       case 'expense::phone-bill':
       case 'expense::utility':
+      case 'expense::water-outline':
+      case 'expense::lightning-bolt-outline':
+      case 'expense::fire':
         return CategoryGroupIds.expenseHome;
       case 'expense::transport':
       case 'expense::car':
@@ -764,6 +1029,7 @@ class DataProvider with ChangeNotifier {
       case 'expense::train':
       case 'expense::travel':
         return CategoryGroupIds.expenseTransport;
+      case 'expense::daily':
       case 'expense::shopping':
       case 'expense::clothing':
       case 'expense::digital':

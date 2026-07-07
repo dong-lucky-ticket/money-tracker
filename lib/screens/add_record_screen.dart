@@ -190,8 +190,8 @@ class _AddRecordScreenState extends State<AddRecordScreen> {
     });
   }
 
-  void _handleCategorySelected(Category category) {
-    final key = _categoryKeys.putIfAbsent(category.id, () => GlobalKey());
+  void _handleCategorySelected(Category category, String keyId) {
+    final key = _categoryKeys.putIfAbsent(keyId, () => GlobalKey());
     setState(() => _selectedCategory = category);
 
     WidgetsBinding.instance.addPostFrameCallback((_) {

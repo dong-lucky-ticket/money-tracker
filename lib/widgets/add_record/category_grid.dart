@@ -12,7 +12,7 @@ class CategoryGrid extends StatelessWidget {
   final List<Category> recentCategories;
   final Category? selectedCategory;
   final Map<String, GlobalKey> categoryKeys;
-  final ValueChanged<Category> onCategorySelected;
+  final void Function(Category category, String keyId) onCategorySelected;
   final VoidCallback onAddCategory;
 
   const CategoryGrid({
@@ -53,6 +53,7 @@ class CategoryGrid extends StatelessWidget {
           _CategoryGroupSection(
             title: '最近使用',
             categories: recentCategories,
+            keyNamespace: 'recent',
             selectedCategory: selectedCategory,
             categoryKeys: categoryKeys,
             onCategorySelected: onCategorySelected,
@@ -63,6 +64,7 @@ class CategoryGrid extends StatelessWidget {
           _CategoryGroupSection(
             title: group.name,
             categories: groupedCategories[group.id] ?? const [],
+            keyNamespace: 'group:${group.id}',
             selectedCategory: selectedCategory,
             categoryKeys: categoryKeys,
             onCategorySelected: onCategorySelected,
@@ -73,6 +75,7 @@ class CategoryGrid extends StatelessWidget {
           _CategoryGroupSection(
             title: '未分组',
             categories: ungroupedCategories,
+            keyNamespace: 'ungrouped',
             selectedCategory: selectedCategory,
             categoryKeys: categoryKeys,
             onCategorySelected: onCategorySelected,
@@ -88,13 +91,15 @@ class CategoryGrid extends StatelessWidget {
 class _CategoryGroupSection extends StatelessWidget {
   final String title;
   final List<Category> categories;
+  final String keyNamespace;
   final Category? selectedCategory;
   final Map<String, GlobalKey> categoryKeys;
-  final ValueChanged<Category> onCategorySelected;
+  final void Function(Category category, String keyId) onCategorySelected;
 
   const _CategoryGroupSection({
     required this.title,
     required this.categories,
+    required this.keyNamespace,
     required this.selectedCategory,
     required this.categoryKeys,
     required this.onCategorySelected,
@@ -131,14 +136,14 @@ class _CategoryGroupSection extends StatelessWidget {
           itemBuilder: (context, index) {
             final category = categories[index];
             final isSelected = selectedCategory?.id == category.id;
-            final key =
-                categoryKeys.putIfAbsent(category.id, () => GlobalKey());
+            final keyId = '$keyNamespace:${category.id}';
+            final key = categoryKeys.putIfAbsent(keyId, () => GlobalKey());
 
             return _CategoryGridItem(
               key: key,
               category: category,
               isSelected: isSelected,
-              onTap: () => onCategorySelected(category),
+              onTap: () => onCategorySelected(category, keyId),
             );
           },
         ),

@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:ui';
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -11,16 +12,58 @@ import 'models/category_group.dart';
 import 'models/record.dart';
 import 'providers/data_provider.dart';
 import 'screens/main_tab_screen.dart';
+import 'services/error_log_service.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  final errorLogService = ErrorLogService.instance;
 
   SystemChrome.setSystemUIOverlayStyle(const SystemUiOverlayStyle(
     statusBarColor: Colors.transparent,
     statusBarIconBrightness: Brightness.dark,
   ));
 
-  runApp(const AppBootstrap());
+  FlutterError.onError = (details) {
+    FlutterError.presentError(details);
+    unawaited(
+      errorLogService.recordFlutterError(
+        details,
+        source: 'flutter_framework',
+      ),
+    );
+  };
+
+  PlatformDispatcher.instance.onError = (error, stackTrace) {
+    unawaited(
+      errorLogService.record(
+        error,
+        stackTrace: stackTrace,
+        source: 'platform_dispatcher',
+      ),
+    );
+    return true;
+  };
+
+  ErrorWidget.builder = (details) {
+    return _GlobalErrorFallback(
+      message: details.exceptionAsString(),
+    );
+  };
+
+  runZonedGuarded(
+    () {
+      runApp(const AppBootstrap());
+    },
+    (error, stackTrace) {
+      unawaited(
+        errorLogService.record(
+          error,
+          stackTrace: stackTrace,
+          source: 'zone_guarded',
+        ),
+      );
+    },
+  );
 }
 
 class AppBootstrap extends StatefulWidget {
@@ -95,6 +138,7 @@ class _AppBootstrapState extends State<AppBootstrap> {
   }) async {
     try {
       await Hive.initFlutter();
+      await ErrorLogService.instance.init();
       if (!Hive.isAdapterRegistered(0)) {
         Hive.registerAdapter(CategoryAdapter());
       }
@@ -128,7 +172,12 @@ class _AppBootstrapState extends State<AppBootstrap> {
       setState(() {
         _dataProvider = dataProvider;
       });
-    } catch (e) {
+    } catch (e, stackTrace) {
+      await ErrorLogService.instance.record(
+        e,
+        stackTrace: stackTrace,
+        source: 'bootstrap_initialize',
+      );
       await minimumSplashFuture;
 
       if (!mounted || bootstrapToken != _bootstrapToken) {
@@ -148,6 +197,7 @@ class _AppBootstrapState extends State<AppBootstrap> {
       return MultiProvider(
         providers: [
           ChangeNotifierProvider.value(value: _dataProvider!),
+          ChangeNotifierProvider.value(value: ErrorLogService.instance),
         ],
         child: const MyApp(),
       );
@@ -637,6 +687,85 @@ class _SplashLoadingDotsState extends State<_SplashLoadingDots>
             }),
           );
         },
+      ),
+    );
+  }
+}
+
+class _GlobalErrorFallback extends StatelessWidget {
+  final String message;
+
+  const _GlobalErrorFallback({
+    required this.message,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: const Color(0xFFF7F9FC),
+      child: Center(
+        child: Padding(
+          padding: const EdgeInsets.all(24),
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 420),
+            child: Container(
+              padding: const EdgeInsets.all(20),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(20),
+                border: Border.all(color: const Color(0xFFE5E7EB)),
+                boxShadow: const [
+                  BoxShadow(
+                    color: Color(0x110F172A),
+                    blurRadius: 24,
+                    offset: Offset(0, 16),
+                  ),
+                ],
+              ),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const Icon(
+                    Icons.error_outline_rounded,
+                    color: Color(0xFFDC2626),
+                    size: 34,
+                  ),
+                  const SizedBox(height: 14),
+                  const Text(
+                    '页面暂时无法显示',
+                    style: TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.w700,
+                      color: Color(0xFF111827),
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    '应用已尝试记录错误信息，你可以返回上一页后重试。',
+                    textAlign: TextAlign.center,
+                    style: TextStyle(
+                      fontSize: 13,
+                      color: const Color(0xFF4B5563).withOpacity(0.95),
+                      height: 1.5,
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  Text(
+                    message,
+                    maxLines: 4,
+                    overflow: TextOverflow.ellipsis,
+                    textAlign: TextAlign.center,
+                    style: const TextStyle(
+                      fontSize: 12,
+                      color: Color(0xFF9CA3AF),
+                      height: 1.4,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
       ),
     );
   }

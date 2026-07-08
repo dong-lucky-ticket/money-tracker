@@ -3,9 +3,11 @@ import 'package:flutter/material.dart';
 import 'package:hive/hive.dart';
 import 'package:intl/intl.dart';
 import 'package:uuid/uuid.dart';
+
 import '../models/category.dart';
 import '../models/category_group.dart';
 import '../models/record.dart';
+import '../services/error_log_service.dart';
 
 class CsvImportResult {
   final int importedCount;
@@ -80,6 +82,20 @@ class DataProvider with ChangeNotifier {
 
   bool _isDarkTheme = false;
   bool get isDarkTheme => _isDarkTheme;
+
+  Future<void> _recordDataError(
+    Object error, {
+    StackTrace? stackTrace,
+    required String source,
+    String? scene,
+  }) {
+    return ErrorLogService.instance.record(
+      error,
+      stackTrace: stackTrace,
+      source: source,
+      scene: scene,
+    );
+  }
 
   Future<void> init({
     ValueChanged<DataSyncProgress>? onProgress,
@@ -475,15 +491,35 @@ class DataProvider with ChangeNotifier {
 
   // --- Record Methods ---
   Future<void> addRecord(Record record) async {
-    final now = DateTime.now();
-    record.updatedAt = now;
-    await _recordsBox.put(record.id, record);
-    notifyListeners();
+    try {
+      final now = DateTime.now();
+      record.updatedAt = now;
+      await _recordsBox.put(record.id, record);
+      notifyListeners();
+    } catch (e, stackTrace) {
+      await _recordDataError(
+        e,
+        stackTrace: stackTrace,
+        source: 'data_add_record',
+        scene: '新增/保存流水: ${record.id}',
+      );
+      rethrow;
+    }
   }
 
   Future<void> deleteRecord(String id) async {
-    await _recordsBox.delete(id);
-    notifyListeners();
+    try {
+      await _recordsBox.delete(id);
+      notifyListeners();
+    } catch (e, stackTrace) {
+      await _recordDataError(
+        e,
+        stackTrace: stackTrace,
+        source: 'data_delete_record',
+        scene: '删除流水: $id',
+      );
+      rethrow;
+    }
   }
 
   void refreshUI() {
@@ -492,52 +528,112 @@ class DataProvider with ChangeNotifier {
 
   // --- Category Methods ---
   Future<void> addCategory(Category category) async {
-    _ensureCategoryGroupId(category);
-    await _categoriesBox.put(category.id, category);
-    notifyListeners();
+    try {
+      _ensureCategoryGroupId(category);
+      await _categoriesBox.put(category.id, category);
+      notifyListeners();
+    } catch (e, stackTrace) {
+      await _recordDataError(
+        e,
+        stackTrace: stackTrace,
+        source: 'data_add_category',
+        scene: '新增分类: ${category.name}',
+      );
+      rethrow;
+    }
   }
 
   // --- Category Group Methods ---
   Future<void> addCategoryGroup(CategoryGroup group) async {
-    if (group.sortOrder < 0) {
-      group.sortOrder = _nextCategoryGroupSortOrder(group.isExpense);
+    try {
+      if (group.sortOrder < 0) {
+        group.sortOrder = _nextCategoryGroupSortOrder(group.isExpense);
+      }
+      await _categoryGroupsBox.put(group.id, group);
+      notifyListeners();
+    } catch (e, stackTrace) {
+      await _recordDataError(
+        e,
+        stackTrace: stackTrace,
+        source: 'data_add_category_group',
+        scene: '新增大类: ${group.name}',
+      );
+      rethrow;
     }
-    await _categoryGroupsBox.put(group.id, group);
-    notifyListeners();
   }
 
   Future<void> updateCategoryGroup(CategoryGroup group) async {
-    await _categoryGroupsBox.put(group.id, group);
-    notifyListeners();
+    try {
+      await _categoryGroupsBox.put(group.id, group);
+      notifyListeners();
+    } catch (e, stackTrace) {
+      await _recordDataError(
+        e,
+        stackTrace: stackTrace,
+        source: 'data_update_category_group',
+        scene: '更新大类: ${group.name}',
+      );
+      rethrow;
+    }
   }
 
   Future<void> reorderCategoryGroups(List<CategoryGroup> newOrderList) async {
-    for (int i = 0; i < newOrderList.length; i++) {
-      newOrderList[i].sortOrder = i;
-    }
-    notifyListeners();
+    try {
+      for (int i = 0; i < newOrderList.length; i++) {
+        newOrderList[i].sortOrder = i;
+      }
+      notifyListeners();
 
-    for (final group in newOrderList) {
-      await _categoryGroupsBox.put(group.id, group);
+      for (final group in newOrderList) {
+        await _categoryGroupsBox.put(group.id, group);
+      }
+    } catch (e, stackTrace) {
+      await _recordDataError(
+        e,
+        stackTrace: stackTrace,
+        source: 'data_reorder_category_groups',
+        scene: '重排大类顺序',
+      );
+      rethrow;
     }
   }
 
   Future<void> deleteCategory(String id) async {
-    await _categoriesBox.delete(id);
-    notifyListeners();
+    try {
+      await _categoriesBox.delete(id);
+      notifyListeners();
+    } catch (e, stackTrace) {
+      await _recordDataError(
+        e,
+        stackTrace: stackTrace,
+        source: 'data_delete_category',
+        scene: '删除分类: $id',
+      );
+      rethrow;
+    }
   }
 
   Future<void> reorderCategories(List<Category> newOrderList) async {
-    // 1. 立即在内存中更新排序，并同步通知UI刷新
-    // 这样 ReorderableListView 能够立刻获取到最新顺序，避免拖拽松手后“回弹再动画”的冗余表现
-    for (int i = 0; i < newOrderList.length; i++) {
-      newOrderList[i].sortOrder = i;
-    }
-    notifyListeners();
+    try {
+      // 1. 立即在内存中更新排序，并同步通知UI刷新
+      // 这样 ReorderableListView 能够立刻获取到最新顺序，避免拖拽松手后“回弹再动画”的冗余表现
+      for (int i = 0; i < newOrderList.length; i++) {
+        newOrderList[i].sortOrder = i;
+      }
+      notifyListeners();
 
-    // 2. 随后在后台异步持久化到本地存储
-    for (var cat in newOrderList) {
-      await _categoriesBox.put(cat.id, cat);
+      // 2. 随后在后台异步持久化到本地存储
+      for (var cat in newOrderList) {
+        await _categoriesBox.put(cat.id, cat);
+      }
+    } catch (e, stackTrace) {
+      await _recordDataError(
+        e,
+        stackTrace: stackTrace,
+        source: 'data_reorder_categories',
+        scene: '重排分类顺序',
+      );
+      rethrow;
     }
   }
 
@@ -546,138 +642,179 @@ class DataProvider with ChangeNotifier {
     required bool isExpense,
     required List<Category> newOrderList,
   }) async {
-    for (int i = 0; i < newOrderList.length; i++) {
-      newOrderList[i].sortOrder = i;
-    }
-    notifyListeners();
+    try {
+      for (int i = 0; i < newOrderList.length; i++) {
+        newOrderList[i].sortOrder = i;
+      }
+      notifyListeners();
 
-    for (final category in newOrderList) {
-      await _categoriesBox.put(category.id, category);
+      for (final category in newOrderList) {
+        await _categoriesBox.put(category.id, category);
+      }
+    } catch (e, stackTrace) {
+      await _recordDataError(
+        e,
+        stackTrace: stackTrace,
+        source: 'data_reorder_categories_in_group',
+        scene: '组内重排分类: $groupId / ${isExpense ? '支出' : '收入'}',
+      );
+      rethrow;
     }
   }
 
   Future<void> clearAllData() async {
-    await _recordsBox.clear();
-    notifyListeners();
+    try {
+      await _recordsBox.clear();
+      notifyListeners();
+    } catch (e, stackTrace) {
+      await _recordDataError(
+        e,
+        stackTrace: stackTrace,
+        source: 'data_clear_all_records',
+        scene: '清空所有账单数据',
+      );
+      rethrow;
+    }
   }
 
   Future<CsvImportResult> importRecordsFromCsv(String csvContent) async {
-    final sanitizedContent = csvContent.trim();
-    if (sanitizedContent.isEmpty) {
-      throw const FormatException('CSV 内容为空');
-    }
-
-    final rows = const CsvToListConverter(shouldParseNumbers: false)
-        .convert(sanitizedContent);
-
-    if (rows.isEmpty) {
-      throw const FormatException('CSV 内容为空');
-    }
-
-    final categoryCache = <String, Category>{
-      for (final category in _categoriesBox.values)
-        _categoryCacheKey(category.name, category.isExpense): category,
-    };
-
-    final recordsToImport = <String, Record>{};
-    var importedCount = 0;
-    var updatedCount = 0;
-    var skippedCount = 0;
-    var createdCategoryCount = 0;
-
-    for (final row in rows) {
-      if (_isEmptyRow(row)) {
-        continue;
+    try {
+      final sanitizedContent = csvContent.trim();
+      if (sanitizedContent.isEmpty) {
+        throw const FormatException('CSV 内容为空');
       }
 
-      if (_isHeaderRow(row)) {
-        continue;
+      final rows = const CsvToListConverter(shouldParseNumbers: false)
+          .convert(sanitizedContent);
+
+      if (rows.isEmpty) {
+        throw const FormatException('CSV 内容为空');
       }
 
-      if (row.length < 6) {
-        skippedCount++;
-        continue;
-      }
+      final categoryCache = <String, Category>{
+        for (final category in _categoriesBox.values)
+          _categoryCacheKey(category.name, category.isExpense): category,
+      };
 
-      try {
-        final id = _cellValue(row, 0).trim();
-        final typeLabel = _cellValue(row, 1).trim();
-        final amountText = _cellValue(row, 2).trim().replaceAll(',', '');
-        final categoryName = _cellValue(row, 3).trim();
-        final remark = _cellValue(row, 4);
-        final dateText = _cellValue(row, 5).trim();
+      final recordsToImport = <String, Record>{};
+      var importedCount = 0;
+      var updatedCount = 0;
+      var skippedCount = 0;
+      var createdCategoryCount = 0;
 
-        final isExpense = _parseImportType(typeLabel);
-        final amount = double.tryParse(amountText);
-        if (amount == null || amount <= 0) {
-          throw const FormatException('金额无效');
+      for (final row in rows) {
+        if (_isEmptyRow(row)) {
+          continue;
         }
 
-        final normalizedCategoryName =
-            categoryName.isEmpty ? (isExpense ? '其他支出' : '其他收入') : categoryName;
-        final cacheKey = _categoryCacheKey(normalizedCategoryName, isExpense);
-        var category = categoryCache[cacheKey];
+        if (_isHeaderRow(row)) {
+          continue;
+        }
 
-        if (category == null) {
-          category = Category(
-            id: const Uuid().v4(),
-            name: normalizedCategoryName,
-            iconName: 'other',
-            colorHex: isExpense ? '#64748B' : '#10B981',
+        if (row.length < 6) {
+          skippedCount++;
+          continue;
+        }
+
+        try {
+          final id = _cellValue(row, 0).trim();
+          final typeLabel = _cellValue(row, 1).trim();
+          final amountText = _cellValue(row, 2).trim().replaceAll(',', '');
+          final categoryName = _cellValue(row, 3).trim();
+          final remark = _cellValue(row, 4);
+          final dateText = _cellValue(row, 5).trim();
+
+          final isExpense = _parseImportType(typeLabel);
+          final amount = double.tryParse(amountText);
+          if (amount == null || amount <= 0) {
+            throw const FormatException('金额无效');
+          }
+
+          final normalizedCategoryName = categoryName.isEmpty
+              ? (isExpense ? '其他支出' : '其他收入')
+              : categoryName;
+          final cacheKey = _categoryCacheKey(normalizedCategoryName, isExpense);
+          var category = categoryCache[cacheKey];
+
+          if (category == null) {
+            category = Category(
+              id: const Uuid().v4(),
+              name: normalizedCategoryName,
+              iconName: 'other',
+              colorHex: isExpense ? '#64748B' : '#10B981',
+              isExpense: isExpense,
+              sortOrder: _nextCategorySortOrder(isExpense),
+            );
+            _ensureCategoryGroupId(category);
+            await _categoriesBox.put(category.id, category);
+            categoryCache[cacheKey] = category;
+            createdCategoryCount++;
+          }
+
+          final recordId = id.isEmpty ? const Uuid().v4() : id;
+          final record = Record(
+            id: recordId,
+            amount: amount,
+            category: category,
+            remark: remark,
+            date: _parseImportDate(dateText),
             isExpense: isExpense,
-            sortOrder: _nextCategorySortOrder(isExpense),
+            createdAt: DateTime.now(),
+            updatedAt: DateTime.now(),
           );
-          _ensureCategoryGroupId(category);
-          await _categoriesBox.put(category.id, category);
-          categoryCache[cacheKey] = category;
-          createdCategoryCount++;
+
+          if (recordsToImport.containsKey(recordId) ||
+              _recordsBox.containsKey(recordId)) {
+            updatedCount++;
+          } else {
+            importedCount++;
+          }
+
+          recordsToImport[recordId] = record;
+        } catch (_) {
+          skippedCount++;
         }
-
-        final recordId = id.isEmpty ? const Uuid().v4() : id;
-        final record = Record(
-          id: recordId,
-          amount: amount,
-          category: category,
-          remark: remark,
-          date: _parseImportDate(dateText),
-          isExpense: isExpense,
-          createdAt: DateTime.now(),
-          updatedAt: DateTime.now(),
-        );
-
-        if (recordsToImport.containsKey(recordId) ||
-            _recordsBox.containsKey(recordId)) {
-          updatedCount++;
-        } else {
-          importedCount++;
-        }
-
-        recordsToImport[recordId] = record;
-      } catch (_) {
-        skippedCount++;
       }
+
+      if (recordsToImport.isEmpty) {
+        throw const FormatException('未识别到可导入的记录，请确认 CSV 格式与导出一致');
+      }
+
+      await _recordsBox.putAll(recordsToImport);
+      notifyListeners();
+
+      return CsvImportResult(
+        importedCount: importedCount,
+        updatedCount: updatedCount,
+        skippedCount: skippedCount,
+        createdCategoryCount: createdCategoryCount,
+      );
+    } catch (e, stackTrace) {
+      await _recordDataError(
+        e,
+        stackTrace: stackTrace,
+        source: 'data_import_records_csv',
+        scene: 'DataProvider 导入 CSV',
+      );
+      rethrow;
     }
-
-    if (recordsToImport.isEmpty) {
-      throw const FormatException('未识别到可导入的记录，请确认 CSV 格式与导出一致');
-    }
-
-    await _recordsBox.putAll(recordsToImport);
-    notifyListeners();
-
-    return CsvImportResult(
-      importedCount: importedCount,
-      updatedCount: updatedCount,
-      skippedCount: skippedCount,
-      createdCategoryCount: createdCategoryCount,
-    );
   }
 
   // --- Settings ---
-  void toggleTheme() {
-    _isDarkTheme = !_isDarkTheme;
-    _settingsBox.put('isDarkTheme', _isDarkTheme);
-    notifyListeners();
+  Future<void> toggleTheme() async {
+    try {
+      _isDarkTheme = !_isDarkTheme;
+      await _settingsBox.put('isDarkTheme', _isDarkTheme);
+      notifyListeners();
+    } catch (e, stackTrace) {
+      await _recordDataError(
+        e,
+        stackTrace: stackTrace,
+        source: 'data_toggle_theme',
+        scene: '切换主题模式',
+      );
+      rethrow;
+    }
   }
 
   // --- Stats ---

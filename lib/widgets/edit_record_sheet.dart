@@ -47,7 +47,7 @@ class _EditRecordSheetState extends State<EditRecordSheet> {
     super.dispose();
   }
 
-  void _save() {
+  Future<void> _save() async {
     final amount = double.tryParse(_amountController.text) ?? 0.0;
     if (amount <= 0) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -56,15 +56,17 @@ class _EditRecordSheetState extends State<EditRecordSheet> {
       return;
     }
 
-    widget.record.amount = amount;
-    widget.record.category = _selectedCategory;
-    widget.record.remark = _remarkController.text;
-    widget.record.date = _selectedDate;
-    widget.record.updatedAt = DateTime.now();
-    widget.record.save();
-    widget.provider.refreshUI();
+    await widget.provider.updateRecord(
+      widget.record,
+      amount: amount,
+      category: _selectedCategory,
+      remark: _remarkController.text,
+      date: _selectedDate,
+    );
 
-    Navigator.pop(context);
+    if (mounted) {
+      Navigator.pop(context);
+    }
   }
 
   String _groupNameFor(Category category) {

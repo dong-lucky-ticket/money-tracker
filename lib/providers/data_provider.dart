@@ -491,6 +491,48 @@ class DataProvider with ChangeNotifier {
 
   // --- Record Methods ---
   Future<void> addRecord(Record record) async {
+    await _saveRecord(
+      record,
+      source: 'data_add_record',
+      scene: '新增/保存流水: ${record.id}',
+    );
+  }
+
+  Future<void> updateRecord(
+    Record record, {
+    required double amount,
+    required Category category,
+    required String remark,
+    required DateTime date,
+  }) async {
+    record
+      ..amount = amount
+      ..category = category
+      ..remark = remark
+      ..date = date;
+
+    await _saveRecord(
+      record,
+      source: 'data_update_record',
+      scene: '编辑流水: ${record.id}',
+    );
+  }
+
+  Future<void> toggleRecordVoided(Record record) async {
+    record.isVoided = !record.isVoided;
+
+    await _saveRecord(
+      record,
+      source: 'data_toggle_record_voided',
+      scene: '切换流水作废状态: ${record.id}',
+    );
+  }
+
+  Future<void> _saveRecord(
+    Record record, {
+    required String source,
+    required String scene,
+  }) async {
     try {
       final now = DateTime.now();
       record.updatedAt = now;
@@ -500,8 +542,8 @@ class DataProvider with ChangeNotifier {
       await _recordDataError(
         e,
         stackTrace: stackTrace,
-        source: 'data_add_record',
-        scene: '新增/保存流水: ${record.id}',
+        source: source,
+        scene: scene,
       );
       rethrow;
     }
@@ -520,10 +562,6 @@ class DataProvider with ChangeNotifier {
       );
       rethrow;
     }
-  }
-
-  void refreshUI() {
-    notifyListeners();
   }
 
   // --- Category Methods ---

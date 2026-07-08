@@ -3,10 +3,11 @@ import 'package:intl/intl.dart';
 import 'package:material_design_icons_flutter/material_design_icons_flutter.dart';
 import 'package:provider/provider.dart';
 
-import '../providers/data_provider.dart';
 import '../models/record.dart';
+import '../providers/data_provider.dart';
 import '../screens/search_screen.dart';
 import '../theme/app_colors.dart';
+import '../utils/record_timeline.dart';
 import '../widgets/edit_record_sheet.dart';
 import '../widgets/common/empty_state.dart';
 import '../widgets/record/record_list_item.dart';
@@ -76,14 +77,6 @@ class _HomeScreenState extends State<HomeScreen> {
   void dispose() {
     _provider?.removeListener(_handleProviderChanged);
     super.dispose();
-  }
-
-  int _compareRecordTimeline(Record a, Record b) {
-    final updatedCompare = b.updatedAt.compareTo(a.updatedAt);
-    if (updatedCompare != 0) {
-      return updatedCompare;
-    }
-    return b.createdAt.compareTo(a.createdAt);
   }
 
   void _pickMonth() {
@@ -214,6 +207,7 @@ class _HomeScreenState extends State<HomeScreen> {
                   .toList();
               final validRecords =
                   records.where((record) => !record.isVoided).toList();
+              final sections = buildRecordTimelineSections(records);
 
               final double monthlyExpense = validRecords
                   .where((r) => r.isExpense)
@@ -221,21 +215,6 @@ class _HomeScreenState extends State<HomeScreen> {
               final double monthlyIncome = validRecords
                   .where((r) => !r.isExpense)
                   .fold(0.0, (s, r) => s + r.amount);
-
-              // Group records by date (yyyy-MM-dd)
-              final Map<String, List<Record>> groupedRecords = {};
-              for (var r in records) {
-                final dateStr = DateFormat('yyyy-MM-dd').format(r.date);
-                if (!groupedRecords.containsKey(dateStr)) {
-                  groupedRecords[dateStr] = [];
-                }
-                groupedRecords[dateStr]!.add(r);
-              }
-              for (final grouped in groupedRecords.values) {
-                grouped.sort(_compareRecordTimeline);
-              }
-              final groupedEntries = groupedRecords.entries.toList()
-                ..sort((a, b) => b.key.compareTo(a.key));
 
               return ListView(
                 padding: const EdgeInsets.fromLTRB(20, 16, 20, 100),
@@ -247,8 +226,9 @@ class _HomeScreenState extends State<HomeScreen> {
                   if (records.isEmpty)
                     _buildEmptyState()
                   else
-                    ...groupedEntries.map(
-                        (e) => _buildDailyRecordList(e.key, e.value, provider)),
+                    ...sections.map(
+                      (section) => _buildDailyRecordList(section, provider),
+                    ),
                 ],
               );
             }),
@@ -347,30 +327,9 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Widget _buildDailyRecordList(
-      String dateStr, List<Record> records, DataProvider provider) {
-    final date = DateTime.parse(dateStr);
-    final today = DateTime.now();
-    final isToday = date.year == today.year &&
-        date.month == today.month &&
-        date.day == today.day;
-    final isYesterday = date.year == today.year &&
-        date.month == today.month &&
-        date.day == today.day - 1;
-
-    String dateDisplay = DateFormat('M月d日').format(date);
-    if (isToday) {
-      dateDisplay += ' 今天';
-    } else if (isYesterday) {
-      dateDisplay += ' 昨天';
-    }
-
-    double dayIncome = records
-        .where((r) => !r.isExpense && !r.isVoided)
-        .fold(0.0, (s, r) => s + r.amount);
-    double dayExpense = records
-        .where((r) => r.isExpense && !r.isVoided)
-        .fold(0.0, (s, r) => s + r.amount);
-
+    RecordTimelineSection section,
+    DataProvider provider,
+  ) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -382,14 +341,14 @@ class _HomeScreenState extends State<HomeScreen> {
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Text(
-                dateDisplay,
+                section.label(),
                 style: const TextStyle(
                     fontWeight: FontWeight.bold,
                     fontSize: 14,
                     color: Color(0xFF6B7280)),
               ),
               Text(
-                '支出 ${dayExpense.toStringAsFixed(2)}  收入 ${dayIncome.toStringAsFixed(2)}',
+                '支出 ${section.expense.toStringAsFixed(2)}  收入 ${section.income.toStringAsFixed(2)}',
                 style: const TextStyle(color: Color(0xFF9CA3AF), fontSize: 12),
               ),
             ],
@@ -397,7 +356,7 @@ class _HomeScreenState extends State<HomeScreen> {
         ),
 
         // 记录列表
-        ...records.map((r) => _buildRecordItem(r, provider)),
+        ...section.records.map((r) => _buildRecordItem(r, provider)),
       ],
     );
   }
@@ -443,10 +402,7 @@ class _HomeScreenState extends State<HomeScreen> {
       },
       onDelete: () => provider.deleteRecord(record.id),
       onToggleVoided: () {
-        record.isVoided = !record.isVoided;
-        record.updatedAt = DateTime.now();
-        record.save();
-        provider.refreshUI();
+        provider.toggleRecordVoided(record);
       },
     );
   }

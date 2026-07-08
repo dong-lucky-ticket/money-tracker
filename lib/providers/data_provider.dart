@@ -1,3 +1,5 @@
+import 'dart:collection';
+
 import 'package:csv/csv.dart';
 import 'package:flutter/material.dart';
 import 'package:hive/hive.dart';
@@ -73,12 +75,14 @@ class DataProvider with ChangeNotifier {
   late Box<CategoryGroup> _categoryGroupsBox;
   late Box _settingsBox;
 
-  List<Record> get records =>
-      _recordsBox.values.toList()..sort((a, b) => b.date.compareTo(a.date));
-  List<CategoryGroup> get categoryGroups => _categoryGroupsBox.values.toList()
-    ..sort((a, b) => a.sortOrder.compareTo(b.sortOrder));
-  List<Category> get categories => _categoriesBox.values.toList()
-    ..sort((a, b) => a.sortOrder.compareTo(b.sortOrder));
+  List<Record>? _recordsCache;
+  List<Category>? _categoriesCache;
+  List<CategoryGroup>? _categoryGroupsCache;
+
+  List<Record> get records => _recordsCache ??= _buildSortedRecords();
+  List<CategoryGroup> get categoryGroups =>
+      _categoryGroupsCache ??= _buildSortedCategoryGroups();
+  List<Category> get categories => _categoriesCache ??= _buildSortedCategories();
 
   bool _isDarkTheme = false;
   bool get isDarkTheme => _isDarkTheme;
@@ -100,6 +104,7 @@ class DataProvider with ChangeNotifier {
   Future<void> init({
     ValueChanged<DataSyncProgress>? onProgress,
   }) async {
+    _invalidateAllCaches();
     onProgress?.call(
       const DataSyncProgress(
         message: '正在准备本地数据',
@@ -119,6 +124,7 @@ class DataProvider with ChangeNotifier {
     await _syncDefaultCategoryGroups();
     await _syncDefaultCategories();
     await _migrateRecordCategoryGroups(onProgress: onProgress);
+    _invalidateAllCaches();
   }
 
   Future<void> _syncDefaultCategoryGroups() async {
@@ -537,7 +543,7 @@ class DataProvider with ChangeNotifier {
       final now = DateTime.now();
       record.updatedAt = now;
       await _recordsBox.put(record.id, record);
-      notifyListeners();
+      _notifyRecordsChanged();
     } catch (e, stackTrace) {
       await _recordDataError(
         e,
@@ -552,7 +558,7 @@ class DataProvider with ChangeNotifier {
   Future<void> deleteRecord(String id) async {
     try {
       await _recordsBox.delete(id);
-      notifyListeners();
+      _notifyRecordsChanged();
     } catch (e, stackTrace) {
       await _recordDataError(
         e,
@@ -569,7 +575,7 @@ class DataProvider with ChangeNotifier {
     try {
       _ensureCategoryGroupId(category);
       await _categoriesBox.put(category.id, category);
-      notifyListeners();
+      _notifyCategoriesChanged();
     } catch (e, stackTrace) {
       await _recordDataError(
         e,
@@ -588,7 +594,7 @@ class DataProvider with ChangeNotifier {
         group.sortOrder = _nextCategoryGroupSortOrder(group.isExpense);
       }
       await _categoryGroupsBox.put(group.id, group);
-      notifyListeners();
+      _notifyCategoryGroupsChanged();
     } catch (e, stackTrace) {
       await _recordDataError(
         e,
@@ -603,7 +609,7 @@ class DataProvider with ChangeNotifier {
   Future<void> updateCategoryGroup(CategoryGroup group) async {
     try {
       await _categoryGroupsBox.put(group.id, group);
-      notifyListeners();
+      _notifyCategoryGroupsChanged();
     } catch (e, stackTrace) {
       await _recordDataError(
         e,
@@ -620,7 +626,7 @@ class DataProvider with ChangeNotifier {
       for (int i = 0; i < newOrderList.length; i++) {
         newOrderList[i].sortOrder = i;
       }
-      notifyListeners();
+      _notifyCategoryGroupsChanged();
 
       for (final group in newOrderList) {
         await _categoryGroupsBox.put(group.id, group);
@@ -639,7 +645,7 @@ class DataProvider with ChangeNotifier {
   Future<void> deleteCategory(String id) async {
     try {
       await _categoriesBox.delete(id);
-      notifyListeners();
+      _notifyCategoriesChanged();
     } catch (e, stackTrace) {
       await _recordDataError(
         e,
@@ -658,7 +664,7 @@ class DataProvider with ChangeNotifier {
       for (int i = 0; i < newOrderList.length; i++) {
         newOrderList[i].sortOrder = i;
       }
-      notifyListeners();
+      _notifyCategoriesChanged();
 
       // 2. 随后在后台异步持久化到本地存储
       for (var cat in newOrderList) {
@@ -684,7 +690,7 @@ class DataProvider with ChangeNotifier {
       for (int i = 0; i < newOrderList.length; i++) {
         newOrderList[i].sortOrder = i;
       }
-      notifyListeners();
+      _notifyCategoriesChanged();
 
       for (final category in newOrderList) {
         await _categoriesBox.put(category.id, category);
@@ -703,7 +709,7 @@ class DataProvider with ChangeNotifier {
   Future<void> clearAllData() async {
     try {
       await _recordsBox.clear();
-      notifyListeners();
+      _notifyRecordsChanged();
     } catch (e, stackTrace) {
       await _recordDataError(
         e,
@@ -819,7 +825,8 @@ class DataProvider with ChangeNotifier {
       }
 
       await _recordsBox.putAll(recordsToImport);
-      notifyListeners();
+      _invalidateCategoriesCache();
+      _notifyRecordsChanged();
 
       return CsvImportResult(
         importedCount: importedCount,
@@ -891,6 +898,41 @@ class DataProvider with ChangeNotifier {
         .map((e) => e.category.id)
         .toSet();
     return usedCategoryIds.length;
+  }
+
+  List<Record> recordsInMonth(DateTime month) {
+    return records.where((record) {
+      return record.date.year == month.year && record.date.month == month.month;
+    }).toList(growable: false);
+  }
+
+  int recordCountInMonth(
+    DateTime month, {
+    bool includeVoided = true,
+  }) {
+    var count = 0;
+    for (final record in records) {
+      if (record.date.year != month.year || record.date.month != month.month) {
+        continue;
+      }
+      if (!includeVoided && record.isVoided) {
+        continue;
+      }
+      count++;
+    }
+    return count;
+  }
+
+  List<Category> categoriesForType(bool isExpense) {
+    return categories
+        .where((category) => category.isExpense == isExpense)
+        .toList(growable: false);
+  }
+
+  List<CategoryGroup> categoryGroupsForType(bool isExpense) {
+    return categoryGroups
+        .where((group) => group.isExpense == isExpense)
+        .toList(growable: false);
   }
 
   List<Category> recentCategories({
@@ -1319,5 +1361,58 @@ class DataProvider with ChangeNotifier {
       }
     }
     return maxSortOrder + 1;
+  }
+
+  List<Record> _buildSortedRecords() {
+    return UnmodifiableListView(
+      _recordsBox.values.toList()..sort((a, b) => b.date.compareTo(a.date)),
+    );
+  }
+
+  List<Category> _buildSortedCategories() {
+    return UnmodifiableListView(
+      _categoriesBox.values.toList()
+        ..sort((a, b) => a.sortOrder.compareTo(b.sortOrder)),
+    );
+  }
+
+  List<CategoryGroup> _buildSortedCategoryGroups() {
+    return UnmodifiableListView(
+      _categoryGroupsBox.values.toList()
+        ..sort((a, b) => a.sortOrder.compareTo(b.sortOrder)),
+    );
+  }
+
+  void _invalidateAllCaches() {
+    _invalidateRecordsCache();
+    _invalidateCategoriesCache();
+    _invalidateCategoryGroupsCache();
+  }
+
+  void _invalidateRecordsCache() {
+    _recordsCache = null;
+  }
+
+  void _invalidateCategoriesCache() {
+    _categoriesCache = null;
+  }
+
+  void _invalidateCategoryGroupsCache() {
+    _categoryGroupsCache = null;
+  }
+
+  void _notifyRecordsChanged() {
+    _invalidateRecordsCache();
+    notifyListeners();
+  }
+
+  void _notifyCategoriesChanged() {
+    _invalidateCategoriesCache();
+    notifyListeners();
+  }
+
+  void _notifyCategoryGroupsChanged() {
+    _invalidateCategoryGroupsCache();
+    notifyListeners();
   }
 }

@@ -66,8 +66,7 @@ class _ReportScreenState extends State<ReportScreen> {
       }
 
       return true;
-    }).toList()
-      ..sort((a, b) => a.sortOrder.compareTo(b.sortOrder));
+    }).toList();
   }
 
   ReportFilter _normalizeFilter(

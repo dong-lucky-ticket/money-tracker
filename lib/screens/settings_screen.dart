@@ -640,13 +640,11 @@ class SettingsScreen extends StatelessWidget {
                 const SettingsProfileCard(),
                 Consumer<DataProvider>(builder: (context, provider, child) {
                   final now = DateTime.now();
-                  final thisMonthCount = provider.records
-                      .where((r) =>
-                          r.date.year == now.year && r.date.month == now.month)
-                      .length;
+                  final records = provider.records;
+                  final thisMonthCount = provider.recordCountInMonth(now);
 
                   return SettingsStatsBar(
-                    totalRecords: provider.records.length.toString(),
+                    totalRecords: records.length.toString(),
                     monthlyRecords: thisMonthCount.toString(),
                     activeCategories: provider.activeCategoryCount.toString(),
                   );

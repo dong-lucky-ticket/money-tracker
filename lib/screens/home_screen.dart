@@ -200,11 +200,7 @@ class _HomeScreenState extends State<HomeScreen> {
           // 主内容滚动区
           Expanded(
             child: Consumer<DataProvider>(builder: (context, provider, child) {
-              final records = provider.records
-                  .where((r) =>
-                      r.date.year == _selectedMonth.year &&
-                      r.date.month == _selectedMonth.month)
-                  .toList();
+              final records = provider.recordsInMonth(_selectedMonth);
               final validRecords =
                   records.where((record) => !record.isVoided).toList();
               final sections = buildRecordTimelineSections(records);

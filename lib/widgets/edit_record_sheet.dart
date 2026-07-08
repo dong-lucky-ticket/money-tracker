@@ -83,12 +83,8 @@ class _EditRecordSheetState extends State<EditRecordSheet> {
 
   Future<void> _showCategoryPicker() async {
     FocusScope.of(context).unfocus();
-    final categories = widget.provider.categories
-        .where((category) => category.isExpense == widget.record.isExpense)
-        .toList();
-    final groups = widget.provider.categoryGroups
-        .where((group) => group.isExpense == widget.record.isExpense)
-        .toList();
+    final categories = widget.provider.categoriesForType(widget.record.isExpense);
+    final groups = widget.provider.categoryGroupsForType(widget.record.isExpense);
     final recentCategories = widget.provider.recentCategories(
       isExpense: widget.record.isExpense,
     );

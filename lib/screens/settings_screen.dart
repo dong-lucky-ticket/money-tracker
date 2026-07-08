@@ -11,9 +11,11 @@ import 'package:path_provider/path_provider.dart';
 import 'package:provider/provider.dart';
 import 'package:share_plus/share_plus.dart';
 
+import '../services/app_share_service.dart';
 import '../providers/data_provider.dart';
 import '../services/error_log_service.dart';
 import '../theme/app_colors.dart';
+import '../widgets/common/app_toast.dart';
 import 'categories_screen.dart';
 import '../widgets/settings/settings_profile_card.dart';
 import '../widgets/settings/settings_section.dart';
@@ -111,8 +113,7 @@ class SettingsScreen extends StatelessWidget {
         scene: '导入 CSV 数据',
       );
       if (context.mounted) {
-        ScaffoldMessenger.of(context)
-            .showSnackBar(SnackBar(content: Text('导入失败：${e.message}')));
+        AppToast.showError(context, '导入失败：${e.message}');
       }
     } catch (e, stackTrace) {
       await ErrorLogService.instance.record(
@@ -122,8 +123,7 @@ class SettingsScreen extends StatelessWidget {
         scene: '导入 CSV 数据',
       );
       if (context.mounted) {
-        ScaffoldMessenger.of(context)
-            .showSnackBar(SnackBar(content: Text('导入失败：$e')));
+        AppToast.showError(context, '导入失败：$e');
       }
     }
   }
@@ -154,7 +154,8 @@ class SettingsScreen extends StatelessWidget {
 
       if (context.mounted) {
         final box = context.findRenderObject() as RenderBox?;
-        await Share.shareXFiles(
+        await AppShareService.shareXFiles(
+          context,
           [XFile(path)],
           subject: '账单数据导出',
           sharePositionOrigin: box!.localToGlobal(Offset.zero) & box.size,
@@ -168,8 +169,7 @@ class SettingsScreen extends StatelessWidget {
         scene: '导出 CSV 数据',
       );
       if (context.mounted) {
-        ScaffoldMessenger.of(context)
-            .showSnackBar(SnackBar(content: Text('导出失败: $e')));
+        AppToast.showError(context, '导出失败：$e');
       }
     }
   }
@@ -188,8 +188,7 @@ class SettingsScreen extends StatelessWidget {
               onPressed: () {
                 provider.clearAllData();
                 Navigator.pop(ctx);
-                ScaffoldMessenger.of(context)
-                    .showSnackBar(const SnackBar(content: Text('已清空所有账单')));
+                AppToast.showSuccess(context, '已清空所有账单');
               },
               child: const Text('确定', style: TextStyle(color: Colors.red)),
             ),
@@ -265,7 +264,8 @@ class SettingsScreen extends StatelessWidget {
                                         onPressed: () async {
                                           final box = itemContext
                                               .findRenderObject() as RenderBox?;
-                                          await Share.shareXFiles(
+                                          await AppShareService.shareXFiles(
+                                            itemContext,
                                             [XFile(file.path)],
                                             subject: '分享 CSV 数据',
                                             sharePositionOrigin: box!
@@ -342,7 +342,8 @@ class SettingsScreen extends StatelessWidget {
       }
 
       final box = context.findRenderObject() as RenderBox?;
-      await Share.shareXFiles(
+      await AppShareService.shareXFiles(
+        context,
         [XFile(path)],
         subject: '记账助储错误日志',
         sharePositionOrigin: box!.localToGlobal(Offset.zero) & box.size,
@@ -355,8 +356,7 @@ class SettingsScreen extends StatelessWidget {
         scene: '导出错误日志',
       );
       if (context.mounted) {
-        ScaffoldMessenger.of(context)
-            .showSnackBar(SnackBar(content: Text('导出错误日志失败：$e')));
+        AppToast.showError(context, '导出错误日志失败：$e');
       }
     }
   }
@@ -528,8 +528,7 @@ class SettingsScreen extends StatelessWidget {
         scene: '查看错误日志',
       );
       if (context.mounted) {
-        ScaffoldMessenger.of(context)
-            .showSnackBar(SnackBar(content: Text('打开错误日志失败：$e')));
+        AppToast.showError(context, '打开错误日志失败：$e');
       }
     }
   }
@@ -566,9 +565,7 @@ class SettingsScreen extends StatelessWidget {
                   Navigator.pop(dialogContext);
                 }
                 if (context.mounted) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text('错误详情已复制')),
-                  );
+                  AppToast.showSuccess(context, '错误详情已复制');
                 }
               },
               child: const Text('复制'),
@@ -615,8 +612,7 @@ class SettingsScreen extends StatelessWidget {
     try {
       await ErrorLogService.instance.clear();
       if (context.mounted) {
-        ScaffoldMessenger.of(context)
-            .showSnackBar(const SnackBar(content: Text('错误日志已清空')));
+        AppToast.showSuccess(context, '错误日志已清空');
       }
     } catch (e, stackTrace) {
       await ErrorLogService.instance.record(
@@ -626,8 +622,7 @@ class SettingsScreen extends StatelessWidget {
         scene: '清空错误日志',
       );
       if (context.mounted) {
-        ScaffoldMessenger.of(context)
-            .showSnackBar(SnackBar(content: Text('清空错误日志失败：$e')));
+        AppToast.showError(context, '清空错误日志失败：$e');
       }
     }
   }
@@ -867,6 +862,9 @@ class SettingsScreen extends StatelessWidget {
                     title: '去商店好评',
                     showArrow: true,
                     isLast: true,
+                    onTap: () => {
+                      AppToast.showInfo(context, '好评，好评，给好评行了吧。'),
+                    },
                   ),
                 ],
               ),

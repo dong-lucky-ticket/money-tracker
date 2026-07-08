@@ -8,6 +8,7 @@ import '../providers/data_provider.dart';
 import '../theme/app_colors.dart';
 import '../utils/color_utils.dart';
 import '../utils/icon_mapper.dart';
+import 'common/app_toast.dart';
 
 class EditRecordSheet extends StatefulWidget {
   final Record record;
@@ -50,9 +51,7 @@ class _EditRecordSheetState extends State<EditRecordSheet> {
   Future<void> _save() async {
     final amount = double.tryParse(_amountController.text) ?? 0.0;
     if (amount <= 0) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('请输入大于 0 的金额')),
-      );
+      AppToast.showError(context, '请输入大于 0 的金额');
       return;
     }
 

@@ -8,21 +8,12 @@ import '../models/category_group.dart';
 import '../models/csv_import_result.dart';
 import '../models/data_sync_progress.dart';
 import '../models/record.dart';
-import '../services/category_catalog_service.dart';
+import '../services/data_bootstrap_service.dart';
 import '../services/error_log_service.dart';
 import '../services/record_import_service.dart';
-import '../services/record_category_migration_service.dart';
 import '../utils/category_rules.dart';
 
 class DataProvider with ChangeNotifier {
-  static const String recordsBoxName = 'recordsBox';
-  static const String categoriesBoxName = 'categoriesBox';
-  static const String categoryGroupsBoxName = 'categoryGroupsBox';
-  static const String settingsBoxName = 'settingsBox';
-  static const String recordGroupMigrationVersionKey =
-      'recordGroupMigrationVersion';
-  static const int currentRecordGroupMigrationVersion = 5;
-
   late Box<Record> _recordsBox;
   late Box<Category> _categoriesBox;
   late Box<CategoryGroup> _categoryGroupsBox;
@@ -58,32 +49,15 @@ class DataProvider with ChangeNotifier {
     ValueChanged<DataSyncProgress>? onProgress,
   }) async {
     _invalidateAllCaches();
-    onProgress?.call(
-      const DataSyncProgress(
-        message: '正在准备本地数据',
-        detail: '初始化账本与分类信息',
-        isIndeterminate: true,
-      ),
-    );
-
-    _recordsBox = await Hive.openBox<Record>(recordsBoxName);
-    _categoriesBox = await Hive.openBox<Category>(categoriesBoxName);
-    _categoryGroupsBox =
-        await Hive.openBox<CategoryGroup>(categoryGroupsBoxName);
-    _settingsBox = await Hive.openBox(settingsBoxName);
-
-    _isDarkTheme = _settingsBox.get('isDarkTheme', defaultValue: false);
-
-    await CategoryCatalogService.syncDefaultCategoryGroups(_categoryGroupsBox);
-    await CategoryCatalogService.syncDefaultCategories(_categoriesBox);
-    await RecordCategoryMigrationService.migrate(
-      recordsBox: _recordsBox,
-      categoriesBox: _categoriesBox,
-      settingsBox: _settingsBox,
-      versionKey: recordGroupMigrationVersionKey,
-      currentVersion: currentRecordGroupMigrationVersion,
+    final snapshot = await DataBootstrapService.bootstrap(
       onProgress: onProgress,
     );
+
+    _recordsBox = snapshot.recordsBox;
+    _categoriesBox = snapshot.categoriesBox;
+    _categoryGroupsBox = snapshot.categoryGroupsBox;
+    _settingsBox = snapshot.settingsBox;
+    _isDarkTheme = snapshot.isDarkTheme;
     _invalidateAllCaches();
   }
 

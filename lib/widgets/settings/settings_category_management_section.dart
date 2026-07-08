@@ -9,6 +9,7 @@ import '../../providers/data_provider.dart';
 import '../../widgets/categories/category_editor_panel.dart';
 import '../../theme/app_colors.dart';
 import '../../widgets/categories/category_list_panel.dart';
+import '../../widgets/common/app_toast.dart';
 import '../../widgets/common/segmented_selector.dart';
 import 'settings_section.dart';
 
@@ -166,9 +167,7 @@ class _SettingsCategoryManagementSectionState
               onPressed: () async {
                 final name = controller.text.trim();
                 if (name.isEmpty) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text('请输入大类名称')),
-                  );
+                  AppToast.showError(context, '请输入大类名称');
                   return;
                 }
 
@@ -179,9 +178,7 @@ class _SettingsCategoryManagementSectionState
                       item.id != group?.id,
                 );
                 if (duplicated) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text('该大类已存在，请修改名称')),
-                  );
+                  AppToast.showError(context, '该大类已存在，请修改名称');
                   return;
                 }
 

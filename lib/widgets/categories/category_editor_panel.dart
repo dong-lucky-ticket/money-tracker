@@ -5,6 +5,7 @@ import 'package:uuid/uuid.dart';
 import '../../models/category.dart';
 import '../../providers/data_provider.dart';
 import '../../utils/category_icons.dart';
+import '../common/app_toast.dart';
 
 class CategoryEditorPanel extends StatefulWidget {
   final bool isExpense;
@@ -61,8 +62,7 @@ class _CategoryEditorPanelState extends State<CategoryEditorPanel> {
   }
 
   void _showMessage(String message) {
-    ScaffoldMessenger.of(context)
-        .showSnackBar(SnackBar(content: Text(message)));
+    AppToast.showError(context, message);
   }
 
   void _restoreHistoryCategory(

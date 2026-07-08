@@ -15,43 +15,44 @@ import 'screens/main_tab_screen.dart';
 import 'services/error_log_service.dart';
 
 void main() async {
-  WidgetsFlutterBinding.ensureInitialized();
   final errorLogService = ErrorLogService.instance;
 
-  SystemChrome.setSystemUIOverlayStyle(const SystemUiOverlayStyle(
-    statusBarColor: Colors.transparent,
-    statusBarIconBrightness: Brightness.dark,
-  ));
-
-  FlutterError.onError = (details) {
-    FlutterError.presentError(details);
-    unawaited(
-      errorLogService.recordFlutterError(
-        details,
-        source: 'flutter_framework',
-      ),
-    );
-  };
-
-  PlatformDispatcher.instance.onError = (error, stackTrace) {
-    unawaited(
-      errorLogService.record(
-        error,
-        stackTrace: stackTrace,
-        source: 'platform_dispatcher',
-      ),
-    );
-    return true;
-  };
-
-  ErrorWidget.builder = (details) {
-    return _GlobalErrorFallback(
-      message: details.exceptionAsString(),
-    );
-  };
-
   runZonedGuarded(
-    () {
+    () async {
+      WidgetsFlutterBinding.ensureInitialized();
+
+      SystemChrome.setSystemUIOverlayStyle(const SystemUiOverlayStyle(
+        statusBarColor: Colors.transparent,
+        statusBarIconBrightness: Brightness.dark,
+      ));
+
+      FlutterError.onError = (details) {
+        FlutterError.presentError(details);
+        unawaited(
+          errorLogService.recordFlutterError(
+            details,
+            source: 'flutter_framework',
+          ),
+        );
+      };
+
+      PlatformDispatcher.instance.onError = (error, stackTrace) {
+        unawaited(
+          errorLogService.record(
+            error,
+            stackTrace: stackTrace,
+            source: 'platform_dispatcher',
+          ),
+        );
+        return true;
+      };
+
+      ErrorWidget.builder = (details) {
+        return _GlobalErrorFallback(
+          message: details.exceptionAsString(),
+        );
+      };
+
       runApp(const AppBootstrap());
     },
     (error, stackTrace) {

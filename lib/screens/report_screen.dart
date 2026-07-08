@@ -8,6 +8,7 @@ import '../models/report_filter.dart';
 import '../models/report_snapshot.dart';
 import '../models/report_time_range.dart';
 import '../providers/data_provider.dart';
+import '../utils/record_queries.dart';
 import '../utils/report_snapshot_builder.dart';
 import '../widgets/report/report_category_detail_sheet.dart';
 import '../widgets/report/report_group_detail_sheet.dart';
@@ -32,41 +33,21 @@ class _ReportScreenState extends State<ReportScreen> {
   ReportTimeRange get _selectedRange => _filter.timeRange;
 
   List<CategoryGroup> _availableGroups(DataProvider provider) {
-    return provider.categoryGroups.where((group) {
-      switch (_filter.recordType) {
-        case ReportRecordType.expense:
-          return group.isExpense;
-        case ReportRecordType.income:
-          return !group.isExpense;
-        case ReportRecordType.all:
-          return true;
-      }
-    }).toList();
+    return filterCategoryGroupsByRecordType(
+      provider.categoryGroups,
+      _filter.recordType,
+    );
   }
 
   List<Category> _availableCategories(
     DataProvider provider, {
     Set<String>? selectedGroupIds,
   }) {
-    final effectiveGroupIds = selectedGroupIds ?? _filter.groupIds;
-    return provider.categories.where((category) {
-      final matchesType = switch (_filter.recordType) {
-        ReportRecordType.expense => category.isExpense,
-        ReportRecordType.income => !category.isExpense,
-        ReportRecordType.all => true,
-      };
-
-      if (!matchesType) {
-        return false;
-      }
-
-      if (effectiveGroupIds.isNotEmpty &&
-          !effectiveGroupIds.contains(category.groupId)) {
-        return false;
-      }
-
-      return true;
-    }).toList();
+    return filterCategoriesByRecordType(
+      provider.categories,
+      _filter.recordType,
+      groupIds: selectedGroupIds ?? _filter.groupIds,
+    );
   }
 
   ReportFilter _normalizeFilter(
@@ -309,32 +290,18 @@ class _ReportScreenState extends State<ReportScreen> {
     ReportSnapshot snapshot,
     String categoryId,
   ) {
-    return snapshot.viewRecords
-        .where((record) => record.category.id == categoryId)
-        .toList()
-      ..sort((a, b) {
-        final updatedCompare = b.updatedAt.compareTo(a.updatedAt);
-        if (updatedCompare != 0) {
-          return updatedCompare;
-        }
-        return b.createdAt.compareTo(a.createdAt);
-      });
+    return sortRecordsByTimeline(
+      snapshot.viewRecords.where((record) => record.category.id == categoryId),
+    );
   }
 
   List<Record> _sortedRecordsByGroup(
     ReportSnapshot snapshot,
     String groupId,
   ) {
-    return snapshot.viewRecords
-        .where((record) => record.category.groupId == groupId)
-        .toList()
-      ..sort((a, b) {
-        final updatedCompare = b.updatedAt.compareTo(a.updatedAt);
-        if (updatedCompare != 0) {
-          return updatedCompare;
-        }
-        return b.createdAt.compareTo(a.createdAt);
-      });
+    return sortRecordsByTimeline(
+      snapshot.viewRecords.where((record) => record.category.groupId == groupId),
+    );
   }
 
   @override

@@ -5,6 +5,7 @@ import 'package:provider/provider.dart';
 import '../models/record.dart';
 import '../providers/data_provider.dart';
 import '../theme/app_colors.dart';
+import '../utils/record_queries.dart';
 import '../utils/record_timeline.dart';
 import '../widgets/common/empty_state.dart';
 import '../widgets/edit_record_sheet.dart';
@@ -58,10 +59,7 @@ class _SearchScreenState extends State<SearchScreen> {
             );
           }
 
-          final filteredRecords = provider.records.where((r) {
-            return r.remark.contains(_searchQuery) ||
-                r.category.name.contains(_searchQuery);
-          }).toList();
+          final filteredRecords = searchRecords(provider.records, _searchQuery);
           final sections = buildRecordTimelineSections(filteredRecords);
 
           if (filteredRecords.isEmpty) {
@@ -90,7 +88,9 @@ class _SearchScreenState extends State<SearchScreen> {
   }
 
   Widget _buildDailyRecordList(
-      RecordTimelineSection section, DataProvider provider) {
+    RecordTimelineSection section,
+    DataProvider provider,
+  ) {
     return Padding(
       padding: const EdgeInsets.only(bottom: 24),
       child: Column(
@@ -99,13 +99,13 @@ class _SearchScreenState extends State<SearchScreen> {
           Padding(
             padding: const EdgeInsets.only(bottom: 12, left: 4, right: 4),
             child: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Text(
-                section.label(),
-                style: const TextStyle(
-                    fontSize: 12,
-                    fontWeight: FontWeight.w500,
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text(
+                  section.label(),
+                  style: const TextStyle(
+                      fontSize: 12,
+                      fontWeight: FontWeight.w500,
                       color: Color(0xFF6B7280)),
                 ),
                 Row(

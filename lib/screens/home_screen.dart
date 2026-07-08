@@ -7,6 +7,7 @@ import '../models/record.dart';
 import '../providers/data_provider.dart';
 import '../screens/search_screen.dart';
 import '../theme/app_colors.dart';
+import '../utils/record_queries.dart';
 import '../utils/record_timeline.dart';
 import '../widgets/edit_record_sheet.dart';
 import '../widgets/common/empty_state.dart';
@@ -201,23 +202,15 @@ class _HomeScreenState extends State<HomeScreen> {
           Expanded(
             child: Consumer<DataProvider>(builder: (context, provider, child) {
               final records = provider.recordsInMonth(_selectedMonth);
-              final validRecords =
-                  records.where((record) => !record.isVoided).toList();
               final sections = buildRecordTimelineSections(records);
-
-              final double monthlyExpense = validRecords
-                  .where((r) => r.isExpense)
-                  .fold(0.0, (s, r) => s + r.amount);
-              final double monthlyIncome = validRecords
-                  .where((r) => !r.isExpense)
-                  .fold(0.0, (s, r) => s + r.amount);
+              final monthlySummary = summarizeRecords(records);
 
               return ListView(
                 padding: const EdgeInsets.fromLTRB(20, 16, 20, 100),
                 physics: const BouncingScrollPhysics(),
                 children: [
                   // 总览卡片
-                  _buildOverviewCard(monthlyExpense, monthlyIncome),
+                  _buildOverviewCard(monthlySummary),
                   // 流水列表
                   if (records.isEmpty)
                     _buildEmptyState()
@@ -234,7 +227,7 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  Widget _buildOverviewCard(double monthlyExpense, double monthlyIncome) {
+  Widget _buildOverviewCard(RecordAmountSummary summary) {
     return Container(
       decoration: BoxDecoration(
         color: AppColors.primary,
@@ -273,7 +266,7 @@ class _HomeScreenState extends State<HomeScreen> {
               ),
               const SizedBox(height: 4),
               Text(
-                '￥${monthlyExpense.toStringAsFixed(2)}',
+                '￥${summary.expense.toStringAsFixed(2)}',
                 style: const TextStyle(
                     color: Colors.white,
                     fontSize: 30,
@@ -290,7 +283,7 @@ class _HomeScreenState extends State<HomeScreen> {
                               color: Colors.white.withOpacity(0.8),
                               fontSize: 12)),
                       const SizedBox(height: 2),
-                      Text(monthlyIncome.toStringAsFixed(2),
+                      Text(summary.income.toStringAsFixed(2),
                           style: const TextStyle(
                               color: Colors.white,
                               fontSize: 18,
@@ -306,7 +299,7 @@ class _HomeScreenState extends State<HomeScreen> {
                               color: Colors.white.withOpacity(0.8),
                               fontSize: 12)),
                       const SizedBox(height: 2),
-                      Text((monthlyIncome - monthlyExpense).toStringAsFixed(2),
+                      Text(summary.balance.toStringAsFixed(2),
                           style: const TextStyle(
                               color: Colors.white,
                               fontSize: 18,

@@ -4,15 +4,12 @@ import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
-import 'package:hive_flutter/hive_flutter.dart';
 import 'package:provider/provider.dart';
 
-import 'models/category.dart';
-import 'models/category_group.dart';
 import 'models/data_sync_progress.dart';
-import 'models/record.dart';
 import 'providers/data_provider.dart';
 import 'screens/main_tab_screen.dart';
+import 'services/app_bootstrap_service.dart';
 import 'services/error_log_service.dart';
 
 void main() async {
@@ -79,11 +76,8 @@ class _AppBootstrapState extends State<AppBootstrap> {
   static const Duration _minimumSplashDuration = Duration(milliseconds: 1500);
 
   DataProvider? _dataProvider;
-  DataSyncProgress _progress = const DataSyncProgress(
-    message: '正在启动应用',
-    detail: '准备加载本地账本数据',
-    isIndeterminate: true,
-  );
+  ErrorLogService? _errorLogService;
+  DataSyncProgress _progress = AppBootstrapService.initialProgress;
   String? _errorMessage;
   bool _showSlowHint = false;
   Timer? _slowHintTimer;
@@ -107,15 +101,12 @@ class _AppBootstrapState extends State<AppBootstrap> {
 
     _slowHintTimer?.cancel();
     _dataProvider = null;
+    _errorLogService = null;
 
     setState(() {
       _errorMessage = null;
       _showSlowHint = false;
-      _progress = const DataSyncProgress(
-        message: '正在启动应用',
-        detail: '准备加载本地账本数据',
-        isIndeterminate: true,
-      );
+      _progress = AppBootstrapService.initialProgress;
     });
 
     _slowHintTimer = Timer(const Duration(milliseconds: 1800), () {
@@ -139,20 +130,7 @@ class _AppBootstrapState extends State<AppBootstrap> {
     required Future<void> minimumSplashFuture,
   }) async {
     try {
-      await Hive.initFlutter();
-      await ErrorLogService.instance.init();
-      if (!Hive.isAdapterRegistered(0)) {
-        Hive.registerAdapter(CategoryAdapter());
-      }
-      if (!Hive.isAdapterRegistered(2)) {
-        Hive.registerAdapter(CategoryGroupAdapter());
-      }
-      if (!Hive.isAdapterRegistered(1)) {
-        Hive.registerAdapter(RecordAdapter());
-      }
-
-      final dataProvider = DataProvider();
-      await dataProvider.init(
+      final snapshot = await AppBootstrapService.bootstrap(
         onProgress: (progress) {
           if (!mounted || bootstrapToken != _bootstrapToken) {
             return;
@@ -163,6 +141,7 @@ class _AppBootstrapState extends State<AppBootstrap> {
           });
         },
       );
+      final dataProvider = snapshot.dataProvider;
 
       await minimumSplashFuture;
 
@@ -173,6 +152,7 @@ class _AppBootstrapState extends State<AppBootstrap> {
       _slowHintTimer?.cancel();
       setState(() {
         _dataProvider = dataProvider;
+        _errorLogService = snapshot.errorLogService;
       });
     } catch (e, stackTrace) {
       await ErrorLogService.instance.record(
@@ -199,7 +179,7 @@ class _AppBootstrapState extends State<AppBootstrap> {
       return MultiProvider(
         providers: [
           ChangeNotifierProvider.value(value: _dataProvider!),
-          ChangeNotifierProvider.value(value: ErrorLogService.instance),
+          ChangeNotifierProvider.value(value: _errorLogService!),
         ],
         child: const MyApp(),
       );

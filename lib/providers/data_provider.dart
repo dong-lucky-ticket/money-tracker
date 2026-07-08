@@ -1,54 +1,17 @@
 import 'dart:collection';
 
-import 'package:csv/csv.dart';
 import 'package:flutter/material.dart';
 import 'package:hive/hive.dart';
-import 'package:intl/intl.dart';
 import 'package:uuid/uuid.dart';
 
 import '../models/category.dart';
 import '../models/category_group.dart';
+import '../models/csv_import_result.dart';
+import '../models/data_sync_progress.dart';
 import '../models/record.dart';
 import '../services/error_log_service.dart';
-
-class CsvImportResult {
-  final int importedCount;
-  final int updatedCount;
-  final int skippedCount;
-  final int createdCategoryCount;
-
-  const CsvImportResult({
-    required this.importedCount,
-    required this.updatedCount,
-    required this.skippedCount,
-    required this.createdCategoryCount,
-  });
-
-  int get processedCount => importedCount + updatedCount;
-}
-
-class DataSyncProgress {
-  final String message;
-  final String? detail;
-  final int processed;
-  final int total;
-  final bool isIndeterminate;
-
-  const DataSyncProgress({
-    required this.message,
-    this.detail,
-    this.processed = 0,
-    this.total = 0,
-    this.isIndeterminate = false,
-  });
-
-  double? get value {
-    if (isIndeterminate || total <= 0) {
-      return null;
-    }
-    return processed / total;
-  }
-}
+import '../services/record_import_service.dart';
+import '../utils/record_queries.dart';
 
 class DataProvider with ChangeNotifier {
   static const String recordsBoxName = 'recordsBox';
@@ -723,117 +686,25 @@ class DataProvider with ChangeNotifier {
 
   Future<CsvImportResult> importRecordsFromCsv(String csvContent) async {
     try {
-      final sanitizedContent = csvContent.trim();
-      if (sanitizedContent.isEmpty) {
-        throw const FormatException('CSV 内容为空');
+      final preparedImport = RecordImportService.prepareCsvImport(
+        csvContent: csvContent,
+        existingCategories: _categoriesBox.values,
+        existingRecords: _recordsBox.values,
+        ensureCategoryGroupId: _ensureCategoryGroupId,
+      );
+
+      if (preparedImport.categoriesToCreate.isNotEmpty) {
+        await _categoriesBox.putAll({
+          for (final category in preparedImport.categoriesToCreate)
+            category.id: category,
+        });
       }
 
-      final rows = const CsvToListConverter(shouldParseNumbers: false)
-          .convert(sanitizedContent);
-
-      if (rows.isEmpty) {
-        throw const FormatException('CSV 内容为空');
-      }
-
-      final categoryCache = <String, Category>{
-        for (final category in _categoriesBox.values)
-          _categoryCacheKey(category.name, category.isExpense): category,
-      };
-
-      final recordsToImport = <String, Record>{};
-      var importedCount = 0;
-      var updatedCount = 0;
-      var skippedCount = 0;
-      var createdCategoryCount = 0;
-
-      for (final row in rows) {
-        if (_isEmptyRow(row)) {
-          continue;
-        }
-
-        if (_isHeaderRow(row)) {
-          continue;
-        }
-
-        if (row.length < 6) {
-          skippedCount++;
-          continue;
-        }
-
-        try {
-          final id = _cellValue(row, 0).trim();
-          final typeLabel = _cellValue(row, 1).trim();
-          final amountText = _cellValue(row, 2).trim().replaceAll(',', '');
-          final categoryName = _cellValue(row, 3).trim();
-          final remark = _cellValue(row, 4);
-          final dateText = _cellValue(row, 5).trim();
-
-          final isExpense = _parseImportType(typeLabel);
-          final amount = double.tryParse(amountText);
-          if (amount == null || amount <= 0) {
-            throw const FormatException('金额无效');
-          }
-
-          final normalizedCategoryName = categoryName.isEmpty
-              ? (isExpense ? '其他支出' : '其他收入')
-              : categoryName;
-          final cacheKey = _categoryCacheKey(normalizedCategoryName, isExpense);
-          var category = categoryCache[cacheKey];
-
-          if (category == null) {
-            category = Category(
-              id: const Uuid().v4(),
-              name: normalizedCategoryName,
-              iconName: 'other',
-              colorHex: isExpense ? '#64748B' : '#10B981',
-              isExpense: isExpense,
-              sortOrder: _nextCategorySortOrder(isExpense),
-            );
-            _ensureCategoryGroupId(category);
-            await _categoriesBox.put(category.id, category);
-            categoryCache[cacheKey] = category;
-            createdCategoryCount++;
-          }
-
-          final recordId = id.isEmpty ? const Uuid().v4() : id;
-          final record = Record(
-            id: recordId,
-            amount: amount,
-            category: category,
-            remark: remark,
-            date: _parseImportDate(dateText),
-            isExpense: isExpense,
-            createdAt: DateTime.now(),
-            updatedAt: DateTime.now(),
-          );
-
-          if (recordsToImport.containsKey(recordId) ||
-              _recordsBox.containsKey(recordId)) {
-            updatedCount++;
-          } else {
-            importedCount++;
-          }
-
-          recordsToImport[recordId] = record;
-        } catch (_) {
-          skippedCount++;
-        }
-      }
-
-      if (recordsToImport.isEmpty) {
-        throw const FormatException('未识别到可导入的记录，请确认 CSV 格式与导出一致');
-      }
-
-      await _recordsBox.putAll(recordsToImport);
+      await _recordsBox.putAll(preparedImport.recordsToImport);
       _invalidateCategoriesCache();
       _notifyRecordsChanged();
 
-      return CsvImportResult(
-        importedCount: importedCount,
-        updatedCount: updatedCount,
-        skippedCount: skippedCount,
-        createdCategoryCount: createdCategoryCount,
-      );
+      return preparedImport.result;
     } catch (e, stackTrace) {
       await _recordDataError(
         e,
@@ -865,45 +736,21 @@ class DataProvider with ChangeNotifier {
   // --- Stats ---
   double get monthlyExpense {
     final now = DateTime.now();
-    return records
-        .where((r) =>
-            r.isExpense &&
-            !r.isVoided &&
-            r.date.year == now.year &&
-            r.date.month == now.month)
-        .fold(0.0, (sum, item) => sum + item.amount);
+    return summarizeRecords(recordsForMonth(records, now)).expense;
   }
 
   double get monthlyIncome {
     final now = DateTime.now();
-    return records
-        .where((r) =>
-            !r.isExpense &&
-            !r.isVoided &&
-            r.date.year == now.year &&
-            r.date.month == now.month)
-        .fold(0.0, (sum, item) => sum + item.amount);
+    return summarizeRecords(recordsForMonth(records, now)).income;
   }
 
-  double get totalExpense => records
-      .where((r) => r.isExpense && !r.isVoided)
-      .fold(0.0, (sum, item) => sum + item.amount);
-  double get totalIncome => records
-      .where((r) => !r.isExpense && !r.isVoided)
-      .fold(0.0, (sum, item) => sum + item.amount);
+  double get totalExpense => summarizeRecords(records).expense;
+  double get totalIncome => summarizeRecords(records).income;
 
-  int get activeCategoryCount {
-    final usedCategoryIds = records
-        .where((record) => !record.isVoided)
-        .map((e) => e.category.id)
-        .toSet();
-    return usedCategoryIds.length;
-  }
+  int get activeCategoryCount => countActiveCategories(records);
 
   List<Record> recordsInMonth(DateTime month) {
-    return records.where((record) {
-      return record.date.year == month.year && record.date.month == month.month;
-    }).toList(growable: false);
+    return recordsForMonth(records, month);
   }
 
   int recordCountInMonth(
@@ -939,38 +786,12 @@ class DataProvider with ChangeNotifier {
     required bool isExpense,
     int limit = 4,
   }) {
-    final activeCategories = {
-      for (final category in _categoriesBox.values)
-        if (category.isExpense == isExpense) category.id: category,
-    };
-
-    final sortedRecords = _recordsBox.values
-        .where((record) => !record.isVoided && record.isExpense == isExpense)
-        .toList()
-      ..sort((a, b) {
-        final updatedCompare = b.updatedAt.compareTo(a.updatedAt);
-        if (updatedCompare != 0) {
-          return updatedCompare;
-        }
-        return b.date.compareTo(a.date);
-      });
-
-    final result = <Category>[];
-    final seenIds = <String>{};
-
-    for (final record in sortedRecords) {
-      final currentCategory = activeCategories[record.category.id];
-      if (currentCategory == null || !seenIds.add(currentCategory.id)) {
-        continue;
-      }
-
-      result.add(currentCategory);
-      if (result.length >= limit) {
-        break;
-      }
-    }
-
-    return result;
+    return recentCategoriesFromRecords(
+      records: records,
+      categories: categories,
+      isExpense: isExpense,
+      limit: limit,
+    );
   }
 
   Future<void> _migrateRecordCategoryGroups({
@@ -1093,71 +914,6 @@ class DataProvider with ChangeNotifier {
         total: total,
       ),
     );
-  }
-
-  bool _isEmptyRow(List<dynamic> row) {
-    return row.every((cell) => cell.toString().trim().isEmpty);
-  }
-
-  bool _isHeaderRow(List<dynamic> row) {
-    return row.isNotEmpty && _normalizeHeader(row.first.toString()) == 'id';
-  }
-
-  String _cellValue(List<dynamic> row, int index) {
-    if (index >= row.length) {
-      return '';
-    }
-    return row[index]?.toString() ?? '';
-  }
-
-  String _normalizeHeader(String value) {
-    return value.replaceFirst('\uFEFF', '').trim().toLowerCase();
-  }
-
-  bool _parseImportType(String value) {
-    final normalized = value.trim().toLowerCase();
-    const expenseValues = {'支出', 'expense', 'exp', 'out', '1', 'true', '鏀嚭'};
-    const incomeValues = {'收入', 'income', 'in', '0', 'false', '鏀跺叆'};
-
-    if (expenseValues.contains(normalized)) {
-      return true;
-    }
-    if (incomeValues.contains(normalized)) {
-      return false;
-    }
-    throw const FormatException('类型无效');
-  }
-
-  DateTime _parseImportDate(String value) {
-    final normalized = value.trim();
-    if (normalized.isEmpty) {
-      throw const FormatException('日期为空');
-    }
-
-    final formats = [
-      DateFormat('yyyy-MM-dd HH:mm:ss'),
-      DateFormat('yyyy-MM-dd HH:mm'),
-      DateFormat('yyyy-MM-dd'),
-    ];
-
-    for (final format in formats) {
-      try {
-        return format.parseStrict(normalized);
-      } catch (_) {
-        // Keep trying other supported export-compatible formats.
-      }
-    }
-
-    final parsed = DateTime.tryParse(normalized);
-    if (parsed != null) {
-      return parsed;
-    }
-
-    throw const FormatException('日期格式无效');
-  }
-
-  String _categoryCacheKey(String name, bool isExpense) {
-    return '${isExpense ? 'expense' : 'income'}::${name.trim()}';
   }
 
   String _defaultCategoryKey({
@@ -1340,17 +1096,6 @@ class DataProvider with ChangeNotifier {
 
   String _categoryTypeKey(String iconName, bool isExpense) {
     return '${isExpense ? 'expense' : 'income'}::${iconName.trim()}';
-  }
-
-  int _nextCategorySortOrder(bool isExpense) {
-    var maxSortOrder = -1;
-    for (final category in _categoriesBox.values) {
-      if (category.isExpense == isExpense &&
-          category.sortOrder > maxSortOrder) {
-        maxSortOrder = category.sortOrder;
-      }
-    }
-    return maxSortOrder + 1;
   }
 
   int _nextCategoryGroupSortOrder(bool isExpense) {

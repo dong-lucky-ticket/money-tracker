@@ -9,6 +9,7 @@ import 'package:provider/provider.dart';
 
 import 'models/category.dart';
 import 'models/category_group.dart';
+import 'models/data_sync_progress.dart';
 import 'models/record.dart';
 import 'providers/data_provider.dart';
 import 'screens/main_tab_screen.dart';

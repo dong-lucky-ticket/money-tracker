@@ -41,6 +41,26 @@ RecordAmountSummary summarizeRecords(
   );
 }
 
+List<Record> recordsForMonth(Iterable<Record> records, DateTime month) {
+  return records.where((record) {
+    return record.date.year == month.year && record.date.month == month.month;
+  }).toList(growable: false);
+}
+
+int countActiveCategories(
+  Iterable<Record> records, {
+  bool includeVoided = false,
+}) {
+  final ids = <String>{};
+  for (final record in records) {
+    if (!includeVoided && record.isVoided) {
+      continue;
+    }
+    ids.add(record.category.id);
+  }
+  return ids.length;
+}
+
 List<Record> sortRecordsByTimeline(Iterable<Record> records) {
   return List<Record>.from(records)..sort(compareRecordsByTimeline);
 }
@@ -102,4 +122,35 @@ List<Category> filterCategoriesByRecordType(
 
     return true;
   }).toList(growable: false);
+}
+
+List<Category> recentCategoriesFromRecords({
+  required Iterable<Record> records,
+  required Iterable<Category> categories,
+  required bool isExpense,
+  int limit = 4,
+}) {
+  final activeCategories = {
+    for (final category in categories)
+      if (category.isExpense == isExpense) category.id: category,
+  };
+  final sortedRecords = sortRecordsByTimeline(
+    records.where((record) => !record.isVoided && record.isExpense == isExpense),
+  );
+  final result = <Category>[];
+  final seenIds = <String>{};
+
+  for (final record in sortedRecords) {
+    final currentCategory = activeCategories[record.category.id];
+    if (currentCategory == null || !seenIds.add(currentCategory.id)) {
+      continue;
+    }
+
+    result.add(currentCategory);
+    if (result.length >= limit) {
+      break;
+    }
+  }
+
+  return result;
 }

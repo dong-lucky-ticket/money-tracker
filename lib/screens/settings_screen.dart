@@ -15,6 +15,7 @@ import '../services/app_share_service.dart';
 import '../providers/data_provider.dart';
 import '../services/error_log_service.dart';
 import '../theme/app_colors.dart';
+import '../utils/record_queries.dart';
 import '../widgets/common/app_toast.dart';
 import 'categories_screen.dart';
 import '../widgets/settings/settings_profile_card.dart';
@@ -641,12 +642,13 @@ class SettingsScreen extends StatelessWidget {
                 Consumer<DataProvider>(builder: (context, provider, child) {
                   final now = DateTime.now();
                   final records = provider.records;
-                  final thisMonthCount = provider.recordCountInMonth(now);
+                  final thisMonthCount = countRecordsForMonth(records, now);
 
                   return SettingsStatsBar(
                     totalRecords: records.length.toString(),
                     monthlyRecords: thisMonthCount.toString(),
-                    activeCategories: provider.activeCategoryCount.toString(),
+                    activeCategories:
+                        countActiveCategories(records).toString(),
                   );
                 }),
               ],

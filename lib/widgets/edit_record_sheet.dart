@@ -8,6 +8,7 @@ import '../providers/data_provider.dart';
 import '../theme/app_colors.dart';
 import '../utils/color_utils.dart';
 import '../utils/icon_mapper.dart';
+import '../utils/record_queries.dart';
 import 'common/app_toast.dart';
 
 class EditRecordSheet extends StatefulWidget {
@@ -83,9 +84,17 @@ class _EditRecordSheetState extends State<EditRecordSheet> {
 
   Future<void> _showCategoryPicker() async {
     FocusScope.of(context).unfocus();
-    final categories = widget.provider.categoriesForType(widget.record.isExpense);
-    final groups = widget.provider.categoryGroupsForType(widget.record.isExpense);
-    final recentCategories = widget.provider.recentCategories(
+    final categories = categoriesForType(
+      widget.provider.categories,
+      isExpense: widget.record.isExpense,
+    );
+    final groups = categoryGroupsForType(
+      widget.provider.categoryGroups,
+      isExpense: widget.record.isExpense,
+    );
+    final recentCategories = recentCategoriesFromRecords(
+      records: widget.provider.records,
+      categories: widget.provider.categories,
       isExpense: widget.record.isExpense,
     );
 

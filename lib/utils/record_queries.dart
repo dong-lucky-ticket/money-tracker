@@ -41,10 +41,39 @@ RecordAmountSummary summarizeRecords(
   );
 }
 
+RecordAmountSummary summarizeRecordsForMonth(
+  Iterable<Record> records,
+  DateTime month, {
+  bool includeVoided = false,
+}) {
+  return summarizeRecords(
+    recordsForMonth(records, month),
+    includeVoided: includeVoided,
+  );
+}
+
 List<Record> recordsForMonth(Iterable<Record> records, DateTime month) {
   return records.where((record) {
     return record.date.year == month.year && record.date.month == month.month;
   }).toList(growable: false);
+}
+
+int countRecordsForMonth(
+  Iterable<Record> records,
+  DateTime month, {
+  bool includeVoided = true,
+}) {
+  var count = 0;
+  for (final record in records) {
+    if (record.date.year != month.year || record.date.month != month.month) {
+      continue;
+    }
+    if (!includeVoided && record.isVoided) {
+      continue;
+    }
+    count++;
+  }
+  return count;
 }
 
 int countActiveCategories(
@@ -59,6 +88,24 @@ int countActiveCategories(
     ids.add(record.category.id);
   }
   return ids.length;
+}
+
+List<Category> categoriesForType(
+  Iterable<Category> categories, {
+  required bool isExpense,
+}) {
+  return categories
+      .where((category) => category.isExpense == isExpense)
+      .toList(growable: false);
+}
+
+List<CategoryGroup> categoryGroupsForType(
+  Iterable<CategoryGroup> groups, {
+  required bool isExpense,
+}) {
+  return groups
+      .where((group) => group.isExpense == isExpense)
+      .toList(growable: false);
 }
 
 List<Record> sortRecordsByTimeline(Iterable<Record> records) {

@@ -201,7 +201,7 @@ class _HomeScreenState extends State<HomeScreen> {
           // 主内容滚动区
           Expanded(
             child: Consumer<DataProvider>(builder: (context, provider, child) {
-              final records = provider.recordsInMonth(_selectedMonth);
+              final records = recordsForMonth(provider.records, _selectedMonth);
               final sections = buildRecordTimelineSections(records);
               final monthlySummary = summarizeRecords(records);
 

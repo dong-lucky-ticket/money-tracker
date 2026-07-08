@@ -13,7 +13,6 @@ import '../services/error_log_service.dart';
 import '../services/record_import_service.dart';
 import '../services/record_category_migration_service.dart';
 import '../utils/category_rules.dart';
-import '../utils/record_queries.dart';
 
 class DataProvider with ChangeNotifier {
   static const String recordsBoxName = 'recordsBox';
@@ -361,67 +360,6 @@ class DataProvider with ChangeNotifier {
       );
       rethrow;
     }
-  }
-
-  // --- Stats ---
-  double get monthlyExpense {
-    final now = DateTime.now();
-    return summarizeRecords(recordsForMonth(records, now)).expense;
-  }
-
-  double get monthlyIncome {
-    final now = DateTime.now();
-    return summarizeRecords(recordsForMonth(records, now)).income;
-  }
-
-  double get totalExpense => summarizeRecords(records).expense;
-  double get totalIncome => summarizeRecords(records).income;
-
-  int get activeCategoryCount => countActiveCategories(records);
-
-  List<Record> recordsInMonth(DateTime month) {
-    return recordsForMonth(records, month);
-  }
-
-  int recordCountInMonth(
-    DateTime month, {
-    bool includeVoided = true,
-  }) {
-    var count = 0;
-    for (final record in records) {
-      if (record.date.year != month.year || record.date.month != month.month) {
-        continue;
-      }
-      if (!includeVoided && record.isVoided) {
-        continue;
-      }
-      count++;
-    }
-    return count;
-  }
-
-  List<Category> categoriesForType(bool isExpense) {
-    return categories
-        .where((category) => category.isExpense == isExpense)
-        .toList(growable: false);
-  }
-
-  List<CategoryGroup> categoryGroupsForType(bool isExpense) {
-    return categoryGroups
-        .where((group) => group.isExpense == isExpense)
-        .toList(growable: false);
-  }
-
-  List<Category> recentCategories({
-    required bool isExpense,
-    int limit = 4,
-  }) {
-    return recentCategoriesFromRecords(
-      records: records,
-      categories: categories,
-      isExpense: isExpense,
-      limit: limit,
-    );
   }
 
   int _nextCategoryGroupSortOrder(bool isExpense) {

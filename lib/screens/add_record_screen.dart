@@ -5,6 +5,7 @@ import 'package:uuid/uuid.dart';
 import '../models/category.dart';
 import '../models/record.dart';
 import '../providers/data_provider.dart';
+import '../utils/record_queries.dart';
 import '../widgets/add_record/add_record_header.dart';
 import '../widgets/add_record/amount_keypad.dart';
 import '../widgets/add_record/category_grid.dart';
@@ -220,12 +221,17 @@ class _AddRecordScreenState extends State<AddRecordScreen> {
   @override
   Widget build(BuildContext context) {
     final provider = context.watch<DataProvider>();
-    final categories =
-        provider.categories.where((c) => c.isExpense == _isExpense).toList();
-    final categoryGroups = provider.categoryGroups
-        .where((group) => group.isExpense == _isExpense)
-        .toList();
-    final recentCategories = provider.recentCategories(
+    final categories = categoriesForType(
+      provider.categories,
+      isExpense: _isExpense,
+    );
+    final categoryGroups = categoryGroupsForType(
+      provider.categoryGroups,
+      isExpense: _isExpense,
+    );
+    final recentCategories = recentCategoriesFromRecords(
+      records: provider.records,
+      categories: provider.categories,
       isExpense: _isExpense,
     );
     if (_selectedCategory != null &&

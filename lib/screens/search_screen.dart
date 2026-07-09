@@ -1,11 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:material_design_icons_flutter/material_design_icons_flutter.dart';
 import 'package:provider/provider.dart';
-import 'package:intl/intl.dart';
 
-import '../providers/data_provider.dart';
 import '../models/record.dart';
+import '../providers/data_provider.dart';
 import '../theme/app_colors.dart';
+import '../utils/record_queries.dart';
+import '../utils/record_timeline.dart';
 import '../widgets/common/empty_state.dart';
 import '../widgets/edit_record_sheet.dart';
 import '../widgets/record/record_list_item.dart';
@@ -19,14 +20,6 @@ class SearchScreen extends StatefulWidget {
 
 class _SearchScreenState extends State<SearchScreen> {
   String _searchQuery = '';
-
-  int _compareRecordTimeline(Record a, Record b) {
-    final updatedCompare = b.updatedAt.compareTo(a.updatedAt);
-    if (updatedCompare != 0) {
-      return updatedCompare;
-    }
-    return b.createdAt.compareTo(a.createdAt);
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -66,10 +59,8 @@ class _SearchScreenState extends State<SearchScreen> {
             );
           }
 
-          final filteredRecords = provider.records.where((r) {
-            return r.remark.contains(_searchQuery) ||
-                r.category.name.contains(_searchQuery);
-          }).toList();
+          final filteredRecords = searchRecords(provider.records, _searchQuery);
+          final sections = buildRecordTimelineSections(filteredRecords);
 
           if (filteredRecords.isEmpty) {
             return Center(
@@ -84,26 +75,11 @@ class _SearchScreenState extends State<SearchScreen> {
             );
           }
 
-          // Group by date
-          final Map<String, List<Record>> groupedRecords = {};
-          for (var r in filteredRecords) {
-            final dateStr = DateFormat('yyyy-MM-dd').format(r.date);
-            if (!groupedRecords.containsKey(dateStr)) {
-              groupedRecords[dateStr] = [];
-            }
-            groupedRecords[dateStr]!.add(r);
-          }
-          for (final grouped in groupedRecords.values) {
-            grouped.sort(_compareRecordTimeline);
-          }
-          final groupedEntries = groupedRecords.entries.toList()
-            ..sort((a, b) => b.key.compareTo(a.key));
-
           return ListView(
             padding: const EdgeInsets.fromLTRB(20, 16, 20, 40),
             physics: const BouncingScrollPhysics(),
-            children: groupedEntries
-                .map((e) => _buildDailyRecordList(e.key, e.value, provider))
+            children: sections
+                .map((section) => _buildDailyRecordList(section, provider))
                 .toList(),
           );
         },
@@ -112,30 +88,9 @@ class _SearchScreenState extends State<SearchScreen> {
   }
 
   Widget _buildDailyRecordList(
-      String dateStr, List<Record> records, DataProvider provider) {
-    final date = DateTime.parse(dateStr);
-    final today = DateTime.now();
-    final isToday = date.year == today.year &&
-        date.month == today.month &&
-        date.day == today.day;
-    final isYesterday = date.year == today.year &&
-        date.month == today.month &&
-        date.day == today.day - 1;
-
-    String dateDisplay = DateFormat('M月d日').format(date);
-    if (isToday) {
-      dateDisplay += ' 今天';
-    } else if (isYesterday) {
-      dateDisplay += ' 昨天';
-    }
-
-    double dayIncome = records
-        .where((r) => !r.isExpense && !r.isVoided)
-        .fold(0.0, (s, r) => s + r.amount);
-    double dayExpense = records
-        .where((r) => r.isExpense && !r.isVoided)
-        .fold(0.0, (s, r) => s + r.amount);
-
+    RecordTimelineSection section,
+    DataProvider provider,
+  ) {
     return Padding(
       padding: const EdgeInsets.only(bottom: 24),
       child: Column(
@@ -147,7 +102,7 @@ class _SearchScreenState extends State<SearchScreen> {
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 Text(
-                  dateDisplay,
+                  section.label(),
                   style: const TextStyle(
                       fontSize: 12,
                       fontWeight: FontWeight.w500,
@@ -155,14 +110,14 @@ class _SearchScreenState extends State<SearchScreen> {
                 ),
                 Row(
                   children: [
-                    if (dayIncome > 0)
-                      Text('收入: ${dayIncome.toStringAsFixed(2)}',
+                    if (section.income > 0)
+                      Text('收入: ${section.income.toStringAsFixed(2)}',
                           style: const TextStyle(
                               fontSize: 12, color: Color(0xFF6B7280))),
-                    if (dayIncome > 0 && dayExpense > 0)
+                    if (section.income > 0 && section.expense > 0)
                       const SizedBox(width: 12),
-                    if (dayExpense > 0)
-                      Text('支出: ${dayExpense.toStringAsFixed(2)}',
+                    if (section.expense > 0)
+                      Text('支出: ${section.expense.toStringAsFixed(2)}',
                           style: const TextStyle(
                               fontSize: 12, color: Color(0xFF6B7280))),
                   ],
@@ -170,7 +125,7 @@ class _SearchScreenState extends State<SearchScreen> {
               ],
             ),
           ),
-          ...records.map((r) => _buildRecordItem(r, provider)),
+          ...section.records.map((r) => _buildRecordItem(r, provider)),
         ],
       ),
     );

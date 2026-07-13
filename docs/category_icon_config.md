@@ -44,7 +44,7 @@
 - 购物：`shopping`
 - 日用：`daily`
 - 交通：`transport`
-- 蔬菜：`vegetables`
+- 买菜：`grocery`
 - 水果：`fruit`
 - 零食：`snacks`
 - 通讯：`communication`
@@ -94,6 +94,7 @@ IconMapper.getIcon(category.iconName)
 例如：
 
 - `food -> MdiIcons.silverwareForkKnife`
+- `grocery -> MdiIcons.cartOutline`
 - `shopping -> MdiIcons.shoppingOutline`
 - `transport -> MdiIcons.bus`
 - `salary -> MdiIcons.cashMultiple`

@@ -73,7 +73,7 @@ class CategoryCatalogService {
   static List<Category> _buildDefaultCategories() {
     final categories = [
       Category(id: const Uuid().v4(), name: '餐饮', iconName: 'food', colorHex: '#F97316', isExpense: true, sortOrder: 0),
-      Category(id: const Uuid().v4(), name: '蔬菜', iconName: 'vegetables', colorHex: '#10B981', isExpense: true, sortOrder: 1),
+      Category(id: const Uuid().v4(), name: '买菜', iconName: 'grocery', colorHex: '#10B981', isExpense: true, sortOrder: 1),
       Category(id: const Uuid().v4(), name: '水果', iconName: 'fruit', colorHex: '#F59E0B', isExpense: true, sortOrder: 2),
       Category(id: const Uuid().v4(), name: '零食', iconName: 'snacks', colorHex: '#EC4899', isExpense: true, sortOrder: 3),
       Category(id: const Uuid().v4(), name: '话费', iconName: 'phone-bill', colorHex: '#3B82F6', isExpense: true, sortOrder: 4),
@@ -148,6 +148,12 @@ class CategoryCatalogService {
       if (isLegacyRailCategory(category)) {
         category.name = '铁路';
         category.iconName = 'train';
+        changed = true;
+      }
+
+      if (isLegacyGroceryCategory(category)) {
+        category.name = '买菜';
+        category.iconName = 'grocery';
         changed = true;
       }
 

@@ -14,7 +14,8 @@ class IconMapper {
       case 'transport':
         return MdiIcons.bus;
       case 'vegetables':
-        return MdiIcons.carrot;
+      case 'grocery':
+        return MdiIcons.cartOutline;
       case 'fruit':
         return MdiIcons.fruitCherries;
       case 'snacks':

@@ -13,6 +13,7 @@ String resolveCategoryGroupId(Category category) {
   switch (_categoryTypeKey(category.iconName, category.isExpense)) {
     case 'expense::food':
     case 'expense::vegetables':
+    case 'expense::grocery':
     case 'expense::fruit':
     case 'expense::snacks':
       return CategoryGroupIds.expenseFood;
@@ -97,6 +98,10 @@ Category? resolveLegacyRecordCategory({
     return findCategoryByName(categories, '铁路', isExpense: true);
   }
 
+  if (isLegacyGroceryCategory(category)) {
+    return findCategoryByName(categories, '买菜', isExpense: true);
+  }
+
   return null;
 }
 
@@ -146,6 +151,14 @@ bool isLegacyRailCategory(Category category) {
   }
 
   return category.iconName == 'train' && category.name == '火车高铁';
+}
+
+bool isLegacyGroceryCategory(Category category) {
+  if (!category.isExpense) {
+    return false;
+  }
+
+  return category.iconName == 'vegetables' || category.name == '蔬菜';
 }
 
 bool isDefaultDailyCategory(Category category) {

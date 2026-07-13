@@ -9,7 +9,7 @@
 - UI 以移动端记账流程为核心，强调单手操作、快速新增和可视化统计。
 
 ```powershell
-D:\demos\trae\release-server\publish-apk.ps1 -SourceApk "D:\demos\trae\expensetracker\build\app\outputs\apk\release\记账助储_v1.0.0.apk"
+D:\demos\flutter\release-server\publish-apk.ps1 -SourceApk "D:\demos\flutter\money-tracker\build\app\outputs\apk\release\记账助储_v1.0.1.apk"
 ```
 
 ## 项目意图

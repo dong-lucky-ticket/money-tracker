@@ -36,6 +36,7 @@ String resolveCategoryGroupId(Category category) {
       return CategoryGroupIds.expenseTransport;
     case 'expense::daily':
     case 'expense::shopping':
+    case 'expense::ticketing':
     case 'expense::clothing':
     case 'expense::digital':
       return CategoryGroupIds.expenseShopping;
@@ -167,6 +168,14 @@ bool isDefaultDailyCategory(Category category) {
   }
 
   return category.iconName == 'daily' || category.name == '日用';
+}
+
+bool isDefaultTicketingCategory(Category category) {
+  if (!category.isExpense) {
+    return false;
+  }
+
+  return category.iconName == 'ticketing' || category.name == '门票';
 }
 
 bool isSameCategorySnapshot(Category a, Category b) {

@@ -66,6 +66,8 @@ class IconMapper {
         return MdiIcons.packageVariantClosed;
       case 'wish':
         return MdiIcons.heartOutline;
+      case 'ticketing':
+        return MdiIcons.ticketConfirmationOutline;
       case 'train':
         return MdiIcons.train;
       case 'phone-bill':

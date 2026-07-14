@@ -31,7 +31,7 @@ class DataBootstrapService {
   static const String settingsBoxName = 'settingsBox';
   static const String recordGroupMigrationVersionKey =
       'recordGroupMigrationVersion';
-  static const int currentRecordGroupMigrationVersion = 6;
+  static const int currentRecordGroupMigrationVersion = 8;
 
   const DataBootstrapService._();
 

@@ -53,6 +53,7 @@
 - 孩子：`child`
 - 长辈：`elders`
 - 旅行：`travel`
+- 门票：`ticketing`
 - 烟酒：`alcohol`
 - 数码：`digital`
 - 汽车：`car`
@@ -98,6 +99,7 @@ IconMapper.getIcon(category.iconName)
 - `shopping -> MdiIcons.shoppingOutline`
 - `transport -> MdiIcons.bus`
 - `travel -> MdiIcons.bagSuitcaseOutline`
+- `ticketing -> MdiIcons.ticketConfirmationOutline`
 - `salary -> MdiIcons.cashMultiple`
 - `investment -> MdiIcons.chartLine`
 

@@ -91,15 +91,16 @@ class CategoryCatalogService {
       Category(id: const Uuid().v4(), name: '日用', iconName: 'daily', colorHex: '#3B82F6', isExpense: true, sortOrder: 16),
       Category(id: const Uuid().v4(), name: '服饰', iconName: 'clothing', colorHex: '#EC4899', isExpense: true, sortOrder: 17),
       Category(id: const Uuid().v4(), name: '数码', iconName: 'digital', colorHex: '#6366F1', isExpense: true, sortOrder: 18),
-      Category(id: const Uuid().v4(), name: '孩子', iconName: 'child', colorHex: '#14B8A6', isExpense: true, sortOrder: 19),
-      Category(id: const Uuid().v4(), name: '长辈', iconName: 'elders', colorHex: '#EF4444', isExpense: true, sortOrder: 20),
-      Category(id: const Uuid().v4(), name: '礼金', iconName: 'gift-money', colorHex: '#EF4444', isExpense: true, sortOrder: 21),
-      Category(id: const Uuid().v4(), name: '医疗', iconName: 'medical', colorHex: '#EF4444', isExpense: true, sortOrder: 22),
-      Category(id: const Uuid().v4(), name: '书籍', iconName: 'books', colorHex: '#8B5CF6', isExpense: true, sortOrder: 23),
-      Category(id: const Uuid().v4(), name: '考试', iconName: 'study', colorHex: '#2563EB', isExpense: true, sortOrder: 24),
-      Category(id: const Uuid().v4(), name: '烟酒', iconName: 'alcohol', colorHex: '#EF4444', isExpense: true, sortOrder: 25),
-      Category(id: const Uuid().v4(), name: '彩票', iconName: 'lottery', colorHex: '#EF4444', isExpense: true, sortOrder: 26),
-      Category(id: const Uuid().v4(), name: '星愿', iconName: 'wish', colorHex: '#A855F7', isExpense: true, sortOrder: 27),
+      Category(id: const Uuid().v4(), name: '门票', iconName: 'ticketing', colorHex: '#0EA5E9', isExpense: true, sortOrder: 19),
+      Category(id: const Uuid().v4(), name: '孩子', iconName: 'child', colorHex: '#14B8A6', isExpense: true, sortOrder: 20),
+      Category(id: const Uuid().v4(), name: '长辈', iconName: 'elders', colorHex: '#EF4444', isExpense: true, sortOrder: 21),
+      Category(id: const Uuid().v4(), name: '礼金', iconName: 'gift-money', colorHex: '#EF4444', isExpense: true, sortOrder: 22),
+      Category(id: const Uuid().v4(), name: '医疗', iconName: 'medical', colorHex: '#EF4444', isExpense: true, sortOrder: 23),
+      Category(id: const Uuid().v4(), name: '书籍', iconName: 'books', colorHex: '#8B5CF6', isExpense: true, sortOrder: 24),
+      Category(id: const Uuid().v4(), name: '考试', iconName: 'study', colorHex: '#2563EB', isExpense: true, sortOrder: 25),
+      Category(id: const Uuid().v4(), name: '烟酒', iconName: 'alcohol', colorHex: '#EF4444', isExpense: true, sortOrder: 26),
+      Category(id: const Uuid().v4(), name: '彩票', iconName: 'lottery', colorHex: '#EF4444', isExpense: true, sortOrder: 27),
+      Category(id: const Uuid().v4(), name: '星愿', iconName: 'wish', colorHex: '#A855F7', isExpense: true, sortOrder: 28),
       Category(id: const Uuid().v4(), name: '工资', iconName: 'salary', colorHex: '#10B981', isExpense: false, sortOrder: 0),
       Category(id: const Uuid().v4(), name: '兼职', iconName: 'part-time', colorHex: '#F59E0B', isExpense: false, sortOrder: 1),
       Category(id: const Uuid().v4(), name: '理财', iconName: 'investment', colorHex: '#3B82F6', isExpense: false, sortOrder: 2),
@@ -158,6 +159,12 @@ class CategoryCatalogService {
       }
 
       if (isDefaultDailyCategory(category) &&
+          category.groupId != CategoryGroupIds.expenseShopping) {
+        category.groupId = CategoryGroupIds.expenseShopping;
+        changed = true;
+      }
+
+      if (isDefaultTicketingCategory(category) &&
           category.groupId != CategoryGroupIds.expenseShopping) {
         category.groupId = CategoryGroupIds.expenseShopping;
         changed = true;

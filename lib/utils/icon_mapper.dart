@@ -35,7 +35,7 @@ class IconMapper {
       case 'social':
         return MdiIcons.chatOutline;
       case 'travel':
-        return MdiIcons.airplane;
+        return MdiIcons.bagSuitcaseOutline;
       case 'alcohol':
         return MdiIcons.glassWine;
       case 'digital':

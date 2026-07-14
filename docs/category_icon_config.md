@@ -97,6 +97,7 @@ IconMapper.getIcon(category.iconName)
 - `grocery -> MdiIcons.cartOutline`
 - `shopping -> MdiIcons.shoppingOutline`
 - `transport -> MdiIcons.bus`
+- `travel -> MdiIcons.bagSuitcaseOutline`
 - `salary -> MdiIcons.cashMultiple`
 - `investment -> MdiIcons.chartLine`
 

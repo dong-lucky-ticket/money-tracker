@@ -72,6 +72,10 @@ class ErrorLogEntry {
         return '保存流水';
       case 'data_delete_record':
         return '删除流水';
+      case 'data_restore_record':
+        return '恢复流水';
+      case 'data_permanently_delete_record':
+        return '彻底删除流水';
       case 'data_add_category':
         return '新增分类';
       case 'data_add_category_group':
@@ -82,12 +86,22 @@ class ErrorLogEntry {
         return '重排大类';
       case 'data_delete_category':
         return '删除分类';
+      case 'data_restore_category':
+        return '恢复分类';
+      case 'data_permanently_delete_category':
+        return '彻底删除分类';
       case 'data_reorder_categories':
         return '重排分类';
       case 'data_reorder_categories_in_group':
         return '组内重排分类';
       case 'data_clear_all_records':
         return '清空账单';
+      case 'data_clear_recycle_bin':
+        return '清空回收站';
+      case 'data_clear_deleted_records':
+        return '清空已删除账单';
+      case 'data_clear_deleted_categories':
+        return '清空已删除分类';
       case 'data_import_records_csv':
         return '数据层 CSV 导入';
       case 'data_toggle_theme':

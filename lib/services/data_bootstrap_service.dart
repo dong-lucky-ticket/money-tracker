@@ -10,14 +10,18 @@ import 'record_category_migration_service.dart';
 
 class DataBootstrapSnapshot {
   final Box<Record> recordsBox;
+  final Box<Record> deletedRecordsBox;
   final Box<Category> categoriesBox;
+  final Box<Category> deletedCategoriesBox;
   final Box<CategoryGroup> categoryGroupsBox;
   final Box settingsBox;
   final bool isDarkTheme;
 
   const DataBootstrapSnapshot({
     required this.recordsBox,
+    required this.deletedRecordsBox,
     required this.categoriesBox,
+    required this.deletedCategoriesBox,
     required this.categoryGroupsBox,
     required this.settingsBox,
     required this.isDarkTheme,
@@ -26,7 +30,9 @@ class DataBootstrapSnapshot {
 
 class DataBootstrapService {
   static const String recordsBoxName = 'recordsBox';
+  static const String deletedRecordsBoxName = 'deletedRecordsBox';
   static const String categoriesBoxName = 'categoriesBox';
+  static const String deletedCategoriesBoxName = 'deletedCategoriesBox';
   static const String categoryGroupsBoxName = 'categoryGroupsBox';
   static const String settingsBoxName = 'settingsBox';
   static const String recordGroupMigrationVersionKey =
@@ -47,7 +53,10 @@ class DataBootstrapService {
     );
 
     final recordsBox = await Hive.openBox<Record>(recordsBoxName);
+    final deletedRecordsBox = await Hive.openBox<Record>(deletedRecordsBoxName);
     final categoriesBox = await Hive.openBox<Category>(categoriesBoxName);
+    final deletedCategoriesBox =
+        await Hive.openBox<Category>(deletedCategoriesBoxName);
     final categoryGroupsBox =
         await Hive.openBox<CategoryGroup>(categoryGroupsBoxName);
     final settingsBox = await Hive.openBox(settingsBoxName);
@@ -66,7 +75,9 @@ class DataBootstrapService {
 
     return DataBootstrapSnapshot(
       recordsBox: recordsBox,
+      deletedRecordsBox: deletedRecordsBox,
       categoriesBox: categoriesBox,
+      deletedCategoriesBox: deletedCategoriesBox,
       categoryGroupsBox: categoryGroupsBox,
       settingsBox: settingsBox,
       isDarkTheme: isDarkTheme,

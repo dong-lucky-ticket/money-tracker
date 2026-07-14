@@ -17,6 +17,7 @@ import '../theme/app_colors.dart';
 import '../widgets/common/app_toast.dart';
 import '../widgets/settings/settings_error_logs_sheet.dart';
 import '../widgets/settings/settings_exported_files_sheet.dart';
+import '../widgets/settings/settings_recycle_bin_sheet.dart';
 
 class SettingsScreenController {
   static final Future<String> appVersionFuture = _loadAppVersion();
@@ -185,6 +186,27 @@ class SettingsScreenController {
               subject: '分享 CSV 数据',
             );
           },
+        );
+      },
+    );
+  }
+
+  Future<void> showRecycleBin(BuildContext context) async {
+    if (!context.mounted) {
+      return;
+    }
+
+    await showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.white,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      ),
+      builder: (sheetContext) {
+        return const FractionallySizedBox(
+          heightFactor: 0.9,
+          child: SettingsRecycleBinSheet(),
         );
       },
     );

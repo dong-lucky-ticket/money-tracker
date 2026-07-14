@@ -15,18 +15,27 @@ import '../utils/category_rules.dart';
 
 class DataProvider with ChangeNotifier {
   late Box<Record> _recordsBox;
+  late Box<Record> _deletedRecordsBox;
   late Box<Category> _categoriesBox;
+  late Box<Category> _deletedCategoriesBox;
   late Box<CategoryGroup> _categoryGroupsBox;
   late Box _settingsBox;
 
   List<Record>? _recordsCache;
+  List<Record>? _deletedRecordsCache;
   List<Category>? _categoriesCache;
+  List<Category>? _deletedCategoriesCache;
   List<CategoryGroup>? _categoryGroupsCache;
 
   List<Record> get records => _recordsCache ??= _buildSortedRecords();
+  List<Record> get deletedRecords =>
+      _deletedRecordsCache ??= _buildSortedDeletedRecords();
   List<CategoryGroup> get categoryGroups =>
       _categoryGroupsCache ??= _buildSortedCategoryGroups();
   List<Category> get categories => _categoriesCache ??= _buildSortedCategories();
+  List<Category> get deletedCategories =>
+      _deletedCategoriesCache ??= _buildSortedDeletedCategories();
+  int get recycleBinItemCount => deletedRecords.length + deletedCategories.length;
 
   bool _isDarkTheme = false;
   bool get isDarkTheme => _isDarkTheme;
@@ -54,7 +63,9 @@ class DataProvider with ChangeNotifier {
     );
 
     _recordsBox = snapshot.recordsBox;
+    _deletedRecordsBox = snapshot.deletedRecordsBox;
     _categoriesBox = snapshot.categoriesBox;
+    _deletedCategoriesBox = snapshot.deletedCategoriesBox;
     _categoryGroupsBox = snapshot.categoryGroupsBox;
     _settingsBox = snapshot.settingsBox;
     _isDarkTheme = snapshot.isDarkTheme;
@@ -123,6 +134,16 @@ class DataProvider with ChangeNotifier {
 
   Future<void> deleteRecord(String id) async {
     try {
+      final record = _recordsBox.get(id);
+      if (record == null) {
+        return;
+      }
+
+      final deletedRecord = _cloneRecord(
+        record,
+        updatedAt: DateTime.now(),
+      );
+      await _deletedRecordsBox.put(deletedRecord.id, deletedRecord);
       await _recordsBox.delete(id);
       _notifyRecordsChanged();
     } catch (e, stackTrace) {
@@ -131,6 +152,46 @@ class DataProvider with ChangeNotifier {
         stackTrace: stackTrace,
         source: 'data_delete_record',
         scene: '删除流水: $id',
+      );
+      rethrow;
+    }
+  }
+
+  Future<void> restoreRecord(String id) async {
+    try {
+      final record = _deletedRecordsBox.get(id);
+      if (record == null) {
+        return;
+      }
+
+      final restoredRecord = _cloneRecord(
+        record,
+        updatedAt: DateTime.now(),
+      );
+      await _recordsBox.put(restoredRecord.id, restoredRecord);
+      await _deletedRecordsBox.delete(id);
+      _notifyRecordsChanged();
+    } catch (e, stackTrace) {
+      await _recordDataError(
+        e,
+        stackTrace: stackTrace,
+        source: 'data_restore_record',
+        scene: '恢复流水: $id',
+      );
+      rethrow;
+    }
+  }
+
+  Future<void> permanentlyDeleteRecord(String id) async {
+    try {
+      await _deletedRecordsBox.delete(id);
+      _notifyRecordsChanged();
+    } catch (e, stackTrace) {
+      await _recordDataError(
+        e,
+        stackTrace: stackTrace,
+        source: 'data_permanently_delete_record',
+        scene: '彻底删除流水: $id',
       );
       rethrow;
     }
@@ -210,6 +271,13 @@ class DataProvider with ChangeNotifier {
 
   Future<void> deleteCategory(String id) async {
     try {
+      final category = _categoriesBox.get(id);
+      if (category == null) {
+        return;
+      }
+
+      final deletedCategory = _cloneCategory(category);
+      await _deletedCategoriesBox.put(deletedCategory.id, deletedCategory);
       await _categoriesBox.delete(id);
       _notifyCategoriesChanged();
     } catch (e, stackTrace) {
@@ -218,6 +286,44 @@ class DataProvider with ChangeNotifier {
         stackTrace: stackTrace,
         source: 'data_delete_category',
         scene: '删除分类: $id',
+      );
+      rethrow;
+    }
+  }
+
+  Future<void> restoreCategory(String id) async {
+    try {
+      final category = _deletedCategoriesBox.get(id);
+      if (category == null) {
+        return;
+      }
+
+      final restoredCategory = _cloneCategory(category);
+      ensureCategoryGroupId(restoredCategory);
+      await _categoriesBox.put(restoredCategory.id, restoredCategory);
+      await _deletedCategoriesBox.delete(id);
+      _notifyCategoriesChanged();
+    } catch (e, stackTrace) {
+      await _recordDataError(
+        e,
+        stackTrace: stackTrace,
+        source: 'data_restore_category',
+        scene: '恢复分类: $id',
+      );
+      rethrow;
+    }
+  }
+
+  Future<void> permanentlyDeleteCategory(String id) async {
+    try {
+      await _deletedCategoriesBox.delete(id);
+      _notifyCategoriesChanged();
+    } catch (e, stackTrace) {
+      await _recordDataError(
+        e,
+        stackTrace: stackTrace,
+        source: 'data_permanently_delete_category',
+        scene: '彻底删除分类: $id',
       );
       rethrow;
     }
@@ -275,6 +381,7 @@ class DataProvider with ChangeNotifier {
   Future<void> clearAllData() async {
     try {
       await _recordsBox.clear();
+      await _deletedRecordsBox.clear();
       _notifyRecordsChanged();
     } catch (e, stackTrace) {
       await _recordDataError(
@@ -282,6 +389,53 @@ class DataProvider with ChangeNotifier {
         stackTrace: stackTrace,
         source: 'data_clear_all_records',
         scene: '清空所有账单数据',
+      );
+      rethrow;
+    }
+  }
+
+  Future<void> clearRecycleBin() async {
+    try {
+      await _deletedRecordsBox.clear();
+      await _deletedCategoriesBox.clear();
+      _notifyRecordsChanged();
+      _notifyCategoriesChanged();
+    } catch (e, stackTrace) {
+      await _recordDataError(
+        e,
+        stackTrace: stackTrace,
+        source: 'data_clear_recycle_bin',
+        scene: '清空回收站',
+      );
+      rethrow;
+    }
+  }
+
+  Future<void> clearDeletedRecords() async {
+    try {
+      await _deletedRecordsBox.clear();
+      _notifyRecordsChanged();
+    } catch (e, stackTrace) {
+      await _recordDataError(
+        e,
+        stackTrace: stackTrace,
+        source: 'data_clear_deleted_records',
+        scene: '清空已删除流水',
+      );
+      rethrow;
+    }
+  }
+
+  Future<void> clearDeletedCategories() async {
+    try {
+      await _deletedCategoriesBox.clear();
+      _notifyCategoriesChanged();
+    } catch (e, stackTrace) {
+      await _recordDataError(
+        e,
+        stackTrace: stackTrace,
+        source: 'data_clear_deleted_categories',
+        scene: '清空已删除分类',
       );
       rethrow;
     }
@@ -346,9 +500,45 @@ class DataProvider with ChangeNotifier {
     return maxSortOrder + 1;
   }
 
+  Record _cloneRecord(
+    Record source, {
+    DateTime? updatedAt,
+  }) {
+    return Record(
+      id: source.id,
+      amount: source.amount,
+      category: _cloneCategory(source.category),
+      remark: source.remark,
+      date: source.date,
+      isExpense: source.isExpense,
+      isVoided: source.isVoided,
+      createdAt: source.createdAt,
+      updatedAt: updatedAt ?? source.updatedAt,
+    );
+  }
+
+  Category _cloneCategory(Category source) {
+    return Category(
+      id: source.id,
+      name: source.name,
+      iconName: source.iconName,
+      colorHex: source.colorHex,
+      isExpense: source.isExpense,
+      sortOrder: source.sortOrder,
+      groupId: source.groupId,
+    );
+  }
+
   List<Record> _buildSortedRecords() {
     return UnmodifiableListView(
       _recordsBox.values.toList()..sort((a, b) => b.date.compareTo(a.date)),
+    );
+  }
+
+  List<Record> _buildSortedDeletedRecords() {
+    return UnmodifiableListView(
+      _deletedRecordsBox.values.toList()
+        ..sort((a, b) => b.updatedAt.compareTo(a.updatedAt)),
     );
   }
 
@@ -356,6 +546,13 @@ class DataProvider with ChangeNotifier {
     return UnmodifiableListView(
       _categoriesBox.values.toList()
         ..sort((a, b) => a.sortOrder.compareTo(b.sortOrder)),
+    );
+  }
+
+  List<Category> _buildSortedDeletedCategories() {
+    return UnmodifiableListView(
+      _deletedCategoriesBox.values.toList()
+        ..sort((a, b) => a.name.compareTo(b.name)),
     );
   }
 
@@ -374,10 +571,12 @@ class DataProvider with ChangeNotifier {
 
   void _invalidateRecordsCache() {
     _recordsCache = null;
+    _deletedRecordsCache = null;
   }
 
   void _invalidateCategoriesCache() {
     _categoriesCache = null;
+    _deletedCategoriesCache = null;
   }
 
   void _invalidateCategoryGroupsCache() {

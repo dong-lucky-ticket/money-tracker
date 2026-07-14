@@ -339,8 +339,8 @@ class _HomeScreenState extends State<HomeScreen> {
           context: context,
           builder: (dialogContext) {
             return AlertDialog(
-              title: const Text('确认删除'),
-              content: const Text('你确定要删除这条账单吗？'),
+              title: const Text('移入回收站'),
+              content: const Text('这条账单将移入回收站，之后仍可恢复。确定继续吗？'),
               actions: [
                 TextButton(
                   onPressed: () => Navigator.of(dialogContext).pop(false),
@@ -352,7 +352,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 TextButton(
                   onPressed: () => Navigator.of(dialogContext).pop(true),
                   child: const Text(
-                    '删除',
+                    '移入回收站',
                     style: TextStyle(color: Colors.red),
                   ),
                 ),

@@ -139,20 +139,20 @@ class _SearchScreenState extends State<SearchScreen> {
           context: context,
           builder: (dialogContext) {
             return AlertDialog(
-              title: const Text('纭鍒犻櫎'),
-              content: const Text('浣犵‘瀹氳鍒犻櫎杩欐潯璐﹀崟鍚楋紵'),
+              title: const Text('移入回收站'),
+              content: const Text('这条账单将移入回收站，之后仍可恢复。确定继续吗？'),
               actions: [
                 TextButton(
                   onPressed: () => Navigator.of(dialogContext).pop(false),
                   child: const Text(
-                    '鍙栨秷',
+                    '取消',
                     style: TextStyle(color: Colors.grey),
                   ),
                 ),
                 TextButton(
                   onPressed: () => Navigator.of(dialogContext).pop(true),
                   child: const Text(
-                    '鍒犻櫎',
+                    '移入回收站',
                     style: TextStyle(color: Colors.red),
                   ),
                 ),

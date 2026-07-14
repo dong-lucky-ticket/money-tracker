@@ -49,6 +49,36 @@ class SettingsDataManagementSection extends StatelessWidget {
               showArrow: true,
               onTap: () => controller.viewExportedFiles(context),
             ),
+            Consumer<DataProvider>(
+              builder: (context, provider, child) {
+                return SettingsItem(
+                  icon: Icons.restore_from_trash_rounded,
+                  iconColor: Colors.deepPurple,
+                  title: '回收站',
+                  customTrailing: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text(
+                        provider.recycleBinItemCount == 0
+                            ? '空'
+                            : '${provider.recycleBinItemCount} 项',
+                        style: const TextStyle(
+                          fontSize: 12,
+                          color: Color(0xFFD1D5DB),
+                        ),
+                      ),
+                      const SizedBox(width: 4),
+                      const Icon(
+                        Icons.chevron_right,
+                        size: 20,
+                        color: Color(0xFFD1D5DB),
+                      ),
+                    ],
+                  ),
+                  onTap: () => controller.showRecycleBin(context),
+                );
+              },
+            ),
             SettingsItem(
               icon: MdiIcons.cloudSyncOutline,
               iconColor: Colors.green,

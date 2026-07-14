@@ -55,7 +55,7 @@ class SettingsCategoryManagementController {
             borderRadius: BorderRadius.circular(16),
           ),
           title: const Text(
-            '删除分类',
+            '移入回收站',
             style: TextStyle(
               fontSize: 18,
               fontWeight: FontWeight.bold,
@@ -64,8 +64,8 @@ class SettingsCategoryManagementController {
           ),
           content: Text(
             usageCount > 0
-                ? '该分类已被使用 $usageCount 次。\n\n删除分类不会影响已记账的原始数据。\n\n确定要删除「${category.name}」吗？'
-                : '该分类暂未使用。\n\n确定要删除「${category.name}」吗？',
+                ? '该分类已被使用 $usageCount 次。\n\n移入回收站不会影响已记账的原始数据，之后也可以恢复。\n\n确定要移入「${category.name}」吗？'
+                : '该分类暂未使用。\n\n移入回收站后仍可恢复，确定继续吗？',
             style: const TextStyle(
               fontSize: 14,
               color: AppColors.textSecondary,
@@ -93,7 +93,7 @@ class SettingsCategoryManagementController {
                 Navigator.pop(dialogContext);
               },
               child: const Text(
-                '删除',
+                '移入回收站',
                 style: TextStyle(
                   color: Colors.white,
                   fontWeight: FontWeight.bold,

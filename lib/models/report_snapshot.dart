@@ -52,6 +52,8 @@ class ReportSnapshot {
   final List<Record> viewRecords;
   final double totalExpense;
   final double totalIncome;
+  final double previousTotalExpense;
+  final double previousTotalIncome;
   final double viewTotal;
   final double previousViewTotal;
   final double viewDeltaAmount;
@@ -78,6 +80,8 @@ class ReportSnapshot {
     required this.viewRecords,
     required this.totalExpense,
     required this.totalIncome,
+    required this.previousTotalExpense,
+    required this.previousTotalIncome,
     required this.viewTotal,
     required this.previousViewTotal,
     required this.viewDeltaAmount,
@@ -128,4 +132,6 @@ class ReportSnapshot {
   }
 
   double get balance => totalIncome - totalExpense;
+
+  double get previousBalance => previousTotalIncome - previousTotalExpense;
 }

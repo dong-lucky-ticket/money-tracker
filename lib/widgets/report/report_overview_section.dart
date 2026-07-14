@@ -16,72 +16,41 @@ class ReportOverviewSection extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final primaryTitle = snapshot.isMixedView
-        ? '本期总流水'
-        : snapshot.isExpenseView
-            ? '本期总支出'
-            : '本期总收入';
-    final secondaryTitle = snapshot.isMixedView
-        ? '本期总支出'
-        : snapshot.isExpenseView
-            ? '本期总收入'
-            : '本期总支出';
-    final secondaryValue = snapshot.isMixedView
-        ? snapshot.totalExpense
-        : snapshot.isExpenseView
-            ? snapshot.totalIncome
-            : snapshot.totalExpense;
-    final deltaRate = snapshot.viewDeltaRate;
-    final deltaText = deltaRate == null
-        ? '暂无${snapshot.compareLabel}可对比数据'
-        : '较${snapshot.compareLabel}${snapshot.viewDeltaAmount >= 0 ? '增加' : '减少'} ${(deltaRate.abs() * 100).toStringAsFixed(1)}%';
+    final primarySummary = _buildPrimarySummary(snapshot);
+    final secondaryStats = _buildSecondaryStats(snapshot);
     final topCategory =
         snapshot.categories.isEmpty ? null : snapshot.categories.first;
 
     return Column(
       children: [
         _PrimarySummaryCard(
-          title: primaryTitle,
-          amount: snapshot.viewTotal,
-          color: snapshot.valueColor,
-          deltaText: deltaText,
+          title: primarySummary.title,
+          amount: primarySummary.amount,
+          color: primarySummary.color,
+          deltaText: primarySummary.deltaText,
           compareLabel: snapshot.compareLabel,
           periodLabel: snapshot.periodLabel,
           recordCount: snapshot.viewRecordCount,
         ),
         const SizedBox(height: 16),
-        Row(
-          children: [
-            Expanded(
-              child: _SecondaryStatCard(
-                title: secondaryTitle,
-                value: secondaryValue.toStringAsFixed(2),
-                icon: snapshot.isMixedView
-                    ? MdiIcons.arrowDownBoldCircleOutline
-                    : snapshot.isExpenseView
-                        ? MdiIcons.arrowDownBoldCircleOutline
-                        : MdiIcons.arrowUpBoldCircleOutline,
-                color: snapshot.isMixedView
-                    ? AppColors.danger
-                    : snapshot.isExpenseView
-                        ? AppColors.success
-                        : AppColors.danger,
-              ),
-            ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: _SecondaryStatCard(
-                title: '本期结余',
-                value: snapshot.balance.toStringAsFixed(2),
-                icon: MdiIcons.scaleBalance,
-                color: snapshot.balance >= 0
-                    ? AppColors.success
-                    : AppColors.danger,
-              ),
-            ),
-          ],
-        ),
-        const SizedBox(height: 16),
+        if (secondaryStats.isNotEmpty) ...[
+          Row(
+            children: [
+              for (var index = 0; index < secondaryStats.length; index++) ...[
+                if (index > 0) const SizedBox(width: 12),
+                Expanded(
+                  child: _SecondaryStatCard(
+                    title: secondaryStats[index].title,
+                    value: secondaryStats[index].value,
+                    icon: secondaryStats[index].icon,
+                    color: secondaryStats[index].color,
+                  ),
+                ),
+              ],
+            ],
+          ),
+          const SizedBox(height: 16),
+        ],
         if (snapshot.viewRecords.isEmpty)
           EmptyState(
             icon: Icon(
@@ -97,8 +66,8 @@ class ReportOverviewSection extends StatelessWidget {
               Expanded(
                 child: _InsightMetricCard(
                   title: snapshot.averageTitle,
-                  value: snapshot.averageAmount.toStringAsFixed(2),
-                  subtitle: '${snapshot.viewRecordCount} 笔记录',
+                  value: _formatCurrency(snapshot.averageAmount),
+                  subtitle: '共 ${snapshot.viewRecordCount} 笔记录',
                   icon: MdiIcons.calendarToday,
                   color: Colors.blue,
                 ),
@@ -107,8 +76,7 @@ class ReportOverviewSection extends StatelessWidget {
               Expanded(
                 child: _InsightMetricCard(
                   title: '最大单笔',
-                  value:
-                      snapshot.maxRecord?.amount.toStringAsFixed(2) ?? '0.00',
+                  value: _formatCurrency(snapshot.maxRecord?.amount ?? 0),
                   subtitle: snapshot.maxRecord?.category.name ?? '--',
                   icon: MdiIcons.arrowUpBoldCircleOutline,
                   color: Colors.orange,
@@ -121,7 +89,7 @@ class ReportOverviewSection extends StatelessWidget {
                   value: topCategory?.category.name ?? '--',
                   subtitle: topCategory == null
                       ? '--'
-                      : '￥${topCategory.amount.toStringAsFixed(2)}',
+                      : _formatCurrency(topCategory.amount),
                   icon: MdiIcons.chartDonutVariant,
                   color: Colors.purple,
                 ),
@@ -181,6 +149,151 @@ class ReportOverviewSection extends StatelessWidget {
       ],
     );
   }
+}
+
+class _PrimarySummary {
+  final String title;
+  final double amount;
+  final Color color;
+  final String deltaText;
+
+  const _PrimarySummary({
+    required this.title,
+    required this.amount,
+    required this.color,
+    required this.deltaText,
+  });
+}
+
+class _SecondaryStat {
+  final String title;
+  final String value;
+  final IconData icon;
+  final Color color;
+
+  const _SecondaryStat({
+    required this.title,
+    required this.value,
+    required this.icon,
+    required this.color,
+  });
+}
+
+_PrimarySummary _buildPrimarySummary(ReportSnapshot snapshot) {
+  if (snapshot.isExpenseView) {
+    return _PrimarySummary(
+      title: '本期总支出',
+      amount: snapshot.viewTotal,
+      color: snapshot.valueColor,
+      deltaText: _buildDeltaText(
+        compareLabel: snapshot.compareLabel,
+        currentAmount: snapshot.viewTotal,
+        previousAmount: snapshot.previousViewTotal,
+        deltaAmount: snapshot.viewDeltaAmount,
+        deltaRate: snapshot.viewDeltaRate,
+        increaseVerb: '增加',
+        decreaseVerb: '减少',
+        emptyText: '暂无${snapshot.compareLabel}支出数据可对比',
+      ),
+    );
+  }
+
+  if (snapshot.isIncomeView) {
+    return _PrimarySummary(
+      title: '本期总收入',
+      amount: snapshot.viewTotal,
+      color: snapshot.valueColor,
+      deltaText: _buildDeltaText(
+        compareLabel: snapshot.compareLabel,
+        currentAmount: snapshot.viewTotal,
+        previousAmount: snapshot.previousViewTotal,
+        deltaAmount: snapshot.viewDeltaAmount,
+        deltaRate: snapshot.viewDeltaRate,
+        increaseVerb: '增加',
+        decreaseVerb: '减少',
+        emptyText: '暂无${snapshot.compareLabel}收入数据可对比',
+      ),
+    );
+  }
+
+  final balance = snapshot.balance;
+  final previousBalance = snapshot.previousBalance;
+  final balanceDelta = balance - previousBalance;
+  final balanceRate =
+      previousBalance != 0 ? balanceDelta / previousBalance.abs() : null;
+
+  return _PrimarySummary(
+    title: '本期净结余',
+    amount: balance,
+    color: balance >= 0 ? AppColors.success : AppColors.danger,
+    deltaText: _buildDeltaText(
+      compareLabel: snapshot.compareLabel,
+      currentAmount: balance,
+      previousAmount: previousBalance,
+      deltaAmount: balanceDelta,
+      deltaRate: balanceRate,
+      increaseVerb: '改善',
+      decreaseVerb: '回落',
+      emptyText: '暂无${snapshot.compareLabel}结余数据可对比',
+    ),
+  );
+}
+
+List<_SecondaryStat> _buildSecondaryStats(ReportSnapshot snapshot) {
+  if (snapshot.isExpenseView) {
+    return const [];
+  }
+
+  if (snapshot.isIncomeView) {
+    return const [];
+  }
+
+  return [
+    _SecondaryStat(
+      title: '本期总收入',
+      value: _formatCurrency(snapshot.totalIncome),
+      icon: MdiIcons.arrowUpBoldCircleOutline,
+      color: AppColors.success,
+    ),
+    _SecondaryStat(
+      title: '本期总支出',
+      value: _formatCurrency(snapshot.totalExpense),
+      icon: MdiIcons.arrowDownBoldCircleOutline,
+      color: AppColors.danger,
+    ),
+  ];
+}
+
+String _buildDeltaText({
+  required String compareLabel,
+  required double currentAmount,
+  required double previousAmount,
+  required double deltaAmount,
+  required double? deltaRate,
+  required String increaseVerb,
+  required String decreaseVerb,
+  required String emptyText,
+}) {
+  if (currentAmount == 0 && previousAmount == 0) {
+    return emptyText;
+  }
+
+  if (deltaAmount == 0) {
+    return '与$compareLabel持平';
+  }
+
+  final verb = deltaAmount > 0 ? increaseVerb : decreaseVerb;
+  final amountText = _formatCurrency(deltaAmount.abs());
+
+  if (deltaRate == null) {
+    return '较$compareLabel$verb $amountText';
+  }
+
+  return '较$compareLabel$verb $amountText (${(deltaRate.abs() * 100).toStringAsFixed(1)}%)';
+}
+
+String _formatCurrency(double amount) {
+  return amount.toStringAsFixed(2);
 }
 
 class _PrimarySummaryCard extends StatelessWidget {
@@ -250,7 +363,7 @@ class _PrimarySummaryCard extends StatelessWidget {
           ),
           const SizedBox(height: 6),
           Text(
-            '￥${amount.toStringAsFixed(2)}',
+            _formatCurrency(amount),
             style: TextStyle(
               fontSize: 36,
               fontWeight: FontWeight.bold,

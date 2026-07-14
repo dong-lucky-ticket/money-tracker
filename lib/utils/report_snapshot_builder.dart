@@ -117,10 +117,18 @@ ReportSnapshot buildReportSnapshot({
       filteredRecords.where((record) => record.isExpense).toList();
   final incomeRecords =
       filteredRecords.where((record) => !record.isExpense).toList();
+  final previousExpenseRecords =
+      previousRecords.where((record) => record.isExpense).toList();
+  final previousIncomeRecords =
+      previousRecords.where((record) => !record.isExpense).toList();
 
   final totalExpense =
       expenseRecords.fold(0.0, (sum, item) => sum + item.amount);
   final totalIncome = incomeRecords.fold(0.0, (sum, item) => sum + item.amount);
+  final previousTotalExpense =
+      previousExpenseRecords.fold(0.0, (sum, item) => sum + item.amount);
+  final previousTotalIncome =
+      previousIncomeRecords.fold(0.0, (sum, item) => sum + item.amount);
 
   final viewRecords = _recordsForType(filteredRecords, filter.recordType);
   final previousViewRecords =
@@ -289,6 +297,8 @@ ReportSnapshot buildReportSnapshot({
     viewRecords: viewRecords,
     totalExpense: totalExpense,
     totalIncome: totalIncome,
+    previousTotalExpense: previousTotalExpense,
+    previousTotalIncome: previousTotalIncome,
     viewTotal: viewTotal,
     previousViewTotal: previousViewTotal,
     viewDeltaAmount: viewDeltaAmount,

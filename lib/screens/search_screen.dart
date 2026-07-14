@@ -134,6 +134,33 @@ class _SearchScreenState extends State<SearchScreen> {
   Widget _buildRecordItem(Record record, DataProvider provider) {
     return RecordListItem(
       record: record,
+      onConfirmDelete: () async {
+        return await showDialog<bool>(
+          context: context,
+          builder: (dialogContext) {
+            return AlertDialog(
+              title: const Text('纭鍒犻櫎'),
+              content: const Text('浣犵‘瀹氳鍒犻櫎杩欐潯璐﹀崟鍚楋紵'),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.of(dialogContext).pop(false),
+                  child: const Text(
+                    '鍙栨秷',
+                    style: TextStyle(color: Colors.grey),
+                  ),
+                ),
+                TextButton(
+                  onPressed: () => Navigator.of(dialogContext).pop(true),
+                  child: const Text(
+                    '鍒犻櫎',
+                    style: TextStyle(color: Colors.red),
+                  ),
+                ),
+              ],
+            );
+          },
+        );
+      },
       onDelete: () => provider.deleteRecord(record.id),
       onTap: () {
         showModalBottomSheet(

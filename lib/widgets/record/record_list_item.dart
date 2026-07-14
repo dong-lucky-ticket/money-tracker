@@ -71,7 +71,15 @@ class RecordListItem extends StatelessWidget {
                 color: Colors.white,
               ),
             )
-          : null,
+          : canDelete
+              ? Container(
+                  margin: margin,
+                  decoration: BoxDecoration(
+                    color: Colors.transparent,
+                    borderRadius: BorderRadius.circular(16),
+                  ),
+                )
+              : null,
       secondaryBackground: canDelete
           ? Container(
               margin: margin,

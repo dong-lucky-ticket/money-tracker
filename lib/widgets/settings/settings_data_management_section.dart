@@ -72,30 +72,31 @@ class SettingsDataManagementSection extends StatelessWidget {
             Consumer<DataProvider>(
               builder: (context, provider, child) {
                 return SettingsItem(
-                  icon: MdiIcons.fileExportOutline,
+                  icon: MdiIcons.backupRestore,
                   iconColor: Colors.blue,
-                  title: '导出数据为 CSV',
-                  onTap: () => controller.exportToCsv(context, provider),
+                  title: '备份与恢复',
+                  showArrow: true,
+                  onTap: () =>
+                      controller.showBackupAndRestoreSheet(context, provider),
                 );
               },
             ),
             Consumer<DataProvider>(
               builder: (context, provider, child) {
                 return SettingsItem(
-                  icon: MdiIcons.fileImportOutline,
-                  iconColor: Colors.teal,
-                  title: '导入 CSV 数据',
+                  icon: MdiIcons.fileDocumentMultipleOutline,
+                  iconColor: Colors.orange,
+                  title: '最近导出',
                   showArrow: true,
-                  onTap: () => controller.importFromCsv(context, provider),
+                  onTap: () => controller.viewExportedFiles(context, provider),
                 );
               },
             ),
             SettingsItem(
-              icon: MdiIcons.fileDocumentMultipleOutline,
+              icon: MdiIcons.cloudSyncOutline,
               iconColor: Colors.orange,
-              title: '查看已导出的 CSV',
-              showArrow: true,
-              onTap: () => controller.viewExportedFiles(context),
+              title: '云端备份与恢复',
+              trailingText: '已关闭',
             ),
             Consumer<DataProvider>(
               builder: (context, provider, child) {
@@ -126,12 +127,6 @@ class SettingsDataManagementSection extends StatelessWidget {
                   onTap: () => controller.showRecycleBin(context),
                 );
               },
-            ),
-            SettingsItem(
-              icon: MdiIcons.cloudSyncOutline,
-              iconColor: Colors.green,
-              title: '云端备份与恢复',
-              trailingText: '已关闭',
             ),
             Consumer<DataProvider>(
               builder: (context, provider, child) {

@@ -7,16 +7,17 @@ import 'package:material_design_icons_flutter/material_design_icons_flutter.dart
 
 class SettingsExportedFilesSheet extends StatefulWidget {
   final List<File> initialFiles;
+  final Future<void> Function(BuildContext context, File file) onRestoreFile;
   final Future<void> Function(BuildContext context, File file) onShareFile;
-  final Future<void> Function(BuildContext context, File file)
-      onSaveToDownloads;
+  final Future<void> Function(BuildContext context, File file) onSaveToDevice;
   final Future<bool> Function(BuildContext context, File file) onDeleteFile;
 
   const SettingsExportedFilesSheet({
     super.key,
     required this.initialFiles,
+    required this.onRestoreFile,
     required this.onShareFile,
-    required this.onSaveToDownloads,
+    required this.onSaveToDevice,
     required this.onDeleteFile,
   });
 
@@ -38,9 +39,16 @@ class _SettingsExportedFilesSheetState
             CupertinoActionSheetAction(
               onPressed: () async {
                 Navigator.pop(sheetContext);
-                await widget.onSaveToDownloads(context, file);
+                await widget.onRestoreFile(context, file);
               },
-              child: const Text('保存到 Download'),
+              child: const Text('恢复此备份'),
+            ),
+            CupertinoActionSheetAction(
+              onPressed: () async {
+                Navigator.pop(sheetContext);
+                await widget.onSaveToDevice(context, file);
+              },
+              child: const Text('保存到设备'),
             ),
             CupertinoActionSheetAction(
               onPressed: () async {
@@ -80,10 +88,21 @@ class _SettingsExportedFilesSheetState
         const Padding(
           padding: EdgeInsets.all(16),
           child: Text(
-            '已导出的 CSV 文件',
+            '最近导出',
             style: TextStyle(
               fontSize: 18,
               fontWeight: FontWeight.bold,
+            ),
+          ),
+        ),
+        const Padding(
+          padding: EdgeInsets.fromLTRB(16, 0, 16, 12),
+          child: Text(
+            '这里保存的是应用最近生成的临时备份，系统可能会自动清理。重要数据建议及时保存到设备或云盘。',
+            style: TextStyle(
+              fontSize: 12,
+              height: 1.5,
+              color: Colors.grey,
             ),
           ),
         ),
@@ -91,7 +110,7 @@ class _SettingsExportedFilesSheetState
           child: _files.isEmpty
               ? const Center(
                   child: Text(
-                    '暂无导出的文件',
+                    '暂无最近导出',
                     style: TextStyle(color: Colors.grey),
                   ),
                 )

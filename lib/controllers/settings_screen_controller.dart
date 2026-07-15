@@ -16,12 +16,14 @@ import '../services/error_log_service.dart';
 import '../services/operation_log_service.dart';
 import '../theme/app_colors.dart';
 import '../widgets/common/app_toast.dart';
+import '../widgets/settings/settings_backup_restore_sheet.dart';
 import '../widgets/settings/settings_error_logs_sheet.dart';
 import '../widgets/settings/settings_exported_files_sheet.dart';
 import '../widgets/settings/settings_operation_logs_sheet.dart';
 import '../widgets/settings/settings_recycle_bin_sheet.dart';
 
 class SettingsScreenController {
+  static const String _exportFilePrefix = '记账助手_';
   static final Future<String> appVersionFuture = _loadAppVersion();
 
   static Future<String> _loadAppVersion() async {
@@ -30,6 +32,43 @@ class SettingsScreenController {
       return '--';
     }
     return 'v${packageInfo.version}';
+  }
+
+  Future<void> showBackupAndRestoreSheet(
+    BuildContext context,
+    DataProvider provider,
+  ) async {
+    if (!context.mounted) {
+      return;
+    }
+
+    await showModalBottomSheet<void>(
+      context: context,
+      backgroundColor: Colors.white,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      ),
+      builder: (sheetContext) {
+        return SettingsBackupRestoreSheet(
+          onSaveBackup: () async {
+            Navigator.pop(sheetContext);
+            await exportBackupToDevice(context, provider);
+          },
+          onShareBackup: () async {
+            Navigator.pop(sheetContext);
+            await exportToCsv(context, provider);
+          },
+          onImportBackup: () async {
+            Navigator.pop(sheetContext);
+            await importFromCsv(context, provider);
+          },
+          onRestoreRecentExport: () async {
+            Navigator.pop(sheetContext);
+            await viewExportedFiles(context, provider);
+          },
+        );
+      },
+    );
   }
 
   Future<void> importFromCsv(
@@ -57,38 +96,12 @@ class SettingsScreenController {
         throw const FormatException('无法读取所选文件');
       }
 
-      final importResult = await provider
-          .importRecordsFromCsv(utf8.decode(bytes, allowMalformed: true));
-
-      if (!context.mounted) {
-        return;
-      }
-
-      await showDialog<void>(
-        context: context,
-        builder: (dialogContext) {
-          return AlertDialog(
-            title: const Text('导入完成'),
-            content: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text('文件：${pickedFile.name}'),
-                const SizedBox(height: 12),
-                Text('新增记录 ${importResult.importedCount} 条'),
-                Text('更新记录 ${importResult.updatedCount} 条'),
-                Text('跳过无效行 ${importResult.skippedCount} 条'),
-                Text('新增分类 ${importResult.createdCategoryCount} 个'),
-              ],
-            ),
-            actions: [
-              TextButton(
-                onPressed: () => Navigator.pop(dialogContext),
-                child: const Text('知道了'),
-              ),
-            ],
-          );
-        },
+      await _importCsvBytes(
+        context,
+        provider,
+        bytes,
+        fileName: pickedFile.name,
+        title: '恢复完成',
       );
     } on FormatException catch (e) {
       await ErrorLogService.instance.record(
@@ -117,32 +130,22 @@ class SettingsScreenController {
     DataProvider provider,
   ) async {
     try {
-      final csv = CsvExportService.buildCsv(
-        activeRecords: provider.records,
-        deletedRecords: provider.deletedRecords,
-        activeCategories: provider.categories,
-        deletedCategories: provider.deletedCategories,
-        categoryGroups: provider.categoryGroups,
+      final exportFile = await _createExportFile(provider);
+      if (!context.mounted) {
+        return;
+      }
+
+      await _shareFile(
+        context,
+        filePath: exportFile.path,
+        subject: '账单数据导出',
       );
-      final directory = await getTemporaryDirectory();
-      final timestamp = DateFormat('yyyyMMdd_HHmmss').format(DateTime.now());
-      final path = '${directory.path}/记账助手_$timestamp.csv';
-      final file = File(path);
-      await file.writeAsString(csv, encoding: utf8);
 
       await OperationLogService.instance.record(
-        title: '导出 CSV 数据',
-        detail: '已生成文件 ${file.uri.pathSegments.last}',
+        title: '分享备份文件',
+        detail: '已分享 ${exportFile.uri.pathSegments.last}',
         category: 'data',
       );
-
-      if (context.mounted) {
-        await _shareFile(
-          context,
-          filePath: path,
-          subject: '账单数据导出',
-        );
-      }
     } catch (e, stackTrace) {
       await ErrorLogService.instance.record(
         e,
@@ -156,15 +159,52 @@ class SettingsScreenController {
     }
   }
 
-  Future<void> viewExportedFiles(BuildContext context) async {
-    final directory = await getTemporaryDirectory();
-    final files = directory.listSync().whereType<File>().where((file) {
-      final name = file.path.split(Platform.pathSeparator).last;
-      return (name.startsWith('expensetracker_') ||
-              name.startsWith('记账助手_')) &&
-          name.endsWith('.csv');
-    }).toList()
-      ..sort((a, b) => b.lastModifiedSync().compareTo(a.lastModifiedSync()));
+  Future<void> exportBackupToDevice(
+    BuildContext context,
+    DataProvider provider,
+  ) async {
+    try {
+      final exportFile = await _createExportFile(provider);
+      final fileName = exportFile.path.split(Platform.pathSeparator).last;
+      final savedPath = await FilePicker.platform.saveFile(
+        dialogTitle: '选择备份保存位置',
+        fileName: fileName,
+        type: FileType.custom,
+        allowedExtensions: const ['csv'],
+        bytes: await exportFile.readAsBytes(),
+      );
+
+      if (savedPath == null) {
+        return;
+      }
+
+      await OperationLogService.instance.record(
+        title: '保存备份到设备',
+        detail: '已保存 $fileName',
+        category: 'data',
+      );
+
+      if (context.mounted) {
+        AppToast.showSuccess(context, '备份已保存到设备');
+      }
+    } catch (e, stackTrace) {
+      await ErrorLogService.instance.record(
+        e,
+        stackTrace: stackTrace,
+        source: 'settings_export_backup_to_device',
+        scene: '保存备份到设备',
+      );
+      if (context.mounted) {
+        AppToast.showError(context, '保存备份失败：$e');
+      }
+    }
+  }
+
+  Future<void> viewExportedFiles(
+    BuildContext context,
+    DataProvider provider,
+  ) async {
+    final files = await _loadExportedFiles();
 
     if (!context.mounted) {
       return;
@@ -179,15 +219,18 @@ class SettingsScreenController {
       builder: (sheetContext) {
         return SettingsExportedFilesSheet(
           initialFiles: files,
+          onRestoreFile: (itemContext, file) {
+            return restoreFromExportedFile(itemContext, provider, file);
+          },
+          onSaveToDevice: (itemContext, file) {
+            return saveExportedFileToDevice(itemContext, file);
+          },
           onShareFile: (itemContext, file) {
             return _shareFile(
               itemContext,
               filePath: file.path,
               subject: '分享 CSV 数据',
             );
-          },
-          onSaveToDownloads: (itemContext, file) {
-            return saveExportedFileToDownloads(itemContext, file);
           },
           onDeleteFile: (itemContext, file) {
             return deleteExportedFile(itemContext, file);
@@ -528,44 +571,94 @@ class SettingsScreenController {
     }
   }
 
-  Future<void> saveExportedFileToDownloads(
+  Future<void> saveExportedFileToDevice(
     BuildContext context,
     File file,
   ) async {
     try {
-      final downloadsDirectory = await getDownloadsDirectory();
-      if (downloadsDirectory == null) {
-        throw const FileSystemException('无法获取 Download 目录');
-      }
-
-      if (!await downloadsDirectory.exists()) {
-        await downloadsDirectory.create(recursive: true);
-      }
-
       final fileName = file.path.split(Platform.pathSeparator).last;
-      final targetPath = await _buildUniqueFilePath(
-        downloadsDirectory.path,
-        fileName,
+      final targetPath = await FilePicker.platform.saveFile(
+        dialogTitle: '选择保存位置',
+        fileName: fileName,
+        type: FileType.custom,
+        allowedExtensions: const ['csv'],
+        bytes: await file.readAsBytes(),
       );
-      final content = await file.readAsString(encoding: utf8);
-      await File(targetPath).writeAsString(
-        content,
-        encoding: utf8,
-        flush: true,
+
+      if (targetPath == null) {
+        return;
+      }
+
+      await OperationLogService.instance.record(
+        title: '保存最近导出到设备',
+        detail: '已保存 $fileName',
+        category: 'data',
       );
 
       if (context.mounted) {
-        AppToast.showSuccess(context, '已保存到 Download');
+        AppToast.showSuccess(context, '已保存到设备');
       }
     } catch (e, stackTrace) {
       await ErrorLogService.instance.record(
         e,
         stackTrace: stackTrace,
-        source: 'settings_save_exported_csv_to_downloads',
-        scene: '保存已导出 CSV 到 Download',
+        source: 'settings_save_exported_csv_to_device',
+        scene: '保存最近导出到设备',
       );
       if (context.mounted) {
         AppToast.showError(context, '保存失败：$e');
+      }
+    }
+  }
+
+  Future<void> restoreFromExportedFile(
+    BuildContext context,
+    DataProvider provider,
+    File file,
+  ) async {
+    final fileName = file.path.split(Platform.pathSeparator).last;
+    final shouldRestore = await showDialog<bool>(
+          context: context,
+          builder: (dialogContext) {
+            return AlertDialog(
+              title: const Text('恢复最近导出'),
+              content: Text('确定要使用 $fileName 恢复数据吗？'),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.pop(dialogContext, false),
+                  child: const Text('取消'),
+                ),
+                TextButton(
+                  onPressed: () => Navigator.pop(dialogContext, true),
+                  child: const Text('恢复'),
+                ),
+              ],
+            );
+          },
+        ) ??
+        false;
+
+    if (!shouldRestore) {
+      return;
+    }
+
+    try {
+      await _importCsvBytes(
+        context,
+        provider,
+        await file.readAsBytes(),
+        fileName: fileName,
+        title: '恢复完成',
+      );
+    } catch (e, stackTrace) {
+      await ErrorLogService.instance.record(
+        e,
+        stackTrace: stackTrace,
+        source: 'settings_restore_recent_export',
+        scene: '从最近导出恢复',
+      );
+      if (context.mounted) {
+        AppToast.showError(context, '恢复失败：$e');
       }
     }
   }
@@ -580,7 +673,7 @@ class SettingsScreenController {
             return AlertDialog(
               title: const Text('删除文件'),
               content: const Text(
-                '确定要删除这个已导出的文件吗？此操作不可恢复。',
+                '确定要删除这个最近导出的文件吗？此操作不可恢复。',
               ),
               actions: [
                 TextButton(
@@ -641,21 +734,80 @@ class SettingsScreenController {
     );
   }
 
-  Future<String> _buildUniqueFilePath(
-    String directoryPath,
-    String fileName,
-  ) async {
-    final dotIndex = fileName.lastIndexOf('.');
-    final baseName = dotIndex >= 0 ? fileName.substring(0, dotIndex) : fileName;
-    final extension = dotIndex >= 0 ? fileName.substring(dotIndex) : '';
+  Future<File> _createExportFile(DataProvider provider) async {
+    final csv = CsvExportService.buildCsv(
+      activeRecords: provider.records,
+      deletedRecords: provider.deletedRecords,
+      activeCategories: provider.categories,
+      deletedCategories: provider.deletedCategories,
+      categoryGroups: provider.categoryGroups,
+    );
+    final directory = await getTemporaryDirectory();
+    final timestamp = DateFormat('yyyyMMdd_HHmmss').format(DateTime.now());
+    final path = '${directory.path}${Platform.pathSeparator}'
+        '$_exportFilePrefix$timestamp.csv';
+    final file = File(path);
+    await file.writeAsString(csv, encoding: utf8, flush: true);
 
-    var candidatePath = '$directoryPath${Platform.pathSeparator}$fileName';
-    var counter = 1;
-    while (await File(candidatePath).exists()) {
-      candidatePath =
-          '$directoryPath${Platform.pathSeparator}${baseName}_$counter$extension';
-      counter++;
+    await OperationLogService.instance.record(
+      title: '生成备份文件',
+      detail: '已生成文件 ${file.uri.pathSegments.last}',
+      category: 'data',
+    );
+    return file;
+  }
+
+  Future<List<File>> _loadExportedFiles() async {
+    final directory = await getTemporaryDirectory();
+    return directory.listSync().whereType<File>().where((file) {
+      final name = file.path.split(Platform.pathSeparator).last;
+      return (name.startsWith('expensetracker_') ||
+              name.startsWith(_exportFilePrefix)) &&
+          name.endsWith('.csv');
+    }).toList()
+      ..sort((a, b) => b.lastModifiedSync().compareTo(a.lastModifiedSync()));
+  }
+
+  Future<void> _importCsvBytes(
+    BuildContext context,
+    DataProvider provider,
+    List<int> bytes, {
+    required String fileName,
+    required String title,
+  }) async {
+    final importResult = await provider.importRecordsFromCsv(
+      utf8.decode(bytes, allowMalformed: true),
+    );
+
+    if (!context.mounted) {
+      return;
     }
-    return candidatePath;
+
+    await showDialog<void>(
+      context: context,
+      builder: (dialogContext) {
+        return AlertDialog(
+          title: Text(title),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text('文件：$fileName'),
+              const SizedBox(height: 12),
+              Text('新增记录 ${importResult.importedCount} 条'),
+              Text('更新记录 ${importResult.updatedCount} 条'),
+              Text('跳过无效行 ${importResult.skippedCount} 条'),
+              Text('新增分类 ${importResult.createdCategoryCount} 个'),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(dialogContext),
+              child: const Text('知道了'),
+            ),
+          ],
+        );
+      },
+    );
   }
 }

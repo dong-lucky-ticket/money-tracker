@@ -13,10 +13,12 @@ import '../providers/data_provider.dart';
 import '../services/app_share_service.dart';
 import '../services/csv_export_service.dart';
 import '../services/error_log_service.dart';
+import '../services/operation_log_service.dart';
 import '../theme/app_colors.dart';
 import '../widgets/common/app_toast.dart';
 import '../widgets/settings/settings_error_logs_sheet.dart';
 import '../widgets/settings/settings_exported_files_sheet.dart';
+import '../widgets/settings/settings_operation_logs_sheet.dart';
 import '../widgets/settings/settings_recycle_bin_sheet.dart';
 
 class SettingsScreenController {
@@ -124,9 +126,15 @@ class SettingsScreenController {
       );
       final directory = await getTemporaryDirectory();
       final timestamp = DateFormat('yyyyMMdd_HHmmss').format(DateTime.now());
-      final path = '${directory.path}/记账助储_$timestamp.csv';
+      final path = '${directory.path}/记账助手_$timestamp.csv';
       final file = File(path);
       await file.writeAsString(csv, encoding: utf8);
+
+      await OperationLogService.instance.record(
+        title: '导出 CSV 数据',
+        detail: '已生成文件 ${file.uri.pathSegments.last}',
+        category: 'data',
+      );
 
       if (context.mounted) {
         await _shareFile(
@@ -152,7 +160,8 @@ class SettingsScreenController {
     final directory = await getTemporaryDirectory();
     final files = directory.listSync().whereType<File>().where((file) {
       final name = file.path.split(Platform.pathSeparator).last;
-      return (name.startsWith('expensetracker_') || name.startsWith('记账助储_')) &&
+      return (name.startsWith('expensetracker_') ||
+              name.startsWith('记账助手_')) &&
           name.endsWith('.csv');
     }).toList()
       ..sort((a, b) => b.lastModifiedSync().compareTo(a.lastModifiedSync()));
@@ -232,9 +241,123 @@ class SettingsScreenController {
       return;
     }
 
-    provider.clearAllData();
+    await provider.clearAllData();
     if (context.mounted) {
       AppToast.showSuccess(context, '已清空所有账单');
+    }
+  }
+
+  Future<void> showOperationLogs(BuildContext context) async {
+    try {
+      await OperationLogService.instance.markViewed();
+      if (!context.mounted) {
+        return;
+      }
+
+      await showModalBottomSheet<void>(
+        context: context,
+        isScrollControlled: true,
+        backgroundColor: Colors.white,
+        shape: const RoundedRectangleBorder(
+          borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+        ),
+        builder: (sheetContext) {
+          return SettingsOperationLogsSheet(
+            onTapEntry: (entry) => showOperationLogDetail(sheetContext, entry),
+            onClear: () => clearOperationLogs(sheetContext),
+          );
+        },
+      );
+    } catch (e, stackTrace) {
+      await ErrorLogService.instance.record(
+        e,
+        stackTrace: stackTrace,
+        source: 'settings_view_operation_logs',
+        scene: '查看操作记录',
+      );
+      if (context.mounted) {
+        AppToast.showError(context, '打开操作记录失败：$e');
+      }
+    }
+  }
+
+  Future<void> showOperationLogDetail(
+    BuildContext context,
+    OperationLogEntry entry,
+  ) async {
+    await showDialog<void>(
+      context: context,
+      builder: (dialogContext) {
+        return AlertDialog(
+          title: Text(entry.title),
+          content: SizedBox(
+            width: double.maxFinite,
+            child: SingleChildScrollView(
+              child: SelectableText(
+                entry.toReadableText(),
+                style: const TextStyle(
+                  fontSize: 12,
+                  color: AppColors.textSecondary,
+                  height: 1.5,
+                ),
+              ),
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(dialogContext),
+              child: const Text('关闭'),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  Future<void> clearOperationLogs(BuildContext context) async {
+    final shouldClear = await showDialog<bool>(
+          context: context,
+          builder: (dialogContext) {
+            return AlertDialog(
+              title: const Text('清空操作记录'),
+              content: const Text('确定要清空本地保存的操作记录吗？此操作不可恢复。'),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.pop(dialogContext, false),
+                  child: const Text('取消'),
+                ),
+                TextButton(
+                  onPressed: () => Navigator.pop(dialogContext, true),
+                  child: const Text(
+                    '清空',
+                    style: TextStyle(color: Colors.red),
+                  ),
+                ),
+              ],
+            );
+          },
+        ) ??
+        false;
+
+    if (!shouldClear) {
+      return;
+    }
+
+    try {
+      await OperationLogService.instance.clear();
+      if (context.mounted) {
+        AppToast.showSuccess(context, '操作记录已清空');
+      }
+    } catch (e, stackTrace) {
+      await ErrorLogService.instance.record(
+        e,
+        stackTrace: stackTrace,
+        source: 'settings_clear_operation_logs',
+        scene: '清空操作记录',
+      );
+      if (context.mounted) {
+        AppToast.showError(context, '清空操作记录失败：$e');
+      }
     }
   }
 
@@ -242,7 +365,7 @@ class SettingsScreenController {
     try {
       final directory = await getTemporaryDirectory();
       final timestamp = DateFormat('yyyyMMdd_HHmmss').format(DateTime.now());
-      final path = '${directory.path}/记账助储_错误日志_$timestamp.txt';
+      final path = '${directory.path}/记账助手_错误日志_$timestamp.txt';
       final file = File(path);
       await file.writeAsString(
         ErrorLogService.instance.buildExportText(),
@@ -256,7 +379,7 @@ class SettingsScreenController {
       await _shareFile(
         context,
         filePath: file.path,
-        subject: '记账助储错误日志',
+        subject: '记账助手错误日志',
       );
     } catch (e, stackTrace) {
       await ErrorLogService.instance.record(

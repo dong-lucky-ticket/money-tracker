@@ -6,6 +6,7 @@ import '../models/data_sync_progress.dart';
 import '../providers/data_provider.dart';
 import '../services/app_bootstrap_service.dart';
 import '../services/error_log_service.dart';
+import '../services/operation_log_service.dart';
 
 class AppBootstrapController extends ChangeNotifier {
   static const Duration _minimumSplashDuration = Duration(milliseconds: 1500);
@@ -13,6 +14,7 @@ class AppBootstrapController extends ChangeNotifier {
 
   DataProvider? _dataProvider;
   ErrorLogService? _errorLogService;
+  OperationLogService? _operationLogService;
   DataSyncProgress _progress = AppBootstrapService.initialProgress;
   String? _errorMessage;
   bool _showSlowHint = false;
@@ -22,10 +24,14 @@ class AppBootstrapController extends ChangeNotifier {
 
   DataProvider? get dataProvider => _dataProvider;
   ErrorLogService? get errorLogService => _errorLogService;
+  OperationLogService? get operationLogService => _operationLogService;
   DataSyncProgress get progress => _progress;
   String? get errorMessage => _errorMessage;
   bool get showSlowHint => _showSlowHint;
-  bool get isReady => _dataProvider != null && _errorLogService != null;
+  bool get isReady =>
+      _dataProvider != null &&
+      _errorLogService != null &&
+      _operationLogService != null;
 
   void startBootstrap() {
     final bootstrapToken = ++_bootstrapToken;
@@ -34,6 +40,7 @@ class AppBootstrapController extends ChangeNotifier {
     _slowHintTimer?.cancel();
     _dataProvider = null;
     _errorLogService = null;
+    _operationLogService = null;
     _errorMessage = null;
     _showSlowHint = false;
     _progress = AppBootstrapService.initialProgress;
@@ -78,6 +85,7 @@ class AppBootstrapController extends ChangeNotifier {
       _slowHintTimer?.cancel();
       _dataProvider = snapshot.dataProvider;
       _errorLogService = snapshot.errorLogService;
+      _operationLogService = snapshot.operationLogService;
       _notifySafely();
     } catch (e, stackTrace) {
       await ErrorLogService.instance.record(

@@ -54,12 +54,16 @@ class _AppBootstrapState extends State<AppBootstrap> {
       builder: (context, _) {
         final dataProvider = _controller.dataProvider;
         final errorLogService = _controller.errorLogService;
+        final operationLogService = _controller.operationLogService;
 
-        if (dataProvider != null && errorLogService != null) {
+        if (dataProvider != null &&
+            errorLogService != null &&
+            operationLogService != null) {
           return MultiProvider(
             providers: [
               ChangeNotifierProvider.value(value: dataProvider),
               ChangeNotifierProvider.value(value: errorLogService),
+              ChangeNotifierProvider.value(value: operationLogService),
             ],
             child: const MyApp(),
           );

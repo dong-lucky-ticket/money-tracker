@@ -7,14 +7,17 @@ import '../models/data_sync_progress.dart';
 import '../models/record.dart';
 import '../providers/data_provider.dart';
 import 'error_log_service.dart';
+import 'operation_log_service.dart';
 
 class AppBootstrapSnapshot {
   final DataProvider dataProvider;
   final ErrorLogService errorLogService;
+  final OperationLogService operationLogService;
 
   const AppBootstrapSnapshot({
     required this.dataProvider,
     required this.errorLogService,
+    required this.operationLogService,
   });
 }
 
@@ -32,6 +35,7 @@ class AppBootstrapService {
   }) async {
     await Hive.initFlutter();
     await ErrorLogService.instance.init();
+    await OperationLogService.instance.init();
     _registerAdapters();
 
     final dataProvider = DataProvider();
@@ -40,6 +44,7 @@ class AppBootstrapService {
     return AppBootstrapSnapshot(
       dataProvider: dataProvider,
       errorLogService: ErrorLogService.instance,
+      operationLogService: OperationLogService.instance,
     );
   }
 

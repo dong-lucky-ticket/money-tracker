@@ -10,6 +10,7 @@ import '../models/data_sync_progress.dart';
 import '../models/record.dart';
 import '../services/data_bootstrap_service.dart';
 import '../services/error_log_service.dart';
+import '../services/operation_log_service.dart';
 import '../services/record_import_service.dart';
 import '../utils/category_rules.dart';
 
@@ -79,6 +80,12 @@ class DataProvider with ChangeNotifier {
       source: 'data_add_record',
       scene: '新增/保存流水: ${record.id}',
     );
+    await _recordOperation(
+      '新增账单',
+      category: 'record',
+      detail:
+          '${record.isExpense ? '支出' : '收入'} ${record.amount.toStringAsFixed(2)} / ${record.category.name}',
+    );
   }
 
   Future<void> updateRecord(
@@ -99,6 +106,12 @@ class DataProvider with ChangeNotifier {
       source: 'data_update_record',
       scene: '编辑流水: ${record.id}',
     );
+    await _recordOperation(
+      '编辑账单',
+      category: 'record',
+      detail:
+          '${record.isExpense ? '支出' : '收入'} ${record.amount.toStringAsFixed(2)} / ${record.category.name}',
+    );
   }
 
   Future<void> toggleRecordVoided(Record record) async {
@@ -108,6 +121,11 @@ class DataProvider with ChangeNotifier {
       record,
       source: 'data_toggle_record_voided',
       scene: '切换流水作废状态: ${record.id}',
+    );
+    await _recordOperation(
+      record.isVoided ? '作废账单' : '取消作废账单',
+      category: 'record',
+      detail: '${record.amount.toStringAsFixed(2)} / ${record.category.name}',
     );
   }
 
@@ -146,6 +164,12 @@ class DataProvider with ChangeNotifier {
       await _deletedRecordsBox.put(deletedRecord.id, deletedRecord);
       await _recordsBox.delete(id);
       _notifyRecordsChanged();
+      await _recordOperation(
+        '删除账单',
+        category: 'record',
+        detail:
+            '${record.isExpense ? '支出' : '收入'} ${record.amount.toStringAsFixed(2)} / ${record.category.name}',
+      );
     } catch (e, stackTrace) {
       await _recordDataError(
         e,
@@ -171,6 +195,12 @@ class DataProvider with ChangeNotifier {
       await _recordsBox.put(restoredRecord.id, restoredRecord);
       await _deletedRecordsBox.delete(id);
       _notifyRecordsChanged();
+      await _recordOperation(
+        '恢复账单',
+        category: 'record',
+        detail:
+            '${record.isExpense ? '支出' : '收入'} ${record.amount.toStringAsFixed(2)} / ${record.category.name}',
+      );
     } catch (e, stackTrace) {
       await _recordDataError(
         e,
@@ -184,8 +214,17 @@ class DataProvider with ChangeNotifier {
 
   Future<void> permanentlyDeleteRecord(String id) async {
     try {
+      final record = _deletedRecordsBox.get(id);
       await _deletedRecordsBox.delete(id);
       _notifyRecordsChanged();
+      if (record != null) {
+        await _recordOperation(
+          '彻底删除账单',
+          category: 'record',
+          detail:
+              '${record.isExpense ? '支出' : '收入'} ${record.amount.toStringAsFixed(2)} / ${record.category.name}',
+        );
+      }
     } catch (e, stackTrace) {
       await _recordDataError(
         e,
@@ -203,6 +242,12 @@ class DataProvider with ChangeNotifier {
       ensureCategoryGroupId(category);
       await _categoriesBox.put(category.id, category);
       _notifyCategoriesChanged();
+      await _recordOperation(
+        '新增分类',
+        category: 'category',
+        detail:
+            '${category.isExpense ? '支出' : '收入'}分类 / ${category.name}',
+      );
     } catch (e, stackTrace) {
       await _recordDataError(
         e,
@@ -222,6 +267,11 @@ class DataProvider with ChangeNotifier {
       }
       await _categoryGroupsBox.put(group.id, group);
       _notifyCategoryGroupsChanged();
+      await _recordOperation(
+        '新增分类组',
+        category: 'category',
+        detail: '${group.isExpense ? '支出' : '收入'} / ${group.name}',
+      );
     } catch (e, stackTrace) {
       await _recordDataError(
         e,
@@ -237,6 +287,11 @@ class DataProvider with ChangeNotifier {
     try {
       await _categoryGroupsBox.put(group.id, group);
       _notifyCategoryGroupsChanged();
+      await _recordOperation(
+        '更新分类组',
+        category: 'category',
+        detail: '${group.isExpense ? '支出' : '收入'} / ${group.name}',
+      );
     } catch (e, stackTrace) {
       await _recordDataError(
         e,
@@ -258,6 +313,12 @@ class DataProvider with ChangeNotifier {
       for (final group in newOrderList) {
         await _categoryGroupsBox.put(group.id, group);
       }
+
+      await _recordOperation(
+        '重排分类组',
+        category: 'category',
+        detail: '共调整 ${newOrderList.length} 个分类组',
+      );
     } catch (e, stackTrace) {
       await _recordDataError(
         e,
@@ -280,6 +341,12 @@ class DataProvider with ChangeNotifier {
       await _deletedCategoriesBox.put(deletedCategory.id, deletedCategory);
       await _categoriesBox.delete(id);
       _notifyCategoriesChanged();
+      await _recordOperation(
+        '删除分类',
+        category: 'category',
+        detail:
+            '${category.isExpense ? '支出' : '收入'}分类 / ${category.name}',
+      );
     } catch (e, stackTrace) {
       await _recordDataError(
         e,
@@ -303,6 +370,12 @@ class DataProvider with ChangeNotifier {
       await _categoriesBox.put(restoredCategory.id, restoredCategory);
       await _deletedCategoriesBox.delete(id);
       _notifyCategoriesChanged();
+      await _recordOperation(
+        '恢复分类',
+        category: 'category',
+        detail:
+            '${category.isExpense ? '支出' : '收入'}分类 / ${category.name}',
+      );
     } catch (e, stackTrace) {
       await _recordDataError(
         e,
@@ -316,8 +389,17 @@ class DataProvider with ChangeNotifier {
 
   Future<void> permanentlyDeleteCategory(String id) async {
     try {
+      final category = _deletedCategoriesBox.get(id);
       await _deletedCategoriesBox.delete(id);
       _notifyCategoriesChanged();
+      if (category != null) {
+        await _recordOperation(
+          '彻底删除分类',
+          category: 'category',
+          detail:
+              '${category.isExpense ? '支出' : '收入'}分类 / ${category.name}',
+        );
+      }
     } catch (e, stackTrace) {
       await _recordDataError(
         e,
@@ -331,17 +413,20 @@ class DataProvider with ChangeNotifier {
 
   Future<void> reorderCategories(List<Category> newOrderList) async {
     try {
-      // 1. 立即在内存中更新排序，并同步通知UI刷新
-      // 这样 ReorderableListView 能够立刻获取到最新顺序，避免拖拽松手后“回弹再动画”的冗余表现
       for (int i = 0; i < newOrderList.length; i++) {
         newOrderList[i].sortOrder = i;
       }
       _notifyCategoriesChanged();
 
-      // 2. 随后在后台异步持久化到本地存储
-      for (var cat in newOrderList) {
+      for (final cat in newOrderList) {
         await _categoriesBox.put(cat.id, cat);
       }
+
+      await _recordOperation(
+        '重排分类',
+        category: 'category',
+        detail: '共调整 ${newOrderList.length} 个分类',
+      );
     } catch (e, stackTrace) {
       await _recordDataError(
         e,
@@ -367,6 +452,13 @@ class DataProvider with ChangeNotifier {
       for (final category in newOrderList) {
         await _categoriesBox.put(category.id, category);
       }
+
+      await _recordOperation(
+        '组内重排分类',
+        category: 'category',
+        detail:
+            '${isExpense ? '支出' : '收入'}组 $groupId 内调整 ${newOrderList.length} 个分类',
+      );
     } catch (e, stackTrace) {
       await _recordDataError(
         e,
@@ -383,12 +475,17 @@ class DataProvider with ChangeNotifier {
       await _recordsBox.clear();
       await _deletedRecordsBox.clear();
       _notifyRecordsChanged();
+      await _recordOperation(
+        '清空全部账单数据',
+        category: 'data',
+        detail: '已清空当前账单与账单回收站',
+      );
     } catch (e, stackTrace) {
       await _recordDataError(
         e,
         stackTrace: stackTrace,
         source: 'data_clear_all_records',
-        scene: '清空所有账单数据',
+        scene: '清空全部账单数据',
       );
       rethrow;
     }
@@ -400,6 +497,11 @@ class DataProvider with ChangeNotifier {
       await _deletedCategoriesBox.clear();
       _notifyRecordsChanged();
       _notifyCategoriesChanged();
+      await _recordOperation(
+        '清空回收站',
+        category: 'data',
+        detail: '已清空已删除账单和分类',
+      );
     } catch (e, stackTrace) {
       await _recordDataError(
         e,
@@ -415,12 +517,17 @@ class DataProvider with ChangeNotifier {
     try {
       await _deletedRecordsBox.clear();
       _notifyRecordsChanged();
+      await _recordOperation(
+        '清空已删除账单',
+        category: 'data',
+        detail: '账单回收站已清空',
+      );
     } catch (e, stackTrace) {
       await _recordDataError(
         e,
         stackTrace: stackTrace,
         source: 'data_clear_deleted_records',
-        scene: '清空已删除流水',
+        scene: '清空已删除账单',
       );
       rethrow;
     }
@@ -430,6 +537,11 @@ class DataProvider with ChangeNotifier {
     try {
       await _deletedCategoriesBox.clear();
       _notifyCategoriesChanged();
+      await _recordOperation(
+        '清空已删除分类',
+        category: 'data',
+        detail: '分类回收站已清空',
+      );
     } catch (e, stackTrace) {
       await _recordDataError(
         e,
@@ -483,6 +595,12 @@ class DataProvider with ChangeNotifier {
       _invalidateCategoryGroupsCache();
       _notifyRecordsChanged();
       _notifyCategoriesChanged();
+      await _recordOperation(
+        '导入 CSV 数据',
+        category: 'data',
+        detail:
+            '新增 ${preparedImport.result.importedCount} 条，更新 ${preparedImport.result.updatedCount} 条，新增分类 ${preparedImport.result.createdCategoryCount} 个',
+      );
 
       return preparedImport.result;
     } catch (e, stackTrace) {
@@ -502,6 +620,10 @@ class DataProvider with ChangeNotifier {
       _isDarkTheme = !_isDarkTheme;
       await _settingsBox.put('isDarkTheme', _isDarkTheme);
       notifyListeners();
+      await _recordOperation(
+        _isDarkTheme ? '切换深色主题' : '切换浅色主题',
+        category: 'settings',
+      );
     } catch (e, stackTrace) {
       await _recordDataError(
         e,
@@ -619,5 +741,17 @@ class DataProvider with ChangeNotifier {
   void _notifyCategoryGroupsChanged() {
     _invalidateCategoryGroupsCache();
     notifyListeners();
+  }
+
+  Future<void> _recordOperation(
+    String title, {
+    String detail = '',
+    String category = 'general',
+  }) {
+    return OperationLogService.instance.record(
+      title: title,
+      detail: detail,
+      category: category,
+    );
   }
 }

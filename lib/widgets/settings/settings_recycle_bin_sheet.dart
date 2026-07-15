@@ -342,6 +342,7 @@ class _SettingsRecycleBinSheetState extends State<SettingsRecycleBinSheet> {
   }
 
   Future<void> _restoreRecord(BuildContext context, Record record) async {
+    final provider = context.read<DataProvider>();
     final confirmed = await showDialog<bool>(
           context: context,
           builder: (dialogContext) {
@@ -370,7 +371,7 @@ class _SettingsRecycleBinSheetState extends State<SettingsRecycleBinSheet> {
       return;
     }
 
-    await context.read<DataProvider>().restoreRecord(record.id);
+    await provider.restoreRecord(record.id);
     if (!context.mounted) {
       return;
     }
@@ -378,6 +379,7 @@ class _SettingsRecycleBinSheetState extends State<SettingsRecycleBinSheet> {
   }
 
   Future<void> _restoreCategory(BuildContext context, Category category) async {
+    final provider = context.read<DataProvider>();
     final confirmed = await showDialog<bool>(
           context: context,
           builder: (dialogContext) {
@@ -406,7 +408,7 @@ class _SettingsRecycleBinSheetState extends State<SettingsRecycleBinSheet> {
       return;
     }
 
-    await context.read<DataProvider>().restoreCategory(category.id);
+    await provider.restoreCategory(category.id);
     if (!context.mounted) {
       return;
     }
@@ -417,6 +419,7 @@ class _SettingsRecycleBinSheetState extends State<SettingsRecycleBinSheet> {
     BuildContext context,
     Record record,
   ) async {
+    final provider = context.read<DataProvider>();
     final confirmed = await showDialog<bool>(
           context: context,
           builder: (dialogContext) {
@@ -445,7 +448,7 @@ class _SettingsRecycleBinSheetState extends State<SettingsRecycleBinSheet> {
       return;
     }
 
-    await context.read<DataProvider>().permanentlyDeleteRecord(record.id);
+    await provider.permanentlyDeleteRecord(record.id);
     if (!context.mounted) {
       return;
     }
@@ -456,6 +459,7 @@ class _SettingsRecycleBinSheetState extends State<SettingsRecycleBinSheet> {
     BuildContext context,
     Category category,
   ) async {
+    final provider = context.read<DataProvider>();
     final confirmed = await showDialog<bool>(
           context: context,
           builder: (dialogContext) {
@@ -484,7 +488,7 @@ class _SettingsRecycleBinSheetState extends State<SettingsRecycleBinSheet> {
       return;
     }
 
-    await context.read<DataProvider>().permanentlyDeleteCategory(category.id);
+    await provider.permanentlyDeleteCategory(category.id);
     if (!context.mounted) {
       return;
     }
@@ -492,6 +496,7 @@ class _SettingsRecycleBinSheetState extends State<SettingsRecycleBinSheet> {
   }
 
   Future<void> _confirmClearCurrentTab(BuildContext context) async {
+    final provider = context.read<DataProvider>();
     final confirmed = await showDialog<bool>(
           context: context,
           builder: (dialogContext) {
@@ -524,7 +529,6 @@ class _SettingsRecycleBinSheetState extends State<SettingsRecycleBinSheet> {
       return;
     }
 
-    final provider = context.read<DataProvider>();
     if (_showRecords) {
       await provider.clearDeletedRecords();
     } else {

@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
 import 'package:material_design_icons_flutter/material_design_icons_flutter.dart';
 import 'package:provider/provider.dart';
 
 import '../../controllers/settings_screen_controller.dart';
 import '../../providers/data_provider.dart';
+import '../../services/operation_log_service.dart';
 import 'settings_section.dart';
 
 class SettingsDataManagementSection extends StatelessWidget {
@@ -21,6 +23,52 @@ class SettingsDataManagementSection extends StatelessWidget {
         const SettingsSectionTitle(title: '数据管理'),
         SettingsSectionCard(
           children: [
+            Consumer<OperationLogService>(
+              builder: (context, operationLogService, child) {
+                final latestEntry = operationLogService.latestEntry;
+                final latestLabel = latestEntry == null
+                    ? '暂无'
+                    : DateFormat('MM-dd HH:mm').format(latestEntry.timestamp);
+
+                return SettingsItem(
+                  icon: MdiIcons.history,
+                  iconColor: Colors.indigo,
+                  title: '操作记录',
+                  customTrailing: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      if (operationLogService.hasUnreadEntries) ...[
+                        Container(
+                          width: 8,
+                          height: 8,
+                          decoration: const BoxDecoration(
+                            color: Colors.redAccent,
+                            shape: BoxShape.circle,
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                      ],
+                      Text(
+                        operationLogService.entryCount == 0
+                            ? latestLabel
+                            : '$latestLabel / ${operationLogService.entryCount} 条',
+                        style: const TextStyle(
+                          fontSize: 12,
+                          color: Color(0xFFD1D5DB),
+                        ),
+                      ),
+                      const SizedBox(width: 4),
+                      const Icon(
+                        Icons.chevron_right,
+                        size: 20,
+                        color: Color(0xFFD1D5DB),
+                      ),
+                    ],
+                  ),
+                  onTap: () => controller.showOperationLogs(context),
+                );
+              },
+            ),
             Consumer<DataProvider>(
               builder: (context, provider, child) {
                 return SettingsItem(

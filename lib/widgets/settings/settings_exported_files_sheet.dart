@@ -1,5 +1,6 @@
 import 'dart:io';
 
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:material_design_icons_flutter/material_design_icons_flutter.dart';
@@ -7,11 +8,16 @@ import 'package:material_design_icons_flutter/material_design_icons_flutter.dart
 class SettingsExportedFilesSheet extends StatefulWidget {
   final List<File> initialFiles;
   final Future<void> Function(BuildContext context, File file) onShareFile;
+  final Future<void> Function(BuildContext context, File file)
+      onSaveToDownloads;
+  final Future<bool> Function(BuildContext context, File file) onDeleteFile;
 
   const SettingsExportedFilesSheet({
     super.key,
     required this.initialFiles,
     required this.onShareFile,
+    required this.onSaveToDownloads,
+    required this.onDeleteFile,
   });
 
   @override
@@ -19,44 +25,52 @@ class SettingsExportedFilesSheet extends StatefulWidget {
       _SettingsExportedFilesSheetState();
 }
 
-class _SettingsExportedFilesSheetState extends State<SettingsExportedFilesSheet> {
+class _SettingsExportedFilesSheetState
+    extends State<SettingsExportedFilesSheet> {
   late final List<File> _files = List<File>.from(widget.initialFiles);
 
-  Future<void> _deleteFile(BuildContext context, File file) async {
-    final shouldDelete = await showDialog<bool>(
-          context: context,
-          builder: (dialogContext) {
-            return AlertDialog(
-              title: const Text('删除文件'),
-              content: const Text('确定要删除这个导出的文件吗？此操作不可恢复。'),
-              actions: [
-                TextButton(
-                  onPressed: () => Navigator.pop(dialogContext, false),
-                  child: const Text('取消'),
-                ),
-                TextButton(
-                  onPressed: () => Navigator.pop(dialogContext, true),
-                  child: const Text(
-                    '删除',
-                    style: TextStyle(color: Colors.red),
-                  ),
-                ),
-              ],
-            );
-          },
-        ) ??
-        false;
-
-    if (!shouldDelete) {
-      return;
-    }
-
-    file.deleteSync();
-    if (mounted) {
-      setState(() {
-        _files.remove(file);
-      });
-    }
+  Future<void> _showActions(BuildContext context, File file) async {
+    await showCupertinoModalPopup<void>(
+      context: context,
+      builder: (sheetContext) {
+        return CupertinoActionSheet(
+          actions: [
+            CupertinoActionSheetAction(
+              onPressed: () async {
+                Navigator.pop(sheetContext);
+                await widget.onSaveToDownloads(context, file);
+              },
+              child: const Text('保存到 Download'),
+            ),
+            CupertinoActionSheetAction(
+              onPressed: () async {
+                Navigator.pop(sheetContext);
+                await widget.onShareFile(context, file);
+              },
+              child: const Text('分享文件'),
+            ),
+            CupertinoActionSheetAction(
+              isDestructiveAction: true,
+              onPressed: () async {
+                Navigator.pop(sheetContext);
+                final deleted = await widget.onDeleteFile(context, file);
+                if (!deleted || !mounted) {
+                  return;
+                }
+                setState(() {
+                  _files.remove(file);
+                });
+              },
+              child: const Text('删除文件'),
+            ),
+          ],
+          cancelButton: CupertinoActionSheetAction(
+            onPressed: () => Navigator.pop(sheetContext),
+            child: const Text('取消'),
+          ),
+        );
+      },
+    );
   }
 
   @override
@@ -95,6 +109,7 @@ class _SettingsExportedFilesSheetState extends State<SettingsExportedFilesSheet>
                     return Builder(
                       builder: (itemContext) {
                         return ListTile(
+                          onTap: () => _showActions(itemContext, file),
                           leading: Icon(
                             MdiIcons.fileDelimitedOutline,
                             color: const Color(0xFF4A90E2),
@@ -107,28 +122,9 @@ class _SettingsExportedFilesSheetState extends State<SettingsExportedFilesSheet>
                             '$modifiedTime  |  $fileSize KB',
                             style: const TextStyle(fontSize: 12),
                           ),
-                          trailing: Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              IconButton(
-                                icon: const Icon(
-                                  Icons.share,
-                                  size: 20,
-                                  color: Colors.grey,
-                                ),
-                                onPressed: () async {
-                                  await widget.onShareFile(itemContext, file);
-                                },
-                              ),
-                              IconButton(
-                                icon: const Icon(
-                                  Icons.delete_outline,
-                                  size: 20,
-                                  color: Colors.redAccent,
-                                ),
-                                onPressed: () => _deleteFile(itemContext, file),
-                              ),
-                            ],
+                          trailing: const Icon(
+                            Icons.chevron_right,
+                            color: Colors.grey,
                           ),
                         );
                       },

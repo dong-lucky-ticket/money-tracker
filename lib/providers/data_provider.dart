@@ -446,20 +446,43 @@ class DataProvider with ChangeNotifier {
       final preparedImport = RecordImportService.prepareCsvImport(
         csvContent: csvContent,
         existingCategories: _categoriesBox.values,
+        existingDeletedCategories: _deletedCategoriesBox.values,
+        existingCategoryGroups: _categoryGroupsBox.values,
         existingRecords: _recordsBox.values,
+        existingDeletedRecords: _deletedRecordsBox.values,
         ensureCategoryGroupId: ensureCategoryGroupId,
       );
 
-      if (preparedImport.categoriesToCreate.isNotEmpty) {
+      if (preparedImport.categoryGroupsToImport.isNotEmpty) {
+        await _categoryGroupsBox.putAll(preparedImport.categoryGroupsToImport);
+      }
+
+      if (preparedImport.activeCategoriesToImport.isNotEmpty) {
         await _categoriesBox.putAll({
-          for (final category in preparedImport.categoriesToCreate)
+          for (final category in preparedImport.activeCategoriesToImport.values)
             category.id: category,
         });
       }
 
-      await _recordsBox.putAll(preparedImport.recordsToImport);
+      if (preparedImport.deletedCategoriesToImport.isNotEmpty) {
+        await _deletedCategoriesBox.putAll({
+          for (final category in preparedImport.deletedCategoriesToImport.values)
+            category.id: category,
+        });
+      }
+
+      if (preparedImport.activeRecordsToImport.isNotEmpty) {
+        await _recordsBox.putAll(preparedImport.activeRecordsToImport);
+      }
+
+      if (preparedImport.deletedRecordsToImport.isNotEmpty) {
+        await _deletedRecordsBox.putAll(preparedImport.deletedRecordsToImport);
+      }
+
       _invalidateCategoriesCache();
+      _invalidateCategoryGroupsCache();
       _notifyRecordsChanged();
+      _notifyCategoriesChanged();
 
       return preparedImport.result;
     } catch (e, stackTrace) {

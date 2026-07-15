@@ -1,7 +1,6 @@
 import 'dart:convert';
 import 'dart:io';
 
-import 'package:csv/csv.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -12,6 +11,7 @@ import 'package:share_plus/share_plus.dart';
 
 import '../providers/data_provider.dart';
 import '../services/app_share_service.dart';
+import '../services/csv_export_service.dart';
 import '../services/error_log_service.dart';
 import '../theme/app_colors.dart';
 import '../widgets/common/app_toast.dart';
@@ -115,20 +115,13 @@ class SettingsScreenController {
     DataProvider provider,
   ) async {
     try {
-      final rows = <List<dynamic>>[
-        ['ID', '类型', '金额', '分类', '备注', '日期'],
-        for (final record in provider.records)
-          [
-            record.id,
-            record.isExpense ? '支出' : '收入',
-            record.amount,
-            record.category.name,
-            record.remark,
-            DateFormat('yyyy-MM-dd HH:mm:ss').format(record.date),
-          ],
-      ];
-
-      final csv = const ListToCsvConverter().convert(rows);
+      final csv = CsvExportService.buildCsv(
+        activeRecords: provider.records,
+        deletedRecords: provider.deletedRecords,
+        activeCategories: provider.categories,
+        deletedCategories: provider.deletedCategories,
+        categoryGroups: provider.categoryGroups,
+      );
       final directory = await getTemporaryDirectory();
       final timestamp = DateFormat('yyyyMMdd_HHmmss').format(DateTime.now());
       final path = '${directory.path}/记账助储_$timestamp.csv';
@@ -162,9 +155,7 @@ class SettingsScreenController {
       return (name.startsWith('expensetracker_') || name.startsWith('记账助储_')) &&
           name.endsWith('.csv');
     }).toList()
-      ..sort(
-        (a, b) => b.lastModifiedSync().compareTo(a.lastModifiedSync()),
-      );
+      ..sort((a, b) => b.lastModifiedSync().compareTo(a.lastModifiedSync()));
 
     if (!context.mounted) {
       return;
@@ -418,7 +409,8 @@ class SettingsScreenController {
       context,
       [XFile(filePath)],
       subject: subject,
-      sharePositionOrigin: box!.localToGlobal(Offset.zero) & box.size,
+      sharePositionOrigin:
+          box == null ? null : box.localToGlobal(Offset.zero) & box.size,
     );
   }
 }

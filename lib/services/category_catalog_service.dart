@@ -14,7 +14,6 @@ class CategoryCatalogService {
     'expense::维修::repair',
     'expense::亲友::relatives',
     'expense::快递::express',
-    'expense::话费::phone-bill',
     'expense::生活缴费::utility',
   };
 

@@ -91,7 +91,8 @@ Category? resolveLegacyRecordCategory({
   required Category category,
   required Iterable<Category> categories,
 }) {
-  if (isLegacyCommunicationCategory(category)) {
+  if (isLegacyCommunicationCategory(category) ||
+      isPhoneBillCategory(category)) {
     return findCategoryByName(categories, '话费', isExpense: true);
   }
 
@@ -144,6 +145,12 @@ bool isLegacyCommunicationCategory(Category category) {
   }
 
   return category.iconName == 'communication' || category.name == '通讯';
+}
+
+bool isPhoneBillCategory(Category category) {
+  return category.isExpense &&
+      category.name == '话费' &&
+      category.iconName == 'phone-bill';
 }
 
 bool isLegacyRailCategory(Category category) {

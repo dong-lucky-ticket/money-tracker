@@ -11,13 +11,17 @@ class RecordCategoryMigrationService {
 
   static Future<void> migrate({
     required Box<Record> recordsBox,
+    required Box<Record> deletedRecordsBox,
     required Box<Category> categoriesBox,
     required Box settingsBox,
     required String versionKey,
     required int currentVersion,
     ValueChanged<DataSyncProgress>? onProgress,
   }) async {
-    final records = recordsBox.values.toList(growable: false);
+    final records = [
+      ...recordsBox.values,
+      ...deletedRecordsBox.values,
+    ];
     final storedVersion = settingsBox.get(versionKey, defaultValue: 0) as int;
     final hasMissingGroupId = records.any((record) => record.category.groupId.isEmpty);
 

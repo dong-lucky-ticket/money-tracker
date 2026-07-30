@@ -37,7 +37,7 @@ class DataBootstrapService {
   static const String settingsBoxName = 'settingsBox';
   static const String recordGroupMigrationVersionKey =
       'recordGroupMigrationVersion';
-  static const int currentRecordGroupMigrationVersion = 8;
+  static const int currentRecordGroupMigrationVersion = 9;
 
   const DataBootstrapService._();
 
@@ -66,6 +66,7 @@ class DataBootstrapService {
     await CategoryCatalogService.syncDefaultCategories(categoriesBox);
     await RecordCategoryMigrationService.migrate(
       recordsBox: recordsBox,
+      deletedRecordsBox: deletedRecordsBox,
       categoriesBox: categoriesBox,
       settingsBox: settingsBox,
       versionKey: recordGroupMigrationVersionKey,

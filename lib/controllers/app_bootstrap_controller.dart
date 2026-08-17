@@ -9,7 +9,6 @@ import '../services/error_log_service.dart';
 import '../services/operation_log_service.dart';
 
 class AppBootstrapController extends ChangeNotifier {
-  static const Duration _minimumSplashDuration = Duration(milliseconds: 1500);
   static const Duration _slowHintDelay = Duration(milliseconds: 1800);
 
   DataProvider? _dataProvider;
@@ -35,7 +34,6 @@ class AppBootstrapController extends ChangeNotifier {
 
   void startBootstrap() {
     final bootstrapToken = ++_bootstrapToken;
-    final minimumSplashFuture = Future<void>.delayed(_minimumSplashDuration);
 
     _slowHintTimer?.cancel();
     _dataProvider = null;
@@ -55,16 +53,10 @@ class AppBootstrapController extends ChangeNotifier {
       _notifySafely();
     });
 
-    _initialize(
-      bootstrapToken: bootstrapToken,
-      minimumSplashFuture: minimumSplashFuture,
-    );
+    _initialize(bootstrapToken: bootstrapToken);
   }
 
-  Future<void> _initialize({
-    required int bootstrapToken,
-    required Future<void> minimumSplashFuture,
-  }) async {
+  Future<void> _initialize({required int bootstrapToken}) async {
     try {
       final snapshot = await AppBootstrapService.bootstrap(
         onProgress: (progress) {
@@ -77,7 +69,6 @@ class AppBootstrapController extends ChangeNotifier {
         },
       );
 
-      await minimumSplashFuture;
       if (!_canUpdate(bootstrapToken)) {
         return;
       }
@@ -93,8 +84,6 @@ class AppBootstrapController extends ChangeNotifier {
         stackTrace: stackTrace,
         source: 'bootstrap_initialize',
       );
-      await minimumSplashFuture;
-
       if (!_canUpdate(bootstrapToken)) {
         return;
       }

@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:intl/intl.dart';
 import 'package:material_design_icons_flutter/material_design_icons_flutter.dart';
 import 'package:provider/provider.dart';
 
@@ -25,11 +24,6 @@ class SettingsDataManagementSection extends StatelessWidget {
           children: [
             Consumer<OperationLogService>(
               builder: (context, operationLogService, child) {
-                final latestEntry = operationLogService.latestEntry;
-                final latestLabel = latestEntry == null
-                    ? '暂无'
-                    : DateFormat('MM-dd HH:mm').format(latestEntry.timestamp);
-
                 return SettingsItem(
                   icon: MdiIcons.history,
                   iconColor: Colors.indigo,
@@ -49,9 +43,7 @@ class SettingsDataManagementSection extends StatelessWidget {
                         const SizedBox(width: 8),
                       ],
                       Text(
-                        operationLogService.entryCount == 0
-                            ? latestLabel
-                            : '$latestLabel / ${operationLogService.entryCount} 条',
+                        '${operationLogService.entryCount} 条',
                         style: const TextStyle(
                           fontSize: 12,
                           color: Color(0xFFD1D5DB),

@@ -15,7 +15,9 @@ import '../widgets/record/record_list_item.dart';
 
 // Note: floatingActionButton replacement skipped as it is likely located in the parent Scaffold/MainScreen.
 class HomeScreen extends StatefulWidget {
-  const HomeScreen({super.key});
+  final VoidCallback onOpenDrawer;
+
+  const HomeScreen({super.key, required this.onOpenDrawer});
 
   @override
   State<HomeScreen> createState() => _HomeScreenState();
@@ -134,39 +136,76 @@ class _HomeScreenState extends State<HomeScreen> {
           // 顶部导航
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                GestureDetector(
-                  onTap: _pickMonth,
-                  child: Row(
-                    children: [
-                      Text(
-                        DateFormat('yyyy年M月').format(_selectedMonth),
-                        style: const TextStyle(
-                          fontSize: 20,
-                          fontWeight: FontWeight.bold,
-                          color: Color(0xFF111827),
+            child: SizedBox(
+              height: 48,
+              child: Row(
+                children: [
+                  SizedBox(
+                    width: 48,
+                    height: 48,
+                    child: IconButton(
+                      alignment: Alignment.centerLeft,
+                      padding: EdgeInsets.zero,
+                      onPressed: widget.onOpenDrawer,
+                      tooltip: '打开菜单',
+                      icon: const Icon(
+                        Icons.menu,
+                        size: 28,
+                        color: Color(0xFF4B5563),
+                      ),
+                    ),
+                  ),
+                  Expanded(
+                    child: InkWell(
+                      onTap: _pickMonth,
+                      borderRadius: BorderRadius.circular(8),
+                      child: Center(
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Text(
+                              DateFormat('yyyy年M月').format(_selectedMonth),
+                              style: const TextStyle(
+                                fontSize: 20,
+                                fontWeight: FontWeight.bold,
+                                height: 1,
+                                color: Color(0xFF111827),
+                              ),
+                            ),
+                            const SizedBox(width: 4),
+                            Icon(
+                              MdiIcons.chevronDown,
+                              color: const Color(0xFF6B7280),
+                            ),
+                          ],
                         ),
                       ),
-                      const SizedBox(width: 4),
-                      Icon(MdiIcons.chevronDown,
-                          color: const Color(0xFF6B7280)),
-                    ],
+                    ),
                   ),
-                ),
-                GestureDetector(
-                  onTap: () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                          builder: (context) => const SearchScreen()),
-                    );
-                  },
-                  child: Icon(MdiIcons.magnify,
-                      size: 28, color: const Color(0xFF4B5563)),
-                ),
-              ],
+                  SizedBox(
+                    width: 48,
+                    height: 48,
+                    child: IconButton(
+                      alignment: Alignment.centerRight,
+                      padding: EdgeInsets.zero,
+                      onPressed: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => const SearchScreen(),
+                          ),
+                        );
+                      },
+                      tooltip: '搜索账单',
+                      icon: Icon(
+                        MdiIcons.magnify,
+                        size: 28,
+                        color: const Color(0xFF4B5563),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
             ),
           ),
 

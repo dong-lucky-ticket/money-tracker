@@ -15,17 +15,34 @@ class MainTabScreen extends StatefulWidget {
 
 class _MainTabScreenState extends State<MainTabScreen> {
   int _currentIndex = 0;
+  final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
 
-  final List<Widget> _pages = [
-    const HomeScreen(),
+  late final List<Widget> _pages = [
+    HomeScreen(onOpenDrawer: _openDrawer),
     const ReportScreen(),
-    const SettingsScreen(),
   ];
+
+  void _openDrawer() {
+    _scaffoldKey.currentState?.openDrawer();
+  }
+
+  Future<void> _openDrawerPage(Widget page) async {
+    await Navigator.of(context).push(
+      MaterialPageRoute(builder: (_) => page),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      key: _scaffoldKey,
       backgroundColor: const Color(0xFFF7F9FC),
+      drawer: Drawer(
+        width: MediaQuery.sizeOf(context).width,
+        elevation: 0,
+        shape: const RoundedRectangleBorder(),
+        child: SettingsScreen(onOpenPage: _openDrawerPage),
+      ),
       body: _pages[_currentIndex],
       floatingActionButton: _currentIndex == 0
           ? FloatingActionButton(
@@ -55,9 +72,6 @@ class _MainTabScreenState extends State<MainTabScreen> {
             _buildNavItem(0, MdiIcons.formatListBulleted, '账单'),
             const SizedBox(width: 10),
             _buildNavItem(1, MdiIcons.chartPie, '报表'),
-            const SizedBox(width: 10),
-            _buildNavItem(2, MdiIcons.accountOutline, '我的',
-                activeIcon: MdiIcons.account),
             const SizedBox(width: 10),
           ],
         ),

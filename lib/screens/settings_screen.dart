@@ -8,6 +8,7 @@ import '../widgets/settings/settings_category_shortcut_section.dart';
 import '../widgets/settings/settings_data_management_section.dart';
 import '../widgets/settings/settings_error_logs_section.dart';
 import '../widgets/settings/settings_header_section.dart';
+import '../widgets/settings/lottery_management_section.dart';
 
 class SettingsPageScreen extends StatelessWidget {
   const SettingsPageScreen({super.key});
@@ -17,7 +18,7 @@ class SettingsPageScreen extends StatelessWidget {
     return Scaffold(
       backgroundColor: AppColors.pageBackground,
       appBar: AppBar(
-        title: const Text('设置'),
+        title: const Text('我的'),
         backgroundColor: Colors.white,
         foregroundColor: AppColors.textPrimary,
         elevation: 0,
@@ -28,7 +29,9 @@ class SettingsPageScreen extends StatelessWidget {
 }
 
 class SettingsScreen extends StatelessWidget {
-  const SettingsScreen({super.key});
+  final Future<void> Function(Widget page)? onOpenPage;
+
+  const SettingsScreen({super.key, this.onOpenPage});
 
   @override
   Widget build(BuildContext context) {
@@ -42,7 +45,9 @@ class SettingsScreen extends StatelessWidget {
             padding: const EdgeInsets.symmetric(vertical: 24),
             physics: const BouncingScrollPhysics(),
             children: [
-              const SettingsCategoryShortcutSection(),
+              LotteryManagementSection(onOpenPage: onOpenPage),
+              const SizedBox(height: 24),
+              SettingsCategoryShortcutSection(onOpenPage: onOpenPage),
               const SizedBox(height: 24),
               SettingsDataManagementSection(controller: controller),
               const SizedBox(height: 24),

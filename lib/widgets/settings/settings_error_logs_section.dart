@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:intl/intl.dart';
 import 'package:material_design_icons_flutter/material_design_icons_flutter.dart';
 import 'package:provider/provider.dart';
 
@@ -24,11 +23,6 @@ class SettingsErrorLogsSection extends StatelessWidget {
           children: [
             Consumer<ErrorLogService>(
               builder: (context, errorLogService, child) {
-                final latestEntry = errorLogService.latestEntry;
-                final latestLabel = latestEntry == null
-                    ? '暂无'
-                    : DateFormat('MM-dd HH:mm').format(latestEntry.timestamp);
-
                 return SettingsItem(
                   icon: MdiIcons.alertCircleOutline,
                   iconColor: Colors.deepOrange,
@@ -48,9 +42,7 @@ class SettingsErrorLogsSection extends StatelessWidget {
                         const SizedBox(width: 8),
                       ],
                       Text(
-                        errorLogService.entryCount == 0
-                            ? latestLabel
-                            : '$latestLabel / ${errorLogService.entryCount} 条',
+                        '${errorLogService.entryCount} 条',
                         style: const TextStyle(
                           fontSize: 12,
                           color: Color(0xFFD1D5DB),

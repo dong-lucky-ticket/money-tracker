@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../../screens/double_color_ball_screen.dart';
 import '../../screens/lottery_screen.dart';
 import '../../theme/app_colors.dart';
 import 'settings_section.dart';
@@ -38,7 +39,9 @@ class LotteryManagementSection extends StatelessWidget {
   }
 
   Future<void> _openLottery(BuildContext context, String lotteryType) async {
-    final page = LotteryScreen(lotteryType: lotteryType);
+    final page = lotteryType == '福彩'
+        ? const DoubleColorBallScreen()
+        : LotteryScreen(lotteryType: lotteryType);
     if (onOpenPage != null) {
       await onOpenPage!(page);
       return;

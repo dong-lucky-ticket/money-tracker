@@ -4,6 +4,7 @@ import 'package:hive_flutter/hive_flutter.dart';
 import '../models/category.dart';
 import '../models/category_group.dart';
 import '../models/data_sync_progress.dart';
+import '../models/double_color_ball_draw.dart';
 import '../models/record.dart';
 import '../models/super_lotto_draw.dart';
 import '../providers/data_provider.dart';
@@ -64,6 +65,12 @@ class AppBootstrapService {
     }
     if (!Hive.isAdapterRegistered(4)) {
       Hive.registerAdapter(SuperLottoPrizeTierAdapter());
+    }
+    if (!Hive.isAdapterRegistered(5)) {
+      Hive.registerAdapter(DoubleColorBallDrawAdapter());
+    }
+    if (!Hive.isAdapterRegistered(6)) {
+      Hive.registerAdapter(DoubleColorBallPrizeTierAdapter());
     }
   }
 }

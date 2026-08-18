@@ -24,6 +24,8 @@ dependencies:
   uuid: ^4.5.3
   material_design_icons_flutter: ^7.0.7296
   share_plus: ^7.2.2
+  dio: ^5.0.0       # 网络请求，支持超时、拦截器和重试
+  html: ^0.15.0     # 解析静态 HTML 公告页
 
 dev_dependencies:
   flutter_test:

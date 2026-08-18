@@ -5,6 +5,7 @@ import '../models/category.dart';
 import '../models/category_group.dart';
 import '../models/data_sync_progress.dart';
 import '../models/record.dart';
+import '../models/super_lotto_draw.dart';
 import '../providers/data_provider.dart';
 import 'error_log_service.dart';
 import 'operation_log_service.dart';
@@ -57,6 +58,12 @@ class AppBootstrapService {
     }
     if (!Hive.isAdapterRegistered(1)) {
       Hive.registerAdapter(RecordAdapter());
+    }
+    if (!Hive.isAdapterRegistered(3)) {
+      Hive.registerAdapter(SuperLottoDrawAdapter());
+    }
+    if (!Hive.isAdapterRegistered(4)) {
+      Hive.registerAdapter(SuperLottoPrizeTierAdapter());
     }
   }
 }

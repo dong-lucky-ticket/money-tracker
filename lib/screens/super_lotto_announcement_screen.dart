@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:intl/intl.dart';
 
 import '../models/super_lotto_draw.dart';
 import '../theme/app_colors.dart';
+import '../widgets/common/app_toast.dart';
 
 class SuperLottoAnnouncementScreen extends StatelessWidget {
   final SuperLottoDraw draw;
@@ -41,18 +43,6 @@ class SuperLottoAnnouncementScreen extends StatelessWidget {
           ),
           const SizedBox(height: 16),
           _AnnouncementSection(
-            title: '开奖信息',
-            child: Column(
-              children: [
-                _InfoRow(label: '开奖时间', value: draw.drawTime ?? '公告未提供'),
-                _InfoRow(label: '开奖地点', value: draw.drawLocation ?? '公告未提供'),
-                _InfoRow(
-                    label: '公告链接', value: draw.announcementUrl, isLast: true),
-              ],
-            ),
-          ),
-          const SizedBox(height: 16),
-          _AnnouncementSection(
             title: '本期中奖情况',
             child: draw.prizeTiers.isEmpty
                 ? const Padding(
@@ -78,6 +68,27 @@ class SuperLottoAnnouncementScreen extends StatelessWidget {
               ),
             ),
           ],
+          const SizedBox(height: 16),
+          _AnnouncementSection(
+            title: '公告链接',
+            child: Tooltip(
+              message: '点击复制',
+              child: GestureDetector(
+                onTap: () {
+                  Clipboard.setData(ClipboardData(text: draw.announcementUrl));
+                  AppToast.showSuccess(context, '公告链接已复制');
+                },
+                child: Text(
+                  draw.announcementUrl,
+                  style: const TextStyle(
+                    color: AppColors.primary,
+                    height: 1.5,
+                    decoration: TextDecoration.underline,
+                  ),
+                ),
+              ),
+            ),
+          ),
         ],
       ),
     );
@@ -157,47 +168,6 @@ class _NumberGroups extends StatelessWidget {
           ),
         ],
       ],
-    );
-  }
-}
-
-class _InfoRow extends StatelessWidget {
-  final String label;
-  final String value;
-  final bool isLast;
-
-  const _InfoRow({
-    required this.label,
-    required this.value,
-    this.isLast = false,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(vertical: 10),
-      decoration: BoxDecoration(
-        border: isLast
-            ? null
-            : const Border(bottom: BorderSide(color: AppColors.divider)),
-      ),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          SizedBox(
-            width: 72,
-            child: Text(label,
-                style: const TextStyle(color: AppColors.textTertiary)),
-          ),
-          Expanded(
-            child: Text(
-              value,
-              style:
-                  const TextStyle(color: AppColors.textSecondary, height: 1.4),
-            ),
-          ),
-        ],
-      ),
     );
   }
 }

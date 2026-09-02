@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 
@@ -27,6 +28,7 @@ class _LotteryScreenState extends State<LotteryScreen> {
   int _totalAnnouncements = 0;
   int _failedAnnouncements = 0;
   bool _isLoading = false;
+  String? _busyIssue;
   String? _syncMessage;
   Timer? _syncMessageTimer;
 
@@ -115,6 +117,86 @@ class _LotteryScreenState extends State<LotteryScreen> {
         _errorMessage = '更新开奖数据时发生异常，请稍后重试。';
         _isLoading = false;
       });
+    }
+  }
+
+  Future<void> _refetchIssue(String value) async {
+    final issue = value.trim();
+    if (_busyIssue != null || issue.isEmpty) return;
+    setState(() {
+      _busyIssue = issue;
+      _errorMessage = null;
+    });
+    try {
+      final refreshed = await _syncService.refreshIssue(issue);
+      if (!mounted) return;
+      setState(() {
+        final index = _draws.indexWhere((draw) => draw.issue == issue);
+        if (index >= 0) {
+          _draws = [..._draws]..[index] = refreshed;
+        }
+        _syncMessage = '第$issue期已重新抓取并覆盖原有数据';
+      });
+      _dismissSyncMessageAfterDelay();
+    } on SuperLottoCrawlException catch (error) {
+      if (mounted) setState(() => _errorMessage = error.message);
+    } catch (_) {
+      if (mounted) setState(() => _errorMessage = '重新抓取第$issue期失败，请稍后重试。');
+    } finally {
+      if (mounted) setState(() => _busyIssue = null);
+    }
+  }
+
+  Future<void> _deleteDraw(SuperLottoDraw draw) async {
+    if (_busyIssue != null) return;
+    setState(() {
+      _busyIssue = draw.issue;
+      _errorMessage = null;
+    });
+    try {
+      await _syncService.deleteIssue(draw.issue);
+      if (!mounted) return;
+      setState(() {
+        _draws = _draws.where((item) => item.issue != draw.issue).toList();
+        _syncMessage = '第${draw.issue}期已删除';
+      });
+      _dismissSyncMessageAfterDelay();
+    } catch (_) {
+      if (mounted) setState(() => _errorMessage = '删除第${draw.issue}期失败，请稍后重试。');
+    } finally {
+      if (mounted) setState(() => _busyIssue = null);
+    }
+  }
+
+  Future<void> _showDrawActions(SuperLottoDraw draw) async {
+    if (_busyIssue != null) return;
+    final action = await showCupertinoModalPopup<String>(
+      context: context,
+      builder: (sheetContext) => CupertinoActionSheet(
+        title: Text('第${draw.issue}期'),
+        actions: [
+          CupertinoActionSheetAction(
+            onPressed: () => Navigator.of(sheetContext).pop('refetch'),
+            child: const Text('重新抓取本期'),
+          ),
+          CupertinoActionSheetAction(
+            isDestructiveAction: true,
+            onPressed: () => Navigator.of(sheetContext).pop('delete'),
+            child: const Text('删除本期'),
+          ),
+        ],
+        cancelButton: CupertinoActionSheetAction(
+          isDefaultAction: true,
+          onPressed: () => Navigator.of(sheetContext).pop(),
+          child: const Text('取消'),
+        ),
+      ),
+    );
+    if (!mounted) return;
+    if (action == 'refetch') {
+      await _refetchIssue(draw.issue);
+    } else if (action == 'delete') {
+      await _deleteDraw(draw);
     }
   }
 
@@ -335,6 +417,7 @@ class _LotteryScreenState extends State<LotteryScreen> {
         borderRadius: BorderRadius.circular(8),
         child: InkWell(
           borderRadius: BorderRadius.circular(8),
+          onLongPress: _busyIssue == null ? () => _showDrawActions(draw) : null,
           onTap: () {
             Navigator.of(context).push(
               MaterialPageRoute(

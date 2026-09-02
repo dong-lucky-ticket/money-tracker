@@ -39,6 +39,11 @@ class SuperLottoRepository {
     await box.putAll({for (final draw in draws) draw.issue: draw});
   }
 
+  Future<void> deleteIssue(String issue) async {
+    final box = await _getBox();
+    await box.delete(issue);
+  }
+
   Future<Map<String, SuperLottoDraw>> loadByIssues(
     Iterable<String> issues,
   ) async {
@@ -65,6 +70,18 @@ class SuperLottoSyncService {
         _repository = repository ?? SuperLottoRepository();
 
   Future<List<SuperLottoDraw>> loadCachedDraws() => _repository.loadRecent();
+
+  Future<void> deleteIssue(String issue) => _repository.deleteIssue(issue);
+
+  Future<SuperLottoDraw> refreshIssue(String issue) async {
+    final existing = (await _repository.loadByIssues([issue]))[issue];
+    if (existing == null) {
+      throw const SuperLottoCrawlException('本地没有找到该期记录，请先同步最近开奖数据。');
+    }
+    final refreshed = await _crawler.fetchAnnouncement(existing);
+    await _repository.saveAll([refreshed]);
+    return refreshed;
+  }
 
   Future<SuperLottoSyncResult> refreshLatest({
     void Function(List<SuperLottoDraw> draws)? onListingLoaded,

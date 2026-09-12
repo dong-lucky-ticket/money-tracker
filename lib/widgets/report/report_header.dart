@@ -42,7 +42,7 @@ class ReportHeader extends StatelessWidget {
                     value: recordType,
                     onChanged: onTypeChanged,
                     padding: const EdgeInsets.all(3),
-                    itemPadding: const EdgeInsets.symmetric(vertical: 9),
+                    itemPadding: const EdgeInsets.symmetric(vertical: 5),
                     backgroundColor: const Color(0xFFF1F5F9),
                     activeBackgroundColor: Colors.white,
                     activeTextColor: const Color(0xFF0F172A),

@@ -43,8 +43,8 @@ class RecordImportService {
       throw const FormatException('CSV 内容为空');
     }
 
-    final rows =
-        const CsvToListConverter(shouldParseNumbers: false).convert(sanitizedContent);
+    final rows = const CsvToListConverter(shouldParseNumbers: false)
+        .convert(sanitizedContent);
     if (rows.isEmpty) {
       throw const FormatException('CSV 内容为空');
     }
@@ -242,9 +242,8 @@ class RecordImportService {
         );
 
         if (scope == CsvExportColumns.scopeDeleted) {
-          final exists =
-              deletedRecordsToImport.containsKey(record.id) ||
-                  existingDeletedRecordIds.contains(record.id);
+          final exists = deletedRecordsToImport.containsKey(record.id) ||
+              existingDeletedRecordIds.contains(record.id);
           deletedRecordsToImport[record.id] = record;
           return _RowStats(
             importedCount: exists ? 0 : 1,
@@ -253,9 +252,8 @@ class RecordImportService {
           );
         }
 
-        final exists =
-            activeRecordsToImport.containsKey(record.id) ||
-                existingRecordIds.contains(record.id);
+        final exists = activeRecordsToImport.containsKey(record.id) ||
+            existingRecordIds.contains(record.id);
         activeRecordsToImport[record.id] = record;
         return _RowStats(
           importedCount: exists ? 0 : 1,
@@ -265,29 +263,50 @@ class RecordImportService {
       case CsvExportColumns.entityCategory:
         final category = _buildCategoryFromExtendedRow(row);
         ensureCategoryGroupId(category);
+        final targetCategories = scope == CsvExportColumns.scopeDeleted
+            ? deletedCategoriesToImport
+            : activeCategoriesToImport;
+        final existingTargetCategories = scope == CsvExportColumns.scopeDeleted
+            ? existingDeletedCategoriesById
+            : existingActiveCategoriesById;
+
+        // A fresh database already contains the default catalog, whose IDs
+        // are generated locally. Backups contain the IDs from the source
+        // database, so an ID-only merge would create a second copy of every
+        // category. Reuse a matching category by name/type/icon when the
+        // backup ID is not known locally.
+        final existingById = targetCategories[category.id] ??
+            existingTargetCategories[category.id];
+        final existingByName = existingById ??
+            _findCategoryInMapByNameAndIcon(
+              targetCategories,
+              category,
+            ) ??
+            _findCategoryInMapByNameAndIcon(
+              existingTargetCategories,
+              category,
+            );
         var createdCategoryCount = 0;
-        if (category.groupId.isNotEmpty &&
-            !categoryGroupsToImport.containsKey(category.groupId) &&
-            !existingCategoryGroupsById.containsKey(category.groupId)) {
-          categoryGroupsToImport[category.groupId] = CategoryGroup(
-            id: category.groupId,
-            name: category.isExpense ? '未命名支出大类' : '未命名收入大类',
-            isExpense: category.isExpense,
-            sortOrder: 0,
-          );
-        }
-        if (scope == CsvExportColumns.scopeDeleted) {
-          if (!deletedCategoriesToImport.containsKey(category.id) &&
-              !existingDeletedCategoriesById.containsKey(category.id)) {
+        if (existingById != null) {
+          // Preserve the original ID-based update behavior when this backup
+          // was created from the same database.
+          targetCategories[category.id] = category;
+        } else if (existingByName == null) {
+          if (category.groupId.isNotEmpty &&
+              !categoryGroupsToImport.containsKey(category.groupId) &&
+              !existingCategoryGroupsById.containsKey(category.groupId)) {
+            categoryGroupsToImport[category.groupId] = CategoryGroup(
+              id: category.groupId,
+              name: category.isExpense ? '未命名支出大类' : '未命名收入大类',
+              isExpense: category.isExpense,
+              sortOrder: 0,
+            );
+          }
+          if (!targetCategories.containsKey(category.id) &&
+              !existingTargetCategories.containsKey(category.id)) {
             createdCategoryCount = 1;
           }
-          deletedCategoriesToImport[category.id] = category;
-        } else {
-          if (!activeCategoriesToImport.containsKey(category.id) &&
-              !existingActiveCategoriesById.containsKey(category.id)) {
-            createdCategoryCount = 1;
-          }
-          activeCategoriesToImport[category.id] = category;
+          targetCategories[category.id] = category;
         }
         return _RowStats(createdCategoryCount: createdCategoryCount);
       case CsvExportColumns.entityCategoryGroup:
@@ -318,7 +337,8 @@ class RecordImportService {
 
     Category? category;
     for (final existing in existingActiveCategoriesById.values) {
-      if (existing.isExpense == isExpense && existing.name == normalizedCategoryName) {
+      if (existing.isExpense == isExpense &&
+          existing.name == normalizedCategoryName) {
         category = existing;
         break;
       }
@@ -338,7 +358,8 @@ class RecordImportService {
         colorHex: isExpense ? '#64748B' : '#10B981',
         isExpense: isExpense,
         sortOrder: _nextCategorySortOrder(
-          activeCategoriesToImport.values.followedBy(existingActiveCategoriesById.values),
+          activeCategoriesToImport.values
+              .followedBy(existingActiveCategoriesById.values),
           isExpense,
         ),
       );
@@ -466,9 +487,10 @@ class RecordImportService {
         _cellValue(row, CsvExportColumns.categoryName),
         _cellValue(row, CsvExportColumns.recordCategoryName),
       ),
-      iconName: _cellValue(row, CsvExportColumns.categoryIconName).trim().isEmpty
-          ? 'other'
-          : _cellValue(row, CsvExportColumns.categoryIconName).trim(),
+      iconName:
+          _cellValue(row, CsvExportColumns.categoryIconName).trim().isEmpty
+              ? 'other'
+              : _cellValue(row, CsvExportColumns.categoryIconName).trim(),
       colorHex: _normalizedColorHex(
         _cellValue(row, CsvExportColumns.categoryColorHex),
         isExpense: isExpense,
@@ -494,10 +516,13 @@ class RecordImportService {
           _cellValue(row, CsvExportColumns.categoryId),
         ),
       ),
-      name: fallbackName.isEmpty ? (fallbackIsExpense ? '其他支出' : '其他收入') : fallbackName,
-      iconName: _cellValue(row, CsvExportColumns.categoryIconName).trim().isEmpty
-          ? 'other'
-          : _cellValue(row, CsvExportColumns.categoryIconName).trim(),
+      name: fallbackName.isEmpty
+          ? (fallbackIsExpense ? '其他支出' : '其他收入')
+          : fallbackName,
+      iconName:
+          _cellValue(row, CsvExportColumns.categoryIconName).trim().isEmpty
+              ? 'other'
+              : _cellValue(row, CsvExportColumns.categoryIconName).trim(),
       colorHex: _normalizedColorHex(
         _cellValue(row, CsvExportColumns.categoryColorHex),
         isExpense: fallbackIsExpense,
@@ -681,7 +706,8 @@ class RecordImportService {
   ) {
     var maxSortOrder = -1;
     for (final category in categories) {
-      if (category.isExpense == isExpense && category.sortOrder > maxSortOrder) {
+      if (category.isExpense == isExpense &&
+          category.sortOrder > maxSortOrder) {
         maxSortOrder = category.sortOrder;
       }
     }
@@ -695,6 +721,20 @@ class RecordImportService {
   ) {
     for (final category in categories.values) {
       if (category.name == name && category.isExpense == isExpense) {
+        return category;
+      }
+    }
+    return null;
+  }
+
+  static Category? _findCategoryInMapByNameAndIcon(
+    Map<String, Category> categories,
+    Category candidate,
+  ) {
+    for (final category in categories.values) {
+      if (category.isExpense == candidate.isExpense &&
+          category.name == candidate.name &&
+          category.iconName == candidate.iconName) {
         return category;
       }
     }

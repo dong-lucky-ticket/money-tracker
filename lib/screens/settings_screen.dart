@@ -9,6 +9,7 @@ import '../widgets/settings/settings_data_management_section.dart';
 import '../widgets/settings/settings_error_logs_section.dart';
 import '../widgets/settings/settings_header_section.dart';
 import '../widgets/settings/lottery_management_section.dart';
+import '../widgets/settings/tools_management_section.dart';
 
 class SettingsPageScreen extends StatelessWidget {
   const SettingsPageScreen({super.key});
@@ -46,6 +47,8 @@ class SettingsScreen extends StatelessWidget {
             physics: const BouncingScrollPhysics(),
             children: [
               LotteryManagementSection(onOpenPage: onOpenPage),
+              const SizedBox(height: 24),
+              ToolsManagementSection(onOpenPage: onOpenPage),
               const SizedBox(height: 24),
               SettingsCategoryShortcutSection(onOpenPage: onOpenPage),
               const SizedBox(height: 24),

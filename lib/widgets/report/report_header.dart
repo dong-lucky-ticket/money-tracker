@@ -42,12 +42,12 @@ class ReportHeader extends StatelessWidget {
                     value: recordType,
                     onChanged: onTypeChanged,
                     padding: const EdgeInsets.all(3),
-                    itemPadding: const EdgeInsets.symmetric(vertical: 5),
+                    itemPadding: const EdgeInsets.symmetric(vertical: 8),
                     backgroundColor: const Color(0xFFF1F5F9),
                     activeBackgroundColor: Colors.white,
                     activeTextColor: const Color(0xFF0F172A),
                     inactiveTextColor: const Color(0xFF64748B),
-                    borderRadius: BorderRadius.circular(14),
+                    borderRadius: BorderRadius.circular(20),
                     options: const [
                       SegmentedOption(
                         value: ReportRecordType.expense,

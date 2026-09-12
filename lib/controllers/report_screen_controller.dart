@@ -118,7 +118,13 @@ class ReportScreenController extends ChangeNotifier {
     DataProvider provider,
   ) {
     updateFilter(
-      _filter.copyWith(recordType: recordType),
+      _filter.copyWith(
+        recordType: recordType,
+        groupIds: <String>{},
+        categoryIds: <String>{},
+        keyword: '',
+        includeVoided: false,
+      ),
       provider,
     );
   }
@@ -129,11 +135,6 @@ class ReportScreenController extends ChangeNotifier {
       categoryIds: <String>{},
       keyword: '',
     );
-    notifyListeners();
-  }
-
-  void setSelectedDate(DateTime date) {
-    _selectedDate = date;
     notifyListeners();
   }
 

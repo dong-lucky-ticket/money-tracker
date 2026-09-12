@@ -9,9 +9,7 @@ import '../common/segmented_selector.dart';
 class ReportHeader extends StatelessWidget {
   final ReportRecordType recordType;
   final ReportTimeRange selectedRange;
-  final String periodLabel;
   final bool hasAdvancedFilters;
-  final VoidCallback onPickDate;
   final VoidCallback onPickRange;
   final VoidCallback onOpenFilters;
   final ValueChanged<ReportRecordType> onTypeChanged;
@@ -20,9 +18,7 @@ class ReportHeader extends StatelessWidget {
     super.key,
     required this.recordType,
     required this.selectedRange,
-    required this.periodLabel,
     required this.hasAdvancedFilters,
-    required this.onPickDate,
     required this.onPickRange,
     required this.onOpenFilters,
     required this.onTypeChanged,
@@ -38,135 +34,105 @@ class ReportHeader extends StatelessWidget {
           children: [
             Container(
               color: Colors.white,
-              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  const SizedBox(width: 24),
-                  Column(
-                    children: [
-                      const Text(
-                        '收支报表',
-                        style: TextStyle(
-                          fontSize: 20,
-                          fontWeight: FontWeight.bold,
-                          color: AppColors.textPrimary,
-                        ),
+              padding: const EdgeInsets.fromLTRB(20, 14, 20, 12),
+              child: Center(
+                child: ConstrainedBox(
+                  constraints: const BoxConstraints(maxWidth: 360),
+                  child: SegmentedSelector<ReportRecordType>(
+                    value: recordType,
+                    onChanged: onTypeChanged,
+                    padding: const EdgeInsets.all(3),
+                    itemPadding: const EdgeInsets.symmetric(vertical: 9),
+                    backgroundColor: const Color(0xFFF1F5F9),
+                    activeBackgroundColor: Colors.white,
+                    activeTextColor: const Color(0xFF0F172A),
+                    inactiveTextColor: const Color(0xFF64748B),
+                    borderRadius: BorderRadius.circular(14),
+                    options: const [
+                      SegmentedOption(
+                        value: ReportRecordType.expense,
+                        label: '支出',
                       ),
-                      const SizedBox(height: 4),
-                      Text(
-                        periodLabel,
-                        style: const TextStyle(
-                          fontSize: 13,
-                          color: AppColors.textMuted,
-                        ),
+                      SegmentedOption(
+                        value: ReportRecordType.income,
+                        label: '收入',
                       ),
-                    ],
-                  ),
-                  Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      GestureDetector(
-                        onTap: onOpenFilters,
-                        child: Stack(
-                          clipBehavior: Clip.none,
-                          children: [
-                            Icon(
-                              MdiIcons.tuneVariant,
-                              size: 22,
-                              color: hasAdvancedFilters
-                                  ? const Color(0xFF4A90E2)
-                                  : AppColors.textSecondary,
-                            ),
-                            if (hasAdvancedFilters)
-                              const Positioned(
-                                right: -2,
-                                top: -2,
-                                child: SizedBox(
-                                  width: 8,
-                                  height: 8,
-                                  child: DecoratedBox(
-                                    decoration: BoxDecoration(
-                                      color: Color(0xFF4A90E2),
-                                      shape: BoxShape.circle,
-                                    ),
-                                  ),
-                                ),
-                              ),
-                          ],
-                        ),
-                      ),
-                      const SizedBox(width: 14),
-                      GestureDetector(
-                        onTap: onPickDate,
-                        child: Icon(
-                          selectedRange.isCustom
-                              ? MdiIcons.calendarRangeOutline
-                              : MdiIcons.calendarMonthOutline,
-                          size: 24,
-                          color: AppColors.textSecondary,
-                        ),
+                      SegmentedOption(
+                        value: ReportRecordType.all,
+                        label: '全部',
                       ),
                     ],
                   ),
-                ],
+                ),
               ),
             ),
             Container(
               color: Colors.white,
-              padding: const EdgeInsets.fromLTRB(20, 0, 20, 16),
+              padding: const EdgeInsets.fromLTRB(20, 0, 20, 14),
               child: Row(
                 children: [
                   Expanded(
-                    child: SegmentedSelector<ReportRecordType>(
-                      value: recordType,
-                      onChanged: onTypeChanged,
-                      options: const [
-                        SegmentedOption(
-                          value: ReportRecordType.expense,
-                          label: '支出',
-                        ),
-                        SegmentedOption(
-                          value: ReportRecordType.income,
-                          label: '收入',
-                        ),
-                        SegmentedOption(
-                          value: ReportRecordType.all,
-                          label: '全部',
-                        ),
-                      ],
-                    ),
-                  ),
-                  const SizedBox(width: 16),
-                  Expanded(
-                    child: OutlinedButton(
+                    child: OutlinedButton.icon(
                       onPressed: onPickRange,
+                      icon: Icon(
+                        selectedRange.isCustom
+                            ? MdiIcons.calendarRangeOutline
+                            : MdiIcons.calendarMonthOutline,
+                        size: 18,
+                      ),
+                      label: Text(selectedRange.selectionLabel),
                       style: OutlinedButton.styleFrom(
                         foregroundColor: AppColors.textPrimary,
                         padding: const EdgeInsets.symmetric(
-                          horizontal: 14,
-                          vertical: 13,
+                          horizontal: 12,
+                          vertical: 11,
                         ),
                         side: const BorderSide(color: Color(0xFFE5E7EB)),
                         shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(16),
+                          borderRadius: BorderRadius.circular(13),
                         ),
                       ),
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    ),
+                  ),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: OutlinedButton.icon(
+                      onPressed: onOpenFilters,
+                      icon: Stack(
+                        clipBehavior: Clip.none,
                         children: [
-                          Text(
-                            selectedRange.selectionLabel,
-                            style: const TextStyle(
-                              fontSize: 14,
-                              fontWeight: FontWeight.w600,
+                          Icon(
+                            MdiIcons.tuneVariant,
+                            size: 18,
+                            color: hasAdvancedFilters
+                                ? const Color(0xFF2563EB)
+                                : AppColors.textSecondary,
+                          ),
+                          if (hasAdvancedFilters)
+                            const Positioned(
+                              right: -3,
+                              top: -3,
+                              child: SizedBox(
+                                width: 7,
+                                height: 7,
+                                child: DecoratedBox(
+                                  decoration: BoxDecoration(
+                                    color: Color(0xFF2563EB),
+                                    shape: BoxShape.circle,
+                                  ),
+                                ),
+                              ),
                             ),
-                          ),
-                          const Icon(
-                            Icons.keyboard_arrow_down_rounded,
-                            size: 20,
-                          ),
                         ],
+                      ),
+                      label: const Text('高级筛选'),
+                      style: OutlinedButton.styleFrom(
+                        foregroundColor: AppColors.textPrimary,
+                        padding: const EdgeInsets.symmetric(vertical: 11),
+                        side: const BorderSide(color: Color(0xFFE5E7EB)),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(13),
+                        ),
                       ),
                     ),
                   ),

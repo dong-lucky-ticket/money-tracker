@@ -3,7 +3,6 @@ import 'package:flutter/material.dart';
 import '../../models/category.dart';
 import '../../models/category_group.dart';
 import '../../models/report_filter.dart';
-import '../common/segmented_selector.dart';
 
 class ReportAdvancedFilterSheet extends StatefulWidget {
   final ReportFilter initialFilter;
@@ -47,7 +46,6 @@ class ReportAdvancedFilterSheet extends StatefulWidget {
 }
 
 class _ReportAdvancedFilterSheetState extends State<ReportAdvancedFilterSheet> {
-  late ReportRecordType _recordType;
   late Set<String> _selectedGroupIds;
   late Set<String> _selectedCategoryIds;
   late TextEditingController _keywordController;
@@ -55,7 +53,6 @@ class _ReportAdvancedFilterSheetState extends State<ReportAdvancedFilterSheet> {
   @override
   void initState() {
     super.initState();
-    _recordType = widget.initialFilter.recordType;
     _selectedGroupIds = Set<String>.from(widget.initialFilter.groupIds);
     _selectedCategoryIds = Set<String>.from(widget.initialFilter.categoryIds);
     _keywordController =
@@ -70,16 +67,7 @@ class _ReportAdvancedFilterSheetState extends State<ReportAdvancedFilterSheet> {
   }
 
   List<Category> get _visibleCategories {
-    final candidates = widget.categories.where((category) {
-      switch (_recordType) {
-        case ReportRecordType.expense:
-          return category.isExpense;
-        case ReportRecordType.income:
-          return !category.isExpense;
-        case ReportRecordType.all:
-          return true;
-      }
-    });
+    final candidates = widget.categories;
 
     if (_selectedGroupIds.isEmpty) {
       return candidates.toList();
@@ -91,16 +79,7 @@ class _ReportAdvancedFilterSheetState extends State<ReportAdvancedFilterSheet> {
   }
 
   List<CategoryGroup> get _visibleGroups {
-    return widget.groups.where((group) {
-      switch (_recordType) {
-        case ReportRecordType.expense:
-          return group.isExpense;
-        case ReportRecordType.income:
-          return !group.isExpense;
-        case ReportRecordType.all:
-          return true;
-      }
-    }).toList();
+    return widget.groups;
   }
 
   void _sanitizeSelectedCategories() {
@@ -151,7 +130,6 @@ class _ReportAdvancedFilterSheetState extends State<ReportAdvancedFilterSheet> {
     Navigator.pop(
       context,
       widget.initialFilter.copyWith(
-        recordType: _recordType,
         groupIds: _selectedGroupIds,
         categoryIds: _selectedCategoryIds,
         keyword: _keywordController.text.trim(),
@@ -197,36 +175,6 @@ class _ReportAdvancedFilterSheetState extends State<ReportAdvancedFilterSheet> {
                 child: ListView(
                   padding: const EdgeInsets.fromLTRB(18, 14, 18, 16),
                   children: [
-                    const _FilterSectionTitle(
-                      title: '收支类型',
-                      subtitle: '切换为支出、收入或全部流水',
-                    ),
-                    const SizedBox(height: 8),
-                    SegmentedSelector<ReportRecordType>(
-                      value: _recordType,
-                      onChanged: (value) {
-                        setState(() {
-                          _recordType = value;
-                          _sanitizeSelectedCategories();
-                        });
-                      },
-                      options: const [
-                        SegmentedOption(
-                          value: ReportRecordType.expense,
-                          label: '支出',
-                        ),
-                        SegmentedOption(
-                          value: ReportRecordType.income,
-                          label: '收入',
-                        ),
-                        SegmentedOption(
-                          value: ReportRecordType.all,
-                          label: '全部',
-                        ),
-                      ],
-                      itemPadding: const EdgeInsets.symmetric(vertical: 7),
-                    ),
-                    const SizedBox(height: 16),
                     const _FilterSectionTitle(
                       title: '备注关键词',
                       subtitle: '支持按备注或分类名称做模糊筛选',

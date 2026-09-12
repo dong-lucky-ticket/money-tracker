@@ -55,24 +55,6 @@ class _ReportScreenState extends State<ReportScreen> {
     _controller.updateFilter(nextFilter, provider);
   }
 
-  Future<void> _pickDate() async {
-    if (_controller.selectedRange.isCustom) {
-      await _pickCustomRange();
-      return;
-    }
-
-    final picked = await showDatePicker(
-      context: context,
-      initialDate: _controller.selectedDate,
-      firstDate: DateTime(2000),
-      lastDate: DateTime(2100),
-      initialEntryMode: DatePickerEntryMode.calendarOnly,
-    );
-    if (picked != null) {
-      _controller.setSelectedDate(picked);
-    }
-  }
-
   Future<void> _pickRange() async {
     final preset = await ReportRangePickerSheet.show(
       context,
@@ -94,9 +76,10 @@ class _ReportScreenState extends State<ReportScreen> {
   Future<void> _pickCustomRange() async {
     final currentRange = _controller.selectedRange.isCustom
         ? DateTimeRange(
-            start:
-                _controller.selectedRange.customStart ?? _controller.selectedDate,
-            end: _controller.selectedRange.customEnd ?? _controller.selectedDate,
+            start: _controller.selectedRange.customStart ??
+                _controller.selectedDate,
+            end:
+                _controller.selectedRange.customEnd ?? _controller.selectedDate,
           )
         : DateTimeRange(
             start: _controller.selectedDate.subtract(const Duration(days: 29)),
@@ -177,7 +160,8 @@ class _ReportScreenState extends State<ReportScreen> {
     String groupId,
   ) {
     return sortRecordsByTimeline(
-      snapshot.viewRecords.where((record) => record.category.groupId == groupId),
+      snapshot.viewRecords
+          .where((record) => record.category.groupId == groupId),
     );
   }
 
@@ -196,9 +180,7 @@ class _ReportScreenState extends State<ReportScreen> {
                 ReportHeader(
                   recordType: filter.recordType,
                   selectedRange: _controller.selectedRange,
-                  periodLabel: snapshot.periodLabel,
                   hasAdvancedFilters: filter.hasAdvancedFilters,
-                  onPickDate: _pickDate,
                   onPickRange: _pickRange,
                   onOpenFilters: () => _openAdvancedFilters(provider),
                   onTypeChanged: (recordType) {

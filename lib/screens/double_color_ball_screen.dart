@@ -10,6 +10,7 @@ import '../services/double_color_ball_repository.dart';
 import '../theme/app_colors.dart';
 import '../widgets/common/empty_state.dart';
 import 'double_color_ball_announcement_screen.dart';
+import 'lottery_rules_screen.dart';
 
 class DoubleColorBallScreen extends StatefulWidget {
   const DoubleColorBallScreen({super.key});
@@ -238,6 +239,18 @@ class _DoubleColorBallScreenState extends State<DoubleColorBallScreen> {
             ),
           ],
         ),
+        actions: [
+          IconButton(
+            onPressed: () => Navigator.of(context).push(
+              MaterialPageRoute(
+                builder: (_) => const LotteryRulesScreen(lotteryType: '福彩'),
+              ),
+            ),
+            icon: const Icon(Icons.rule, size: 18),
+            style: TextButton.styleFrom(foregroundColor: AppColors.primary),
+          ),
+          const SizedBox(width: 4),
+        ],
       ),
       body: _buildBody(),
     );

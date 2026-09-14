@@ -10,6 +10,7 @@ import '../services/super_lotto_repository.dart';
 import '../theme/app_colors.dart';
 import '../widgets/common/empty_state.dart';
 import 'super_lotto_announcement_screen.dart';
+import 'lottery_rules_screen.dart';
 
 class LotteryScreen extends StatefulWidget {
   final String lotteryType;
@@ -252,6 +253,18 @@ class _LotteryScreenState extends State<LotteryScreen> {
                 ],
               )
             : null,
+        actions: [
+          IconButton(
+            onPressed: () => Navigator.of(context).push(
+              MaterialPageRoute(
+                builder: (_) => const LotteryRulesScreen(lotteryType: '体彩'),
+              ),
+            ),
+            icon: const Icon(Icons.rule, size: 18),
+            style: TextButton.styleFrom(foregroundColor: AppColors.primary),
+          ),
+          const SizedBox(width: 4),
+        ],
       ),
       body: _isSporttery ? _buildSportteryBody() : _buildPlaceholder(),
     );

@@ -5,6 +5,7 @@ import 'package:intl/intl.dart';
 import '../models/double_color_ball_draw.dart';
 import '../theme/app_colors.dart';
 import '../widgets/common/app_toast.dart';
+import 'lottery_rules_screen.dart';
 
 class DoubleColorBallAnnouncementScreen extends StatelessWidget {
   final DoubleColorBallDraw draw;
@@ -20,6 +21,18 @@ class DoubleColorBallAnnouncementScreen extends StatelessWidget {
         backgroundColor: Colors.white,
         foregroundColor: AppColors.textPrimary,
         elevation: 0,
+        actions: [
+          IconButton(
+            onPressed: () => Navigator.of(context).push(
+              MaterialPageRoute(
+                builder: (_) => const LotteryRulesScreen(lotteryType: '福彩'),
+              ),
+            ),
+            icon: const Icon(Icons.rule, size: 18),
+            style: TextButton.styleFrom(foregroundColor: AppColors.primary),
+          ),
+          const SizedBox(width: 4),
+        ],
       ),
       body: ListView(
         padding: const EdgeInsets.fromLTRB(20, 20, 20, 32),

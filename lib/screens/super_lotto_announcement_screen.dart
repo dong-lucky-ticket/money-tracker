@@ -5,6 +5,7 @@ import 'package:intl/intl.dart';
 import '../models/super_lotto_draw.dart';
 import '../theme/app_colors.dart';
 import '../widgets/common/app_toast.dart';
+import 'lottery_rules_screen.dart';
 
 class SuperLottoAnnouncementScreen extends StatelessWidget {
   final SuperLottoDraw draw;
@@ -20,6 +21,18 @@ class SuperLottoAnnouncementScreen extends StatelessWidget {
         backgroundColor: Colors.white,
         foregroundColor: AppColors.textPrimary,
         elevation: 0,
+        actions: [
+          IconButton(
+            onPressed: () => Navigator.of(context).push(
+              MaterialPageRoute(
+                builder: (_) => const LotteryRulesScreen(lotteryType: '体彩'),
+              ),
+            ),
+            icon: const Icon(Icons.rule, size: 18),
+            style: TextButton.styleFrom(foregroundColor: AppColors.primary),
+          ),
+          const SizedBox(width: 4),
+        ],
       ),
       body: ListView(
         padding: const EdgeInsets.fromLTRB(20, 20, 20, 32),

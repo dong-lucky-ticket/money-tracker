@@ -1,8 +1,8 @@
+import 'package:expensetracker/widgets/common/app_toast.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
 import '../theme/app_colors.dart';
-import '../widgets/common/app_toast.dart';
 
 /// The published prize rules for the two lottery products supported by the app.
 ///
@@ -119,32 +119,37 @@ class _RulesTable extends StatelessWidget {
     }
     return SingleChildScrollView(
       scrollDirection: Axis.horizontal,
-      child: Table(
-        defaultColumnWidth: const IntrinsicColumnWidth(),
-        columnWidths: columnWidths,
-        border: TableBorder.all(color: AppColors.border),
-        defaultVerticalAlignment: TableCellVerticalAlignment.middle,
-        children: [
-          TableRow(
-            decoration: const BoxDecoration(color: AppColors.surfaceMuted),
-            children:
-                headers.map((text) => _RuleCell(text, isHeader: true)).toList(),
-          ),
-          ...rows.map(
-            (row) => TableRow(
-              children: row
-                  .asMap()
-                  .entries
-                  .map(
-                    (entry) => _RuleCell(
-                      entry.value,
-                      isCondition: entry.key == 1,
-                    ),
-                  )
+      child: ConstrainedBox(
+        constraints: BoxConstraints(
+            minWidth: MediaQuery.of(context).size.width - 24 - 32 - 2),
+        child: Table(
+          defaultColumnWidth: const IntrinsicColumnWidth(),
+          columnWidths: columnWidths,
+          border: TableBorder.all(color: AppColors.border),
+          defaultVerticalAlignment: TableCellVerticalAlignment.middle,
+          children: [
+            TableRow(
+              decoration: const BoxDecoration(color: AppColors.surfaceMuted),
+              children: headers
+                  .map((text) => _RuleCell(text, isHeader: true))
                   .toList(),
             ),
-          ),
-        ],
+            ...rows.map(
+              (row) => TableRow(
+                children: row
+                    .asMap()
+                    .entries
+                    .map(
+                      (entry) => _RuleCell(
+                        entry.value,
+                        isCondition: entry.key == 1,
+                      ),
+                    )
+                    .toList(),
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -165,11 +170,11 @@ class _RuleCell extends StatelessWidget {
   Widget build(BuildContext context) {
     return ConstrainedBox(
       constraints: const BoxConstraints(minWidth: 76),
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 10),
-        child: isCondition
-            ? _ConditionDisplay(text)
-            : Text(
+      child: isCondition
+          ? _ConditionDisplay(text)
+          : Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 10),
+              child: Text(
                 text,
                 textAlign: TextAlign.center,
                 style: TextStyle(
@@ -179,7 +184,7 @@ class _RuleCell extends StatelessWidget {
                   color: AppColors.textSecondary,
                 ),
               ),
-      ),
+            ),
     );
   }
 }
@@ -198,24 +203,32 @@ class _ConditionDisplay extends StatelessWidget {
         .toList();
     return Semantics(
       label: condition,
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.center,
+      // Each alternative is rendered as a compact sub-row. Keeping the
+      // separators inside the condition cell makes multi-condition prizes
+      // read like one merged table row instead of a paragraph of text.
+      child: Table(
+        defaultColumnWidth: const IntrinsicColumnWidth(),
         children: [
-          for (var index = 0; index < combinations.length; index++) ...[
-            if (index > 0)
-              const Padding(
-                padding: EdgeInsets.symmetric(vertical: 2),
-                child: Text(
-                  '或',
-                  style: TextStyle(
-                    fontSize: 11,
-                    color: AppColors.textTertiary,
+          for (var index = 0; index < combinations.length; index++)
+            TableRow(
+              decoration: index == 0
+                  ? null
+                  : const BoxDecoration(
+                      border: Border(
+                        top: BorderSide(color: AppColors.border),
+                      ),
+                    ),
+              children: [
+                Padding(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
+                  // padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 10),
+                  child: Center(
+                    child: _ConditionCombination(combinations[index]),
                   ),
                 ),
-              ),
-            _ConditionCombination(combinations[index]),
-          ],
+              ],
+            ),
         ],
       ),
     );
@@ -246,15 +259,16 @@ class _ConditionCombination extends StatelessWidget {
     final backCount = int.parse(match.group(2)!);
     return Row(
       mainAxisSize: MainAxisSize.min,
+      mainAxisAlignment: MainAxisAlignment.center,
       children: [
         for (var i = 0; i < frontCount; i++)
           const Padding(
-            padding: EdgeInsets.symmetric(horizontal: 2),
+            padding: EdgeInsets.symmetric(horizontal: 1),
             child: _RuleBall(color: AppColors.danger),
           ),
         for (var i = 0; i < backCount; i++)
           const Padding(
-            padding: EdgeInsets.symmetric(horizontal: 2),
+            padding: EdgeInsets.symmetric(horizontal: 1),
             child: _RuleBall(color: AppColors.primary),
           ),
       ],
@@ -270,8 +284,8 @@ class _RuleBall extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      width: 13,
-      height: 13,
+      width: 11,
+      height: 11,
       decoration: BoxDecoration(color: color, shape: BoxShape.circle),
     );
   }
@@ -293,9 +307,9 @@ class _SuperLottoTable extends StatelessWidget {
       rows: [
         ['一等奖', '5个前区 + 2个后区', '浮动奖', '浮动奖'],
         ['二等奖', '5个前区 + 1个后区', '浮动奖', '浮动奖'],
-        ['三等奖', '5个前区 + 0个后区\n或 4个前区 + 2个后区', '5,000元', '6,666元'],
-        ['四等奖', '4个前区 + 1个后区\n或 3个前区 + 2个后区', '300元', '380元'],
-        ['五等奖', '4个前区 + 0个后区\n或 3个前区 + 1个后区\n或 2个前区 + 2个后区', '150元', '200元'],
+        ['三等奖', '5个前区 + 0个后区\n或 4个前区 + 2个后区', '5000元', '6666元'],
+        ['四等奖', '4个前区 + 1个后区', '300元', '380元'],
+        ['五等奖', '4个前区 + 0个后区\n或 3个前区 + 2个后区', '150元', '200元'],
         ['六等奖', '3个前区 + 1个后区\n或 2个前区 + 2个后区', '15元', '18元'],
         [
           '七等奖',
@@ -327,6 +341,7 @@ class _DoubleColorBallTable extends StatelessWidget {
         ['四等奖', '5个红球 + 0个蓝球\n或 4个红球 + 1个蓝球', '200元'],
         ['五等奖', '4个红球 + 0个蓝球\n或 3个红球 + 1个蓝球', '10元'],
         ['六等奖', '2个红球 + 1个蓝球\n或 1个红球 + 1个蓝球\n或 0个红球 + 1个蓝球', '5元'],
+        ['福运奖\n(特别规定期)', '3个红球 + 0个蓝球', '5元'],
       ],
     );
   }
@@ -338,7 +353,7 @@ class _SportteryNotes extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return const Text(
-      '每注从前区01-35中选5个号码、后区01-12中选2个号码。基本投注每注2元，追加投注每注另加1元；追加投注中奖时，追加奖金按官方规则另行计算。\n\n一等奖奖金由当期奖级奖金的75%与奖池资金组成（奖池超过1亿元时按官方比例分配），单注最高限额500万元。三至七等奖按奖池金额分档派发。',
+      '每注从前区01-35中选5个号码、后区01-12中选2个号码。追加投注是在基本投注基础上，每注多投入1元；中奖时可额外获得追加奖金。\n\n一等奖奖金由当期奖级奖金的75%与奖池资金组成（奖池超过1亿元时按官方比例分配），单注最高限额500万元。二至六等奖按固定或浮动规则派发。',
       style: TextStyle(color: AppColors.textSecondary, height: 1.65),
     );
   }
@@ -349,9 +364,27 @@ class _DoubleColorBallNotes extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return const Text(
-      '每注从红球01-33中选6个号码，从蓝球01-16中选1个号码。一等奖和二等奖为浮动奖，奖金取决于当期奖池和中奖注数；三至六等奖为固定奖。单注投注金额2元。',
-      style: TextStyle(color: AppColors.textSecondary, height: 1.65),
+    return const Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          '每注从红球01-33中选6个号码，从蓝球01-16中选1个号码。一等奖和二等奖为浮动奖，三至六等奖为固定奖。单注投注金额2元。',
+          style: TextStyle(color: AppColors.textSecondary, height: 1.65),
+        ),
+        SizedBox(height: 10),
+        Text(
+          '特别规定',
+          style: TextStyle(
+            fontWeight: FontWeight.w600,
+            color: AppColors.textPrimary,
+          ),
+        ),
+        SizedBox(height: 4),
+        Text(
+          '当奖池资金高于15亿元（含）时开始执行特别规定，增加福运奖；直至某期开奖后奖池资金低于3亿元时，停止执行特别规定。福运奖仅在执行特别规定期间设立，具体中奖条件和奖金见上方表格。',
+          style: TextStyle(color: AppColors.textSecondary, height: 1.65),
+        ),
+      ],
     );
   }
 }
@@ -365,8 +398,8 @@ class _SourceInfo extends StatelessWidget {
   Widget build(BuildContext context) {
     final source = isSporttery ? '国家体育总局体育彩票管理中心、江苏体彩网' : '中国福利彩票发行管理中心、中国福彩网';
     final url = isSporttery
-        ? 'https://www.lottery.gov.cn/dlt/rule.html'
-        : 'https://www.cwl.gov.cn/fcpz/ywxx/ssq/gz/';
+        ? 'https://www.js-lottery.com/wfzq/dlt/wfjs/cms/post-146353.html'
+        : 'https://www.cwl.gov.cn/fcpz/yxjs/ssq/';
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [

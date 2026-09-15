@@ -42,7 +42,12 @@ class SettingsSectionCard extends StatelessWidget {
       margin: const EdgeInsets.symmetric(horizontal: 20),
       padding: EdgeInsets.zero,
       borderRadius: BorderRadius.circular(16),
-      child: Column(children: children),
+      child: Material(
+        color: Colors.transparent,
+        borderRadius: BorderRadius.circular(16),
+        clipBehavior: Clip.antiAlias,
+        child: Column(children: children),
+      ),
     );
   }
 }

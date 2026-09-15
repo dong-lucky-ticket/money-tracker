@@ -27,6 +27,7 @@ class _DoubleColorBallScreenState extends State<DoubleColorBallScreen> {
   int _totalAnnouncements = 0;
   int _failedAnnouncements = 0;
   bool _isLoading = false;
+  int? _drawLimit = 30;
   String? _busyIssue;
   String? _syncMessage;
   Timer? _syncMessageTimer;
@@ -39,7 +40,7 @@ class _DoubleColorBallScreenState extends State<DoubleColorBallScreen> {
 
   Future<void> _loadCachedDraws() async {
     try {
-      final cached = await _syncService.loadCachedDraws();
+      final cached = await _syncService.loadCachedDraws(limit: _drawLimit);
       if (mounted && cached.isNotEmpty) {
         setState(() => _draws = cached);
       }
@@ -67,6 +68,7 @@ class _DoubleColorBallScreenState extends State<DoubleColorBallScreen> {
 
     try {
       final result = await _syncService.refreshLatest(
+        limit: _drawLimit ?? 100,
         onListingLoaded: (draws) {
           if (mounted) {
             setState(() => _draws = draws);
@@ -108,6 +110,18 @@ class _DoubleColorBallScreenState extends State<DoubleColorBallScreen> {
           _isLoading = false;
         });
       }
+    }
+  }
+
+  Future<void> _changeDrawLimit(int limit) async {
+    final selectedLimit = limit == -1 ? null : limit;
+    if (_drawLimit == selectedLimit || _isLoading) {
+      return;
+    }
+    setState(() => _drawLimit = selectedLimit);
+    await _loadCachedDraws();
+    if (selectedLimit != null) {
+      await _refresh();
     }
   }
 
@@ -307,7 +321,7 @@ class _DoubleColorBallScreenState extends State<DoubleColorBallScreen> {
             color: AppColors.textMuted,
           ),
           title: '暂无开奖记录',
-          subtitle: '点击左上角同步最近30期数据',
+          subtitle: '点击左上角同步开奖数据',
         ),
       );
     }
@@ -346,14 +360,13 @@ class _DoubleColorBallScreenState extends State<DoubleColorBallScreen> {
   }
 
   Widget _buildHeader() {
-    final status = _isLoading ? _loadingMessage : '最近 ${_draws.length} 期';
     return Row(
       children: [
-        const Expanded(
+        Expanded(
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(
+              const Text(
                 '双色球',
                 style: TextStyle(
                   fontSize: 20,
@@ -361,17 +374,44 @@ class _DoubleColorBallScreenState extends State<DoubleColorBallScreen> {
                   color: AppColors.textPrimary,
                 ),
               ),
-              SizedBox(height: 4),
+              const SizedBox(height: 4),
               Text(
-                '中国福彩网历史数据',
-                style: TextStyle(fontSize: 12, color: AppColors.textTertiary),
+                '中国福彩网历史数据（${_draws.length}条）',
+                style: const TextStyle(
+                  fontSize: 12,
+                  color: AppColors.textTertiary,
+                ),
               ),
             ],
           ),
         ),
-        Text(
-          status,
-          style: const TextStyle(fontSize: 12, color: AppColors.textTertiary),
+        PopupMenuButton<int>(
+          enabled: !_isLoading,
+          tooltip: '选择显示范围',
+          onSelected: _changeDrawLimit,
+          itemBuilder: (context) => const [
+            PopupMenuItem(value: 30, child: Text('最近30期')),
+            PopupMenuItem(value: 50, child: Text('最近50期')),
+            PopupMenuItem(value: 100, child: Text('最近100期')),
+            PopupMenuItem(value: -1, child: Text('全部')),
+          ],
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(
+                _isLoading
+                    ? _loadingMessage
+                    : _drawLimit == null
+                        ? '全部'
+                        : '最近$_drawLimit期',
+                style: const TextStyle(
+                  fontSize: 12,
+                  color: AppColors.textTertiary,
+                ),
+              ),
+              const Icon(Icons.arrow_drop_down, color: AppColors.textTertiary),
+            ],
+          ),
         ),
       ],
     );
@@ -379,7 +419,7 @@ class _DoubleColorBallScreenState extends State<DoubleColorBallScreen> {
 
   String get _loadingMessage {
     if (_totalAnnouncements == 0) {
-      return '正在获取最近30期开奖结果';
+      return '正在获取${_drawLimit ?? 100}期开奖结果';
     }
     return '正在解析公告 $_completedAnnouncements/$_totalAnnouncements';
   }

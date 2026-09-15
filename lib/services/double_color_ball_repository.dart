@@ -24,14 +24,14 @@ class DoubleColorBallRepository {
 
   Box<DoubleColorBallDraw>? _box;
 
-  Future<List<DoubleColorBallDraw>> loadRecent({int limit = 30}) async {
+  Future<List<DoubleColorBallDraw>> loadRecent({int? limit = 30}) async {
     final box = await _getBox();
     final draws = box.values.toList()
       ..sort((left, right) {
         final byDate = right.publishDate.compareTo(left.publishDate);
         return byDate != 0 ? byDate : right.issue.compareTo(left.issue);
       });
-    return draws.take(limit).toList();
+    return limit == null ? draws : draws.take(limit).toList();
   }
 
   Future<void> saveAll(Iterable<DoubleColorBallDraw> draws) async {
@@ -69,8 +69,8 @@ class DoubleColorBallSyncService {
   })  : _crawler = crawler ?? DoubleColorBallCrawler(),
         _repository = repository ?? DoubleColorBallRepository();
 
-  Future<List<DoubleColorBallDraw>> loadCachedDraws() =>
-      _repository.loadRecent();
+  Future<List<DoubleColorBallDraw>> loadCachedDraws({int? limit = 30}) =>
+      _repository.loadRecent(limit: limit);
 
   Future<void> deleteIssue(String issue) => _repository.deleteIssue(issue);
 
@@ -85,10 +85,11 @@ class DoubleColorBallSyncService {
   }
 
   Future<DoubleColorBallSyncResult> refreshLatest({
+    int limit = 30,
     void Function(List<DoubleColorBallDraw> draws)? onListingLoaded,
     void Function(int completed, int total)? onAnnouncementProgress,
   }) async {
-    final listing = await _crawler.fetchLatestDraws();
+    final listing = await _crawler.fetchLatestDraws(limit: limit);
     final existingByIssue = await _repository.loadByIssues(
       listing.map((draw) => draw.issue),
     );
@@ -110,7 +111,7 @@ class DoubleColorBallSyncService {
     }
 
     await _repository.saveAll(mergedDraws);
-    onListingLoaded?.call(await _repository.loadRecent());
+    onListingLoaded?.call(await _repository.loadRecent(limit: limit));
 
     final pendingIndexes = <int>[
       for (var index = 0; index < mergedDraws.length; index++)
@@ -143,7 +144,7 @@ class DoubleColorBallSyncService {
 
     await _repository.saveAll(resolved);
     return DoubleColorBallSyncResult(
-      draws: await _repository.loadRecent(),
+      draws: await _repository.loadRecent(limit: limit),
       failedAnnouncementIssues: failedIssues,
       addedDrawCount: addedDrawCount,
       skippedAnnouncementCount: skippedAnnouncementCount,

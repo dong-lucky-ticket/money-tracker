@@ -24,14 +24,14 @@ class SuperLottoRepository {
 
   Box<SuperLottoDraw>? _box;
 
-  Future<List<SuperLottoDraw>> loadRecent({int limit = 30}) async {
+  Future<List<SuperLottoDraw>> loadRecent({int? limit = 30}) async {
     final box = await _getBox();
     final draws = box.values.toList()
       ..sort((left, right) {
         final byDate = right.publishDate.compareTo(left.publishDate);
         return byDate != 0 ? byDate : right.issue.compareTo(left.issue);
       });
-    return draws.take(limit).toList();
+    return limit == null ? draws : draws.take(limit).toList();
   }
 
   Future<void> saveAll(Iterable<SuperLottoDraw> draws) async {
@@ -69,7 +69,8 @@ class SuperLottoSyncService {
   })  : _crawler = crawler ?? SuperLottoCrawler(),
         _repository = repository ?? SuperLottoRepository();
 
-  Future<List<SuperLottoDraw>> loadCachedDraws() => _repository.loadRecent();
+  Future<List<SuperLottoDraw>> loadCachedDraws({int? limit = 30}) =>
+      _repository.loadRecent(limit: limit);
 
   Future<void> deleteIssue(String issue) => _repository.deleteIssue(issue);
 
@@ -84,10 +85,11 @@ class SuperLottoSyncService {
   }
 
   Future<SuperLottoSyncResult> refreshLatest({
+    int limit = 30,
     void Function(List<SuperLottoDraw> draws)? onListingLoaded,
     void Function(int completed, int total)? onAnnouncementProgress,
   }) async {
-    final listing = await _crawler.fetchLatestDraws();
+    final listing = await _crawler.fetchLatestDraws(limit: limit);
     final existingByIssue = await _repository.loadByIssues(
       listing.map((draw) => draw.issue),
     );
@@ -109,7 +111,7 @@ class SuperLottoSyncService {
     }
 
     await _repository.saveAll(mergedDraws);
-    onListingLoaded?.call(await _repository.loadRecent());
+    onListingLoaded?.call(await _repository.loadRecent(limit: limit));
 
     final pendingIndexes = <int>[
       for (var index = 0; index < mergedDraws.length; index++)
@@ -142,7 +144,7 @@ class SuperLottoSyncService {
 
     await _repository.saveAll(resolved);
     return SuperLottoSyncResult(
-      draws: await _repository.loadRecent(),
+      draws: await _repository.loadRecent(limit: limit),
       failedAnnouncementIssues: failedIssues,
       addedDrawCount: addedDrawCount,
       skippedAnnouncementCount: skippedAnnouncementCount,

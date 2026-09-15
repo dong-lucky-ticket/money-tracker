@@ -12,6 +12,14 @@
 D:\demos\flutter\release-server\publish-apk.ps1 -SourceApk "D:\demos\flutter\money-tracker\build\app\outputs\apk\release\记账助储_v1.0.1.apk"
 ```
 
+```powershell
+taskkill /F /IM flutter.exe
+taskkill /F /IM dart.exe
+taskkill /F /IM Code.exe
+
+D:\flutter\bin\cache\lockfile
+```
+
 ## 项目意图
 
 从现有页面和交互设计来看，这个项目的目标是做一款：

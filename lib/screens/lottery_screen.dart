@@ -434,7 +434,10 @@ class _LotteryScreenState extends State<LotteryScreen> {
           onTap: () {
             Navigator.of(context).push(
               MaterialPageRoute(
-                builder: (_) => SuperLottoAnnouncementScreen(draw: draw),
+                builder: (_) => SuperLottoAnnouncementScreen(
+                  draw: draw,
+                  draws: _draws,
+                ),
               ),
             );
           },

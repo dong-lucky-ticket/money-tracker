@@ -7,13 +7,95 @@ import '../theme/app_colors.dart';
 import '../widgets/common/app_toast.dart';
 import 'lottery_rules_screen.dart';
 
-class DoubleColorBallAnnouncementScreen extends StatelessWidget {
+class DoubleColorBallAnnouncementScreen extends StatefulWidget {
   final DoubleColorBallDraw draw;
+  final List<DoubleColorBallDraw> draws;
 
-  const DoubleColorBallAnnouncementScreen({super.key, required this.draw});
+  const DoubleColorBallAnnouncementScreen({
+    super.key,
+    required this.draw,
+    List<DoubleColorBallDraw>? draws,
+  }) : draws = draws ?? const [];
+
+  @override
+  State<DoubleColorBallAnnouncementScreen> createState() =>
+      _DoubleColorBallAnnouncementScreenState();
+}
+
+class _DoubleColorBallAnnouncementScreenState
+    extends State<DoubleColorBallAnnouncementScreen> {
+  static const _switchThreshold = 72.0;
+  late final List<DoubleColorBallDraw> _draws;
+  late final PageController _pageController;
+  late int _currentIndex;
+  double _overscrollDistance = 0;
+  int? _overscrollDirection;
+  bool _isSwitching = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _draws = widget.draws.isEmpty ? [widget.draw] : widget.draws;
+    _currentIndex =
+        _draws.indexWhere((item) => item.issue == widget.draw.issue);
+    if (_currentIndex < 0) {
+      _currentIndex = 0;
+    }
+    _pageController = PageController(initialPage: _currentIndex);
+  }
+
+  @override
+  void dispose() {
+    _pageController.dispose();
+    super.dispose();
+  }
+
+  bool _handleScrollNotification(ScrollNotification notification) {
+    if (notification is ScrollEndNotification) {
+      _overscrollDistance = 0;
+      _overscrollDirection = null;
+    }
+    if (notification is! OverscrollNotification || _isSwitching) {
+      return false;
+    }
+
+    final isAtTop =
+        notification.metrics.pixels <= notification.metrics.minScrollExtent;
+    final isAtBottom =
+        notification.metrics.pixels >= notification.metrics.maxScrollExtent;
+    final direction = notification.overscroll < 0 && isAtTop
+        ? -1
+        : notification.overscroll > 0 && isAtBottom
+            ? 1
+            : 0;
+    if (direction == 0 ||
+        (_currentIndex + direction) < 0 ||
+        (_currentIndex + direction) >= _draws.length) {
+      return false;
+    }
+
+    if (_overscrollDirection != direction) {
+      _overscrollDirection = direction;
+      _overscrollDistance = 0;
+    }
+    _overscrollDistance += notification.overscroll.abs();
+    if (_overscrollDistance >= _switchThreshold) {
+      _isSwitching = true;
+      _overscrollDistance = 0;
+      _pageController
+          .animateToPage(
+            _currentIndex + direction,
+            duration: const Duration(milliseconds: 220),
+            curve: Curves.easeOut,
+          )
+          .whenComplete(() => _isSwitching = false);
+    }
+    return false;
+  }
 
   @override
   Widget build(BuildContext context) {
+    final draw = _draws[_currentIndex];
     return Scaffold(
       backgroundColor: AppColors.pageBackground,
       appBar: AppBar(
@@ -34,76 +116,105 @@ class DoubleColorBallAnnouncementScreen extends StatelessWidget {
           const SizedBox(width: 4),
         ],
       ),
-      body: ListView(
-        padding: const EdgeInsets.fromLTRB(20, 20, 20, 32),
-        children: [
-          Text(
-            '双色球',
-            style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                  fontWeight: FontWeight.bold,
-                  color: AppColors.textPrimary,
-                ),
-          ),
-          const SizedBox(height: 4),
-          Text(
-            '发布日期 ${DateFormat('yyyy-MM-dd').format(draw.publishDate)}',
-            style: const TextStyle(color: AppColors.textTertiary),
-          ),
-          const SizedBox(height: 20),
-          _AnnouncementSection(
-            title: '开奖号码',
-            child: _NumberGroups(draw: draw),
-          ),
-          const SizedBox(height: 16),
-          _AnnouncementSection(
-            title: '本期中奖情况',
-            child: draw.prizeTiers.isEmpty
-                ? const Padding(
-                    padding: EdgeInsets.symmetric(vertical: 20),
-                    child: Text(
-                      '该期中奖表格暂未解析成功。',
-                      textAlign: TextAlign.center,
-                      style: TextStyle(color: AppColors.textTertiary),
-                    ),
-                  )
-                : _PrizeTierTable(tiers: draw.prizeTiers),
-          ),
-          if (draw.winnerSummary != null) ...[
-            const SizedBox(height: 16),
-            _AnnouncementSection(
-              title: '一等奖中奖情况',
-              child: Text(
-                draw.winnerSummary!,
-                style: const TextStyle(
-                  height: 1.6,
-                  color: AppColors.textSecondary,
-                ),
+      body: PageView.builder(
+        controller: _pageController,
+        scrollDirection: Axis.vertical,
+        physics: const NeverScrollableScrollPhysics(),
+        itemCount: _draws.length,
+        onPageChanged: (index) {
+          setState(() {
+            _currentIndex = index;
+            _overscrollDistance = 0;
+            _overscrollDirection = null;
+          });
+        },
+        itemBuilder: (context, index) =>
+            NotificationListener<ScrollNotification>(
+          onNotification: _handleScrollNotification,
+          child: _AnnouncementBody(draw: _draws[index]),
+        ),
+      ),
+    );
+  }
+}
+
+class _AnnouncementBody extends StatelessWidget {
+  final DoubleColorBallDraw draw;
+
+  const _AnnouncementBody({required this.draw});
+
+  @override
+  Widget build(BuildContext context) {
+    return ListView(
+      key: PageStorageKey('double-color-ball-${draw.issue}'),
+      padding: const EdgeInsets.fromLTRB(20, 20, 20, 32),
+      children: [
+        Text(
+          '双色球',
+          style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                fontWeight: FontWeight.bold,
+                color: AppColors.textPrimary,
               ),
-            ),
-          ],
+        ),
+        const SizedBox(height: 4),
+        Text(
+          '发布日期 ${DateFormat('yyyy-MM-dd').format(draw.publishDate)}',
+          style: const TextStyle(color: AppColors.textTertiary),
+        ),
+        const SizedBox(height: 20),
+        _AnnouncementSection(
+          title: '开奖号码',
+          child: _NumberGroups(draw: draw),
+        ),
+        const SizedBox(height: 16),
+        _AnnouncementSection(
+          title: '本期中奖情况',
+          child: draw.prizeTiers.isEmpty
+              ? const Padding(
+                  padding: EdgeInsets.symmetric(vertical: 20),
+                  child: Text(
+                    '该期中奖表格暂未解析成功。',
+                    textAlign: TextAlign.center,
+                    style: TextStyle(color: AppColors.textTertiary),
+                  ),
+                )
+              : _PrizeTierTable(tiers: draw.prizeTiers),
+        ),
+        if (draw.winnerSummary != null) ...[
           const SizedBox(height: 16),
           _AnnouncementSection(
-            title: '公告链接',
-            child: Tooltip(
-              message: '点击复制',
-              child: GestureDetector(
-                onTap: () {
-                  Clipboard.setData(ClipboardData(text: draw.announcementUrl));
-                  AppToast.showSuccess(context, '公告链接已复制');
-                },
-                child: Text(
-                  draw.announcementUrl,
-                  style: const TextStyle(
-                    color: AppColors.primary,
-                    height: 1.5,
-                    decoration: TextDecoration.underline,
-                  ),
-                ),
+            title: '一等奖中奖情况',
+            child: Text(
+              draw.winnerSummary!,
+              style: const TextStyle(
+                height: 1.6,
+                color: AppColors.textSecondary,
               ),
             ),
           ),
         ],
-      ),
+        const SizedBox(height: 16),
+        _AnnouncementSection(
+          title: '公告链接',
+          child: Tooltip(
+            message: '点击复制',
+            child: GestureDetector(
+              onTap: () {
+                Clipboard.setData(ClipboardData(text: draw.announcementUrl));
+                AppToast.showSuccess(context, '公告链接已复制');
+              },
+              child: Text(
+                draw.announcementUrl,
+                style: const TextStyle(
+                  color: AppColors.primary,
+                  height: 1.5,
+                  decoration: TextDecoration.underline,
+                ),
+              ),
+            ),
+          ),
+        ),
+      ],
     );
   }
 }

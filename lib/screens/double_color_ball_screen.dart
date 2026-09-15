@@ -407,7 +407,10 @@ class _DoubleColorBallScreenState extends State<DoubleColorBallScreen> {
           onTap: () {
             Navigator.of(context).push(
               MaterialPageRoute(
-                builder: (_) => DoubleColorBallAnnouncementScreen(draw: draw),
+                builder: (_) => DoubleColorBallAnnouncementScreen(
+                  draw: draw,
+                  draws: _draws,
+                ),
               ),
             );
           },

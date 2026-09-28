@@ -10,10 +10,26 @@ import '../theme/app_colors.dart';
 /// avoids coupling the announcement detail page to a particular draw.
 class LotteryRulesScreen extends StatelessWidget {
   final String lotteryType;
+  final String? issue;
+  final List<String> primaryNumbers;
+  final List<String> secondaryNumbers;
 
-  const LotteryRulesScreen({super.key, required this.lotteryType});
+  /// [primaryNumbers] and [secondaryNumbers] are supplied by an announcement
+  /// page when the rules are opened for a particular draw. Keeping them
+  /// optional preserves the standalone rules entry point.
+  const LotteryRulesScreen({
+    super.key,
+    required this.lotteryType,
+    this.issue,
+    this.primaryNumbers = const [],
+    this.secondaryNumbers = const [],
+  });
 
   bool get _isSporttery => lotteryType == '体彩';
+
+  bool get _hasDrawNumbers =>
+      issue != null &&
+      (primaryNumbers.isNotEmpty || secondaryNumbers.isNotEmpty);
 
   @override
   Widget build(BuildContext context) {
@@ -26,42 +42,165 @@ class LotteryRulesScreen extends StatelessWidget {
         foregroundColor: AppColors.textPrimary,
         elevation: 0,
       ),
-      body: ListView(
-        padding: const EdgeInsets.fromLTRB(16, 20, 16, 32),
+      body: Stack(
         children: [
-          Text(
-            _isSporttery ? '超级大乐透（体彩）' : '双色球（福彩）',
-            style: const TextStyle(
-              fontSize: 20,
-              fontWeight: FontWeight.bold,
-              color: AppColors.textPrimary,
+          ListView(
+            padding:
+                EdgeInsets.fromLTRB(16, 20, 16, _hasDrawNumbers ? 108 : 32),
+            children: [
+              Text(
+                _isSporttery ? '超级大乐透（体彩）' : '双色球（福彩）',
+                style: const TextStyle(
+                  fontSize: 20,
+                  fontWeight: FontWeight.bold,
+                  color: AppColors.textPrimary,
+                ),
+              ),
+              const SizedBox(height: 4),
+              const Text(
+                '规则依据官方公开发行规则整理，适用于当前标准玩法。',
+                style: TextStyle(color: AppColors.textTertiary, height: 1.5),
+              ),
+              const SizedBox(height: 20),
+              _RuleSection(
+                title: '奖级与中奖条件',
+                child: _isSporttery
+                    ? const _SuperLottoTable()
+                    : const _DoubleColorBallTable(),
+              ),
+              const SizedBox(height: 16),
+              _RuleSection(
+                title: '玩法说明',
+                child: _isSporttery
+                    ? const _SportteryNotes()
+                    : const _DoubleColorBallNotes(),
+              ),
+              const SizedBox(height: 16),
+              _RuleSection(
+                title: '规则来源',
+                child: _SourceInfo(isSporttery: _isSporttery),
+              ),
+            ],
+          ),
+          if (_hasDrawNumbers)
+            Positioned(
+              left: 16,
+              right: 16,
+              bottom: 12,
+              child: SafeArea(
+                top: false,
+                child: _FloatingDrawNumbers(
+                  issue: issue!,
+                  isSporttery: _isSporttery,
+                  primaryNumbers: primaryNumbers,
+                  secondaryNumbers: secondaryNumbers,
+                ),
+              ),
             ),
-          ),
-          const SizedBox(height: 4),
-          const Text(
-            '规则依据官方公开发行规则整理，适用于当前标准玩法。',
-            style: TextStyle(color: AppColors.textTertiary, height: 1.5),
-          ),
-          const SizedBox(height: 20),
-          _RuleSection(
-            title: '奖级与中奖条件',
-            child: _isSporttery
-                ? const _SuperLottoTable()
-                : const _DoubleColorBallTable(),
-          ),
-          const SizedBox(height: 16),
-          _RuleSection(
-            title: '玩法说明',
-            child: _isSporttery
-                ? const _SportteryNotes()
-                : const _DoubleColorBallNotes(),
-          ),
-          const SizedBox(height: 16),
-          _RuleSection(
-            title: '规则来源',
-            child: _SourceInfo(isSporttery: _isSporttery),
-          ),
         ],
+      ),
+    );
+  }
+}
+
+class _FloatingDrawNumbers extends StatelessWidget {
+  final String issue;
+  final bool isSporttery;
+  final List<String> primaryNumbers;
+  final List<String> secondaryNumbers;
+
+  const _FloatingDrawNumbers({
+    required this.issue,
+    required this.isSporttery,
+    required this.primaryNumbers,
+    required this.secondaryNumbers,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final label = isSporttery ? '前区 / 后区' : '红球 / 蓝球';
+    return Material(
+      elevation: 8,
+      color: Colors.transparent,
+      borderRadius: BorderRadius.circular(14),
+      child: Container(
+        padding: const EdgeInsets.fromLTRB(14, 10, 14, 11),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(14),
+          border: Border.all(color: AppColors.border),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.12),
+              blurRadius: 14,
+              offset: const Offset(0, 5),
+            ),
+          ],
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                const Icon(Icons.confirmation_number_outlined,
+                    size: 18, color: AppColors.primary),
+                const SizedBox(width: 8),
+                Text(
+                  '第$issue期 · $label',
+                  style: const TextStyle(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w600,
+                    color: AppColors.textSecondary,
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 8),
+            Wrap(
+              spacing: 5,
+              runSpacing: 4,
+              children: [
+                ...primaryNumbers.map(
+                  (number) => _FloatingBall(
+                    number: number,
+                    color: AppColors.danger,
+                  ),
+                ),
+                ...secondaryNumbers.map(
+                  (number) => _FloatingBall(
+                    number: number,
+                    color: AppColors.primary,
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _FloatingBall extends StatelessWidget {
+  final String number;
+  final Color color;
+
+  const _FloatingBall({required this.number, required this.color});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: 24,
+      height: 24,
+      alignment: Alignment.center,
+      decoration: BoxDecoration(color: color, shape: BoxShape.circle),
+      child: Text(
+        number,
+        style: const TextStyle(
+          color: Colors.white,
+          fontSize: 10,
+          fontWeight: FontWeight.bold,
+        ),
       ),
     );
   }

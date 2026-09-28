@@ -107,7 +107,12 @@ class _DoubleColorBallAnnouncementScreenState
           IconButton(
             onPressed: () => Navigator.of(context).push(
               MaterialPageRoute(
-                builder: (_) => const LotteryRulesScreen(lotteryType: '福彩'),
+                builder: (_) => LotteryRulesScreen(
+                  lotteryType: '福彩',
+                  issue: draw.issue,
+                  primaryNumbers: draw.redNumbers,
+                  secondaryNumbers: [draw.blueNumber],
+                ),
               ),
             ),
             icon: const Icon(Icons.rule, size: 18),

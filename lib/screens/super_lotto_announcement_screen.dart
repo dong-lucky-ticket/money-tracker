@@ -107,7 +107,12 @@ class _SuperLottoAnnouncementScreenState
           IconButton(
             onPressed: () => Navigator.of(context).push(
               MaterialPageRoute(
-                builder: (_) => const LotteryRulesScreen(lotteryType: '体彩'),
+                builder: (_) => LotteryRulesScreen(
+                  lotteryType: '体彩',
+                  issue: draw.issue,
+                  primaryNumbers: draw.frontNumbers,
+                  secondaryNumbers: draw.backNumbers,
+                ),
               ),
             ),
             icon: const Icon(Icons.rule, size: 18),

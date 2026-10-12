@@ -257,7 +257,7 @@ class _DoubleColorBallScreenState extends State<DoubleColorBallScreen> {
           IconButton(
             onPressed: () => Navigator.of(context).push(
               MaterialPageRoute(
-                builder: (_) => const LotteryRulesScreen(lotteryType: '福彩'),
+                builder: (_) => const LotteryRulesScreen(lotteryType: '福彩双色球'),
               ),
             ),
             icon: const Icon(Icons.rule, size: 18),

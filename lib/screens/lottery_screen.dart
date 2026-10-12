@@ -13,9 +13,7 @@ import 'super_lotto_announcement_screen.dart';
 import 'lottery_rules_screen.dart';
 
 class LotteryScreen extends StatefulWidget {
-  final String lotteryType;
-
-  const LotteryScreen({super.key, required this.lotteryType});
+  const LotteryScreen({super.key});
 
   @override
   State<LotteryScreen> createState() => _LotteryScreenState();
@@ -34,14 +32,10 @@ class _LotteryScreenState extends State<LotteryScreen> {
   String? _syncMessage;
   Timer? _syncMessageTimer;
 
-  bool get _isSporttery => widget.lotteryType == '体彩';
-
   @override
   void initState() {
     super.initState();
-    if (_isSporttery) {
-      _loadCachedDraws();
-    }
+    _loadCachedDraws();
   }
 
   Future<void> _loadCachedDraws() async {
@@ -233,45 +227,41 @@ class _LotteryScreenState extends State<LotteryScreen> {
   @override
   Widget build(BuildContext context) {
     final canGoBack = Navigator.of(context).canPop();
-    final hasLeadingActions = canGoBack || _isSporttery;
     return Scaffold(
       backgroundColor: AppColors.pageBackground,
       appBar: AppBar(
-        title: Text(widget.lotteryType),
+        title: const Text('体彩大乐透'),
         backgroundColor: Colors.white,
         foregroundColor: AppColors.textPrimary,
         elevation: 0,
         automaticallyImplyLeading: false,
-        leadingWidth: canGoBack && _isSporttery ? 104 : 56,
-        leading: hasLeadingActions
-            ? Row(
-                children: [
-                  if (canGoBack)
-                    IconButton(
-                      onPressed: () => Navigator.of(context).maybePop(),
-                      tooltip: '返回',
-                      icon: const Icon(Icons.arrow_back),
-                    ),
-                  if (_isSporttery)
-                    IconButton(
-                      onPressed: _isLoading ? null : _refresh,
-                      tooltip: '同步大乐透数据',
-                      icon: _isLoading
-                          ? const SizedBox(
-                              width: 20,
-                              height: 20,
-                              child: CircularProgressIndicator(strokeWidth: 2),
-                            )
-                          : const Icon(Icons.sync),
-                    ),
-                ],
-              )
-            : null,
+        leadingWidth: canGoBack ? 104 : 56,
+        leading: Row(
+          children: [
+            if (canGoBack)
+              IconButton(
+                onPressed: () => Navigator.of(context).maybePop(),
+                tooltip: '返回',
+                icon: const Icon(Icons.arrow_back),
+              ),
+            IconButton(
+              onPressed: _isLoading ? null : _refresh,
+              tooltip: '同步体彩大乐透数据',
+              icon: _isLoading
+                  ? const SizedBox(
+                      width: 20,
+                      height: 20,
+                      child: CircularProgressIndicator(strokeWidth: 2),
+                    )
+                  : const Icon(Icons.sync),
+            ),
+          ],
+        ),
         actions: [
           IconButton(
             onPressed: () => Navigator.of(context).push(
               MaterialPageRoute(
-                builder: (_) => const LotteryRulesScreen(lotteryType: '体彩'),
+                builder: (_) => const LotteryRulesScreen(lotteryType: '体彩大乐透'),
               ),
             ),
             icon: const Icon(Icons.rule, size: 18),
@@ -280,25 +270,11 @@ class _LotteryScreenState extends State<LotteryScreen> {
           const SizedBox(width: 4),
         ],
       ),
-      body: _isSporttery ? _buildSportteryBody() : _buildPlaceholder(),
+      body: _buildBody(),
     );
   }
 
-  Widget _buildPlaceholder() {
-    return Center(
-      child: EmptyState(
-        icon: const Icon(
-          Icons.confirmation_number_outlined,
-          size: 48,
-          color: AppColors.textMuted,
-        ),
-        title: '暂未记录${widget.lotteryType}开奖信息',
-        subtitle: '开奖期号和中奖表格将在这里展示',
-      ),
-    );
-  }
-
-  Widget _buildSportteryBody() {
+  Widget _buildBody() {
     if (_draws.isEmpty && _isLoading) {
       return _LoadingState(message: _loadingMessage);
     }

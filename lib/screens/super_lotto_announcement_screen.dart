@@ -108,7 +108,7 @@ class _SuperLottoAnnouncementScreenState
             onPressed: () => Navigator.of(context).push(
               MaterialPageRoute(
                 builder: (_) => LotteryRulesScreen(
-                  lotteryType: '体彩',
+                  lotteryType: '体彩大乐透',
                   issue: draw.issue,
                   primaryNumbers: draw.frontNumbers,
                   secondaryNumbers: draw.backNumbers,

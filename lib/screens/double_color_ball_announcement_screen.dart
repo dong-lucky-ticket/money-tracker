@@ -108,7 +108,7 @@ class _DoubleColorBallAnnouncementScreenState
             onPressed: () => Navigator.of(context).push(
               MaterialPageRoute(
                 builder: (_) => LotteryRulesScreen(
-                  lotteryType: '福彩',
+                  lotteryType: '福彩双色球',
                   issue: draw.issue,
                   primaryNumbers: draw.redNumbers,
                   secondaryNumbers: [draw.blueNumber],

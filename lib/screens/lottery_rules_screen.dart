@@ -3,8 +3,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
 import '../theme/app_colors.dart';
+import '../widgets/lottery/prize_rules_table.dart';
 
-/// The published prize rules for the two lottery products supported by the app.
+/// The published prize rules for the lottery products supported by the app.
 ///
 /// Keeping the rules here makes them available when the user is offline and
 /// avoids coupling the announcement detail page to a particular draw.
@@ -25,7 +26,9 @@ class LotteryRulesScreen extends StatelessWidget {
     this.secondaryNumbers = const [],
   });
 
-  bool get _isSporttery => lotteryType == '体彩';
+  bool get _isSevenStar => lotteryType == '体彩七星彩';
+
+  bool get _isSporttery => lotteryType == '体彩大乐透' || _isSevenStar;
 
   bool get _hasDrawNumbers =>
       issue != null &&
@@ -33,7 +36,11 @@ class LotteryRulesScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final title = _isSporttery ? '超级大乐透中奖规则' : '双色球中奖规则';
+    final title = _isSevenStar
+        ? '体彩七星彩中奖规则'
+        : _isSporttery
+            ? '体彩大乐透中奖规则'
+            : '福彩双色球中奖规则';
     return Scaffold(
       backgroundColor: AppColors.pageBackground,
       appBar: AppBar(
@@ -49,7 +56,11 @@ class LotteryRulesScreen extends StatelessWidget {
                 EdgeInsets.fromLTRB(16, 20, 16, _hasDrawNumbers ? 108 : 32),
             children: [
               Text(
-                _isSporttery ? '超级大乐透（体彩）' : '双色球（福彩）',
+                _isSevenStar
+                    ? '体彩七星彩'
+                    : _isSporttery
+                        ? '体彩大乐透'
+                        : '福彩双色球',
                 style: const TextStyle(
                   fontSize: 20,
                   fontWeight: FontWeight.bold,
@@ -64,21 +75,28 @@ class LotteryRulesScreen extends StatelessWidget {
               const SizedBox(height: 20),
               _RuleSection(
                 title: '奖级与中奖条件',
-                child: _isSporttery
-                    ? const _SuperLottoTable()
-                    : const _DoubleColorBallTable(),
+                child: _isSevenStar
+                    ? const _SevenStarTable()
+                    : _isSporttery
+                        ? const _SuperLottoTable()
+                        : const _DoubleColorBallTable(),
               ),
               const SizedBox(height: 16),
               _RuleSection(
                 title: '玩法说明',
-                child: _isSporttery
-                    ? const _SportteryNotes()
-                    : const _DoubleColorBallNotes(),
+                child: _isSevenStar
+                    ? const _SevenStarNotes()
+                    : _isSporttery
+                        ? const _SportteryNotes()
+                        : const _DoubleColorBallNotes(),
               ),
               const SizedBox(height: 16),
               _RuleSection(
                 title: '规则来源',
-                child: _SourceInfo(isSporttery: _isSporttery),
+                child: _SourceInfo(
+                  isSporttery: _isSporttery,
+                  isSevenStar: _isSevenStar,
+                ),
               ),
             ],
           ),
@@ -92,6 +110,7 @@ class LotteryRulesScreen extends StatelessWidget {
                 child: _FloatingDrawNumbers(
                   issue: issue!,
                   isSporttery: _isSporttery,
+                  isSevenStar: _isSevenStar,
                   primaryNumbers: primaryNumbers,
                   secondaryNumbers: secondaryNumbers,
                 ),
@@ -106,19 +125,25 @@ class LotteryRulesScreen extends StatelessWidget {
 class _FloatingDrawNumbers extends StatelessWidget {
   final String issue;
   final bool isSporttery;
+  final bool isSevenStar;
   final List<String> primaryNumbers;
   final List<String> secondaryNumbers;
 
   const _FloatingDrawNumbers({
     required this.issue,
     required this.isSporttery,
+    required this.isSevenStar,
     required this.primaryNumbers,
     required this.secondaryNumbers,
   });
 
   @override
   Widget build(BuildContext context) {
-    final label = isSporttery ? '前区 / 后区' : '红球 / 蓝球';
+    final label = isSevenStar
+        ? '前区6位 / 后区1位'
+        : isSporttery
+            ? '前区 / 后区'
+            : '红球 / 蓝球';
     return Material(
       elevation: 8,
       color: Colors.transparent,
@@ -163,13 +188,13 @@ class _FloatingDrawNumbers extends StatelessWidget {
                 ...primaryNumbers.map(
                   (number) => _FloatingBall(
                     number: number,
-                    color: AppColors.danger,
+                    color: isSevenStar ? AppColors.primary : AppColors.danger,
                   ),
                 ),
                 ...secondaryNumbers.map(
                   (number) => _FloatingBall(
                     number: number,
-                    color: AppColors.primary,
+                    color: isSevenStar ? Colors.orange : AppColors.primary,
                   ),
                 ),
               ],
@@ -241,221 +266,65 @@ class _RuleSection extends StatelessWidget {
   }
 }
 
-class _RulesTable extends StatelessWidget {
-  final List<String> headers;
-  final List<List<String>> rows;
-  final List<TableColumnWidth>? widths;
-
-  const _RulesTable({required this.headers, required this.rows, this.widths});
-
-  @override
-  Widget build(BuildContext context) {
-    final columnWidths = <int, TableColumnWidth>{};
-    if (widths != null) {
-      for (var i = 0; i < widths!.length; i++) {
-        columnWidths[i] = widths![i];
-      }
-    }
-    return SingleChildScrollView(
-      scrollDirection: Axis.horizontal,
-      child: ConstrainedBox(
-        constraints: BoxConstraints(
-            minWidth: MediaQuery.of(context).size.width - 24 - 32 - 2),
-        child: Table(
-          defaultColumnWidth: const IntrinsicColumnWidth(),
-          columnWidths: columnWidths,
-          border: TableBorder.all(color: AppColors.border),
-          defaultVerticalAlignment: TableCellVerticalAlignment.middle,
-          children: [
-            TableRow(
-              decoration: const BoxDecoration(color: AppColors.surfaceMuted),
-              children: headers
-                  .map((text) => _RuleCell(text, isHeader: true))
-                  .toList(),
-            ),
-            ...rows.map(
-              (row) => TableRow(
-                children: row
-                    .asMap()
-                    .entries
-                    .map(
-                      (entry) => _RuleCell(
-                        entry.value,
-                        isCondition: entry.key == 1,
-                      ),
-                    )
-                    .toList(),
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-class _RuleCell extends StatelessWidget {
-  final String text;
-  final bool isHeader;
-  final bool isCondition;
-
-  const _RuleCell(
-    this.text, {
-    this.isHeader = false,
-    this.isCondition = false,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return ConstrainedBox(
-      constraints: const BoxConstraints(minWidth: 76),
-      child: isCondition
-          ? _ConditionDisplay(text)
-          : Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 10),
-              child: Text(
-                text,
-                textAlign: TextAlign.center,
-                style: TextStyle(
-                  fontSize: 12,
-                  height: 1.45,
-                  fontWeight: isHeader ? FontWeight.w600 : FontWeight.normal,
-                  color: AppColors.textSecondary,
-                ),
-              ),
-            ),
-    );
-  }
-}
-
-class _ConditionDisplay extends StatelessWidget {
-  final String condition;
-
-  const _ConditionDisplay(this.condition);
-
-  @override
-  Widget build(BuildContext context) {
-    final combinations = condition
-        .split(RegExp(r'\s*或\s*|\n'))
-        .map((value) => value.trim())
-        .where((value) => value.isNotEmpty)
-        .toList();
-    return Semantics(
-      label: condition,
-      // Each alternative is rendered as a compact sub-row. Keeping the
-      // separators inside the condition cell makes multi-condition prizes
-      // read like one merged table row instead of a paragraph of text.
-      child: Table(
-        defaultColumnWidth: const IntrinsicColumnWidth(),
-        children: [
-          for (var index = 0; index < combinations.length; index++)
-            TableRow(
-              decoration: index == 0
-                  ? null
-                  : const BoxDecoration(
-                      border: Border(
-                        top: BorderSide(color: AppColors.border),
-                      ),
-                    ),
-              children: [
-                Padding(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
-                  // padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 10),
-                  child: Center(
-                    child: _ConditionCombination(combinations[index]),
-                  ),
-                ),
-              ],
-            ),
-        ],
-      ),
-    );
-  }
-}
-
-class _ConditionCombination extends StatelessWidget {
-  final String condition;
-
-  const _ConditionCombination(this.condition);
-
-  @override
-  Widget build(BuildContext context) {
-    final match = RegExp(
-      r'(\d+)(?:个前区|个红球)\s*\+\s*(\d+)(?:个后区|个蓝球)',
-    ).firstMatch(condition);
-    if (match == null) {
-      return Text(
-        condition,
-        textAlign: TextAlign.center,
-        style: const TextStyle(
-          fontSize: 12,
-          color: AppColors.textSecondary,
-        ),
-      );
-    }
-    final frontCount = int.parse(match.group(1)!);
-    final backCount = int.parse(match.group(2)!);
-    return Row(
-      mainAxisSize: MainAxisSize.min,
-      mainAxisAlignment: MainAxisAlignment.center,
-      children: [
-        for (var i = 0; i < frontCount; i++)
-          const Padding(
-            padding: EdgeInsets.symmetric(horizontal: 1),
-            child: _RuleBall(color: AppColors.danger),
-          ),
-        for (var i = 0; i < backCount; i++)
-          const Padding(
-            padding: EdgeInsets.symmetric(horizontal: 1),
-            child: _RuleBall(color: AppColors.primary),
-          ),
-      ],
-    );
-  }
-}
-
-class _RuleBall extends StatelessWidget {
-  final Color color;
-
-  const _RuleBall({required this.color});
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      width: 11,
-      height: 11,
-      decoration: BoxDecoration(color: color, shape: BoxShape.circle),
-    );
-  }
-}
-
 class _SuperLottoTable extends StatelessWidget {
   const _SuperLottoTable();
 
   @override
   Widget build(BuildContext context) {
-    return const _RulesTable(
-      headers: ['奖级', '中奖条件', '奖池8亿以下', '奖池8亿及以上'],
-      widths: [
-        IntrinsicColumnWidth(),
-        IntrinsicColumnWidth(),
-        IntrinsicColumnWidth(),
-        IntrinsicColumnWidth(),
-      ],
-      rows: [
-        ['一等奖', '5个前区 + 2个后区', '浮动奖', '浮动奖'],
-        ['二等奖', '5个前区 + 1个后区', '浮动奖', '浮动奖'],
-        ['三等奖', '5个前区 + 0个后区\n或 4个前区 + 2个后区', '5000元', '6666元'],
-        ['四等奖', '4个前区 + 1个后区', '300元', '380元'],
-        ['五等奖', '4个前区 + 0个后区\n或 3个前区 + 2个后区', '150元', '200元'],
-        ['六等奖', '3个前区 + 1个后区\n或 2个前区 + 2个后区', '15元', '18元'],
-        [
-          '七等奖',
-          '3个前区 + 0个后区\n或 2个前区 + 1个后区\n或 1个前区 + 2个后区\n或 0个前区 + 2个后区',
-          '5元',
-          '7元'
-        ],
+    return const PrizeRulesTable(
+      prizeHeaders: ['奖池8亿以下', '奖池8亿及以上'],
+      frontLabel: '前区',
+      backLabel: '后区',
+      tiers: [
+        PrizeRuleTier(
+          name: '一等奖',
+          conditions: [PrizeRuleCondition(frontCount: 5, backCount: 2)],
+          prizes: ['浮动奖', '浮动奖'],
+        ),
+        PrizeRuleTier(
+          name: '二等奖',
+          conditions: [PrizeRuleCondition(frontCount: 5, backCount: 1)],
+          prizes: ['浮动奖', '浮动奖'],
+        ),
+        PrizeRuleTier(
+          name: '三等奖',
+          conditions: [
+            PrizeRuleCondition(frontCount: 5, backCount: 0),
+            PrizeRuleCondition(frontCount: 4, backCount: 2),
+          ],
+          prizes: ['5000元', '6666元'],
+        ),
+        PrizeRuleTier(
+          name: '四等奖',
+          conditions: [PrizeRuleCondition(frontCount: 4, backCount: 1)],
+          prizes: ['300元', '380元'],
+        ),
+        PrizeRuleTier(
+          name: '五等奖',
+          conditions: [
+            PrizeRuleCondition(frontCount: 4, backCount: 0),
+            PrizeRuleCondition(frontCount: 3, backCount: 2),
+          ],
+          prizes: ['150元', '200元'],
+        ),
+        PrizeRuleTier(
+          name: '六等奖',
+          conditions: [
+            PrizeRuleCondition(frontCount: 3, backCount: 1),
+            PrizeRuleCondition(frontCount: 2, backCount: 2),
+          ],
+          prizes: ['15元', '18元'],
+        ),
+        PrizeRuleTier(
+          name: '七等奖',
+          conditions: [
+            PrizeRuleCondition(frontCount: 3, backCount: 0),
+            PrizeRuleCondition(frontCount: 2, backCount: 1),
+            PrizeRuleCondition(frontCount: 1, backCount: 2),
+            PrizeRuleCondition(frontCount: 0, backCount: 2),
+          ],
+          prizes: ['5元', '7元'],
+        ),
       ],
     );
   }
@@ -466,22 +335,106 @@ class _DoubleColorBallTable extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return const _RulesTable(
-      headers: ['奖级', '中奖条件', '单注奖金'],
-      widths: [
-        IntrinsicColumnWidth(),
-        IntrinsicColumnWidth(),
-        IntrinsicColumnWidth(),
+    return const PrizeRulesTable(
+      prizeHeaders: ['单注奖金'],
+      frontLabel: '红球',
+      backLabel: '蓝球',
+      tiers: [
+        PrizeRuleTier(
+            name: '一等奖',
+            conditions: [PrizeRuleCondition(frontCount: 6, backCount: 1)],
+            prizes: ['浮动奖']),
+        PrizeRuleTier(
+            name: '二等奖',
+            conditions: [PrizeRuleCondition(frontCount: 6, backCount: 0)],
+            prizes: ['浮动奖']),
+        PrizeRuleTier(
+            name: '三等奖',
+            conditions: [PrizeRuleCondition(frontCount: 5, backCount: 1)],
+            prizes: ['3000元']),
+        PrizeRuleTier(name: '四等奖', conditions: [
+          PrizeRuleCondition(frontCount: 5, backCount: 0),
+          PrizeRuleCondition(frontCount: 4, backCount: 1)
+        ], prizes: [
+          '200元'
+        ]),
+        PrizeRuleTier(name: '五等奖', conditions: [
+          PrizeRuleCondition(frontCount: 4, backCount: 0),
+          PrizeRuleCondition(frontCount: 3, backCount: 1)
+        ], prizes: [
+          '10元'
+        ]),
+        PrizeRuleTier(name: '六等奖', conditions: [
+          PrizeRuleCondition(frontCount: 2, backCount: 1),
+          PrizeRuleCondition(frontCount: 1, backCount: 1),
+          PrizeRuleCondition(frontCount: 0, backCount: 1)
+        ], prizes: [
+          '5元'
+        ]),
+        PrizeRuleTier(
+            name: '福运奖\n(特别规定期)',
+            conditions: [PrizeRuleCondition(frontCount: 3, backCount: 0)],
+            prizes: ['5元']),
       ],
-      rows: [
-        ['一等奖', '6个红球 + 1个蓝球', '浮动奖'],
-        ['二等奖', '6个红球 + 0个蓝球', '浮动奖'],
-        ['三等奖', '5个红球 + 1个蓝球', '3000元'],
-        ['四等奖', '5个红球 + 0个蓝球\n或 4个红球 + 1个蓝球', '200元'],
-        ['五等奖', '4个红球 + 0个蓝球\n或 3个红球 + 1个蓝球', '10元'],
-        ['六等奖', '2个红球 + 1个蓝球\n或 1个红球 + 1个蓝球\n或 0个红球 + 1个蓝球', '5元'],
-        ['福运奖\n(特别规定期)', '3个红球 + 0个蓝球', '5元'],
+    );
+  }
+}
+
+class _SevenStarTable extends StatelessWidget {
+  const _SevenStarTable();
+
+  @override
+  Widget build(BuildContext context) {
+    return const PrizeRulesTable(
+      prizeHeaders: ['奖金'],
+      frontLabel: '前区',
+      backLabel: '后区',
+      tiers: [
+        PrizeRuleTier(
+            name: '一等奖',
+            conditions: [PrizeRuleCondition(frontCount: 6, backCount: 1)],
+            prizes: ['最高可中\n500万元']),
+        PrizeRuleTier(
+            name: '二等奖',
+            conditions: [PrizeRuleCondition(frontCount: 6, backCount: 0)],
+            prizes: ['浮动奖']),
+        PrizeRuleTier(
+            name: '三等奖',
+            conditions: [PrizeRuleCondition(frontCount: 5, backCount: 1)],
+            prizes: ['3,000元']),
+        PrizeRuleTier(name: '四等奖', conditions: [
+          PrizeRuleCondition(frontCount: 5, backCount: 0),
+          PrizeRuleCondition(frontCount: 4, backCount: 1)
+        ], prizes: [
+          '500元'
+        ]),
+        PrizeRuleTier(name: '五等奖', conditions: [
+          PrizeRuleCondition(frontCount: 4, backCount: 0),
+          PrizeRuleCondition(frontCount: 3, backCount: 1)
+        ], prizes: [
+          '30元'
+        ]),
+        PrizeRuleTier(name: '六等奖', conditions: [
+          PrizeRuleCondition(frontCount: 3, backCount: 0),
+          PrizeRuleCondition(frontCount: 2, backCount: 1),
+          PrizeRuleCondition(frontCount: 1, backCount: 1),
+          PrizeRuleCondition(frontCount: 0, backCount: 1)
+        ], prizes: [
+          '5元'
+        ]),
       ],
+    );
+  }
+}
+
+class _SevenStarNotes extends StatelessWidget {
+  const _SevenStarNotes();
+
+  @override
+  Widget build(BuildContext context) {
+    return const Text(
+      '每注从0-9中选择7位号码，前区为前6位，后区为最后1位，单注投注金额2元。所有中奖条件均要求对应位置号码相同；具体规则以中国体彩网相关公告为准。',
+      style: TextStyle(color: AppColors.textSecondary, height: 1.65),
     );
   }
 }
@@ -530,15 +483,22 @@ class _DoubleColorBallNotes extends StatelessWidget {
 
 class _SourceInfo extends StatelessWidget {
   final bool isSporttery;
+  final bool isSevenStar;
 
-  const _SourceInfo({required this.isSporttery});
+  const _SourceInfo({required this.isSporttery, this.isSevenStar = false});
 
   @override
   Widget build(BuildContext context) {
-    final source = isSporttery ? '国家体育总局体育彩票管理中心、江苏体彩网' : '中国福利彩票发行管理中心、中国福彩网';
-    final url = isSporttery
-        ? 'https://www.js-lottery.com/wfzq/dlt/wfjs/cms/post-146353.html'
-        : 'https://www.cwl.gov.cn/fcpz/yxjs/ssq/';
+    final source = isSevenStar
+        ? '中国体彩网'
+        : isSporttery
+            ? '江苏体彩网'
+            : '中国福彩网';
+    final url = isSevenStar
+        ? 'https://www.lottery.gov.cn/qxc/index.html'
+        : isSporttery
+            ? 'https://www.js-lottery.com/wfzq/dlt/wfjs/cms/post-146353.html'
+            : 'https://www.cwl.gov.cn/fcpz/yxjs/ssq/';
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [

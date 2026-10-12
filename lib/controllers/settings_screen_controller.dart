@@ -96,6 +96,10 @@ class SettingsScreenController {
         throw const FormatException('无法读取所选文件');
       }
 
+      if (!context.mounted) {
+        return;
+      }
+
       await _importCsvBytes(
         context,
         provider,
@@ -643,10 +647,15 @@ class SettingsScreenController {
     }
 
     try {
+      final bytes = await file.readAsBytes();
+      if (!context.mounted) {
+        return;
+      }
+
       await _importCsvBytes(
         context,
         provider,
-        await file.readAsBytes(),
+        bytes,
         fileName: fileName,
         title: '恢复完成',
       );

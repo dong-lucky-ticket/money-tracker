@@ -6,6 +6,7 @@ import '../models/category_group.dart';
 import '../models/data_sync_progress.dart';
 import '../models/double_color_ball_draw.dart';
 import '../models/record.dart';
+import '../models/seven_star_draw.dart';
 import '../models/super_lotto_draw.dart';
 import '../providers/data_provider.dart';
 import 'error_log_service.dart';
@@ -71,6 +72,12 @@ class AppBootstrapService {
     }
     if (!Hive.isAdapterRegistered(6)) {
       Hive.registerAdapter(DoubleColorBallPrizeTierAdapter());
+    }
+    if (!Hive.isAdapterRegistered(7)) {
+      Hive.registerAdapter(SevenStarDrawAdapter());
+    }
+    if (!Hive.isAdapterRegistered(8)) {
+      Hive.registerAdapter(SevenStarPrizeTierAdapter());
     }
   }
 }

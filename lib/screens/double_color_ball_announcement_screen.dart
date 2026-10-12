@@ -155,7 +155,7 @@ class _AnnouncementBody extends StatelessWidget {
       padding: const EdgeInsets.fromLTRB(20, 20, 20, 32),
       children: [
         Text(
-          '双色球',
+          '福彩双色球',
           style: Theme.of(context).textTheme.titleLarge?.copyWith(
                 fontWeight: FontWeight.bold,
                 color: AppColors.textPrimary,

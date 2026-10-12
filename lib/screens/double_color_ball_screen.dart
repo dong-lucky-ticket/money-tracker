@@ -222,38 +222,25 @@ class _DoubleColorBallScreenState extends State<DoubleColorBallScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final canGoBack = Navigator.of(context).canPop();
     return Scaffold(
       backgroundColor: AppColors.pageBackground,
       appBar: AppBar(
-        title: const Text('双色球'),
+        title: const Text('福彩双色球'),
         backgroundColor: Colors.white,
         foregroundColor: AppColors.textPrimary,
         elevation: 0,
-        automaticallyImplyLeading: false,
-        leadingWidth: canGoBack ? 104 : 56,
-        leading: Row(
-          children: [
-            if (canGoBack)
-              IconButton(
-                onPressed: () => Navigator.of(context).maybePop(),
-                tooltip: '返回',
-                icon: const Icon(Icons.arrow_back),
-              ),
-            IconButton(
-              onPressed: _isLoading ? null : _refresh,
-              tooltip: '同步双色球数据',
-              icon: _isLoading
-                  ? const SizedBox(
-                      width: 20,
-                      height: 20,
-                      child: CircularProgressIndicator(strokeWidth: 2),
-                    )
-                  : const Icon(Icons.sync),
-            ),
-          ],
-        ),
         actions: [
+          IconButton(
+            onPressed: _isLoading ? null : _refresh,
+            tooltip: '同步福彩双色球数据',
+            icon: _isLoading
+                ? const SizedBox(
+                    width: 20,
+                    height: 20,
+                    child: CircularProgressIndicator(strokeWidth: 2),
+                  )
+                : const Icon(Icons.sync),
+          ),
           IconButton(
             onPressed: () => Navigator.of(context).push(
               MaterialPageRoute(
@@ -321,7 +308,7 @@ class _DoubleColorBallScreenState extends State<DoubleColorBallScreen> {
             color: AppColors.textMuted,
           ),
           title: '暂无开奖记录',
-          subtitle: '点击左上角同步开奖数据',
+          subtitle: '点击右上角同步开奖数据',
         ),
       );
     }
@@ -367,7 +354,7 @@ class _DoubleColorBallScreenState extends State<DoubleColorBallScreen> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               const Text(
-                '双色球',
+                '福彩双色球',
                 style: TextStyle(
                   fontSize: 20,
                   fontWeight: FontWeight.bold,

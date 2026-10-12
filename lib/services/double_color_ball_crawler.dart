@@ -57,7 +57,7 @@ class DoubleColorBallCrawler {
         throw const DoubleColorBallCrawlException('中国福彩网响应异常，请稍后重试。');
       }
       if (data['message'] != '查询成功' || data['result'] is! List) {
-        throw const DoubleColorBallCrawlException('中国福彩网未返回双色球开奖记录。');
+        throw const DoubleColorBallCrawlException('中国福彩网未返回开奖记录。');
       }
 
       final draws = (data['result'] as List)
@@ -67,7 +67,7 @@ class DoubleColorBallCrawler {
           .take(limit)
           .toList();
       if (draws.isEmpty) {
-        throw const DoubleColorBallCrawlException('未从中国福彩网获取到双色球开奖记录。');
+        throw const DoubleColorBallCrawlException('未从中国福彩网获取到开奖记录。');
       }
       return draws;
     } on DioException catch (error) {
@@ -75,7 +75,7 @@ class DoubleColorBallCrawler {
     } on DoubleColorBallCrawlException {
       rethrow;
     } catch (error) {
-      throw DoubleColorBallCrawlException('双色球列表解析失败，请稍后重试。', error);
+      throw DoubleColorBallCrawlException('列表解析失败，请稍后重试。', error);
     }
   }
 
@@ -148,7 +148,7 @@ class DoubleColorBallCrawler {
     } on DoubleColorBallCrawlException {
       rethrow;
     } catch (error) {
-      throw DoubleColorBallCrawlException('双色球公告解析失败，请稍后重试。', error);
+      throw DoubleColorBallCrawlException('公告解析失败，请稍后重试。', error);
     }
   }
 
@@ -223,7 +223,7 @@ class DoubleColorBallCrawler {
       case DioExceptionType.connectionError:
         return '无法连接中国福彩网，请检查网络后重试。';
       default:
-        return '获取双色球开奖数据失败，请稍后重试。';
+        return '获取开奖数据失败，请稍后重试。';
     }
   }
 }

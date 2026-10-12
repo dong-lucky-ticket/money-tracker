@@ -226,7 +226,6 @@ class _LotteryScreenState extends State<LotteryScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final canGoBack = Navigator.of(context).canPop();
     return Scaffold(
       backgroundColor: AppColors.pageBackground,
       appBar: AppBar(
@@ -234,30 +233,18 @@ class _LotteryScreenState extends State<LotteryScreen> {
         backgroundColor: Colors.white,
         foregroundColor: AppColors.textPrimary,
         elevation: 0,
-        automaticallyImplyLeading: false,
-        leadingWidth: canGoBack ? 104 : 56,
-        leading: Row(
-          children: [
-            if (canGoBack)
-              IconButton(
-                onPressed: () => Navigator.of(context).maybePop(),
-                tooltip: '返回',
-                icon: const Icon(Icons.arrow_back),
-              ),
-            IconButton(
-              onPressed: _isLoading ? null : _refresh,
-              tooltip: '同步体彩大乐透数据',
-              icon: _isLoading
-                  ? const SizedBox(
-                      width: 20,
-                      height: 20,
-                      child: CircularProgressIndicator(strokeWidth: 2),
-                    )
-                  : const Icon(Icons.sync),
-            ),
-          ],
-        ),
         actions: [
+          IconButton(
+            onPressed: _isLoading ? null : _refresh,
+            tooltip: '同步体彩大乐透数据',
+            icon: _isLoading
+                ? const SizedBox(
+                    width: 20,
+                    height: 20,
+                    child: CircularProgressIndicator(strokeWidth: 2),
+                  )
+                : const Icon(Icons.sync),
+          ),
           IconButton(
             onPressed: () => Navigator.of(context).push(
               MaterialPageRoute(

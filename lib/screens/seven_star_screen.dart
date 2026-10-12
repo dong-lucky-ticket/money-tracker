@@ -227,6 +227,7 @@ class _SevenStarScreenState extends State<SevenStarScreen> {
             ),
             tooltip: '体彩七星彩玩法规则',
             icon: const Icon(Icons.rule, size: 18),
+            style: TextButton.styleFrom(foregroundColor: AppColors.primary),
           ),
           const SizedBox(width: 4),
         ],

@@ -22,7 +22,10 @@ String buildTimelineDateLabel(
 }) {
   final today = _dateOnly(now ?? DateTime.now());
   final yesterday = today.subtract(const Duration(days: 1));
-  final buffer = StringBuffer(DateFormat('M月d日').format(date));
+  const weekdays = ['星期一', '星期二', '星期三', '星期四', '星期五', '星期六', '星期日'];
+  final buffer = StringBuffer(
+    '${DateFormat('M月d日').format(date)} ${weekdays[date.weekday - 1]}',
+  );
 
   if (_isSameDay(date, today)) {
     buffer.write(' 今天');

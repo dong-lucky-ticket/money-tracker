@@ -28,6 +28,8 @@ class LotteryRulesScreen extends StatelessWidget {
 
   bool get _isSevenStar => lotteryType == '体彩七星彩';
 
+  bool get _isHappyEight => lotteryType == '福彩快乐8';
+
   bool get _isSporttery => lotteryType == '体彩大乐透' || _isSevenStar;
 
   bool get _hasDrawNumbers =>
@@ -36,11 +38,14 @@ class LotteryRulesScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final title = _isSevenStar
-        ? '体彩七星彩中奖规则'
-        : _isSporttery
-            ? '体彩大乐透中奖规则'
-            : '福彩双色球中奖规则';
+    final lotteryName = _isHappyEight
+        ? '福彩快乐8'
+        : _isSevenStar
+            ? '体彩七星彩'
+            : _isSporttery
+                ? '体彩大乐透'
+                : '福彩双色球';
+    final title = '$lotteryName中奖规则';
     return Scaffold(
       backgroundColor: AppColors.pageBackground,
       appBar: AppBar(
@@ -53,14 +58,10 @@ class LotteryRulesScreen extends StatelessWidget {
         children: [
           ListView(
             padding:
-                EdgeInsets.fromLTRB(16, 20, 16, _hasDrawNumbers ? 108 : 32),
+                EdgeInsets.fromLTRB(16, 20, 16, _hasDrawNumbers ? 128 : 32),
             children: [
               Text(
-                _isSevenStar
-                    ? '体彩七星彩'
-                    : _isSporttery
-                        ? '体彩大乐透'
-                        : '福彩双色球',
+                lotteryName,
                 style: const TextStyle(
                   fontSize: 20,
                   fontWeight: FontWeight.bold,
@@ -75,20 +76,24 @@ class LotteryRulesScreen extends StatelessWidget {
               const SizedBox(height: 20),
               _RuleSection(
                 title: '奖级与中奖条件',
-                child: _isSevenStar
-                    ? const _SevenStarTable()
-                    : _isSporttery
-                        ? const _SuperLottoTable()
-                        : const _DoubleColorBallTable(),
+                child: _isHappyEight
+                    ? const _HappyEightTable()
+                    : _isSevenStar
+                        ? const _SevenStarTable()
+                        : _isSporttery
+                            ? const _SuperLottoTable()
+                            : const _DoubleColorBallTable(),
               ),
               const SizedBox(height: 16),
               _RuleSection(
                 title: '玩法说明',
-                child: _isSevenStar
-                    ? const _SevenStarNotes()
-                    : _isSporttery
-                        ? const _SportteryNotes()
-                        : const _DoubleColorBallNotes(),
+                child: _isHappyEight
+                    ? const _HappyEightNotes()
+                    : _isSevenStar
+                        ? const _SevenStarNotes()
+                        : _isSporttery
+                            ? const _SportteryNotes()
+                            : const _DoubleColorBallNotes(),
               ),
               const SizedBox(height: 16),
               _RuleSection(
@@ -96,6 +101,7 @@ class LotteryRulesScreen extends StatelessWidget {
                 child: _SourceInfo(
                   isSporttery: _isSporttery,
                   isSevenStar: _isSevenStar,
+                  isHappyEight: _isHappyEight,
                 ),
               ),
             ],
@@ -111,6 +117,7 @@ class LotteryRulesScreen extends StatelessWidget {
                   issue: issue!,
                   isSporttery: _isSporttery,
                   isSevenStar: _isSevenStar,
+                  isHappyEight: _isHappyEight,
                   primaryNumbers: primaryNumbers,
                   secondaryNumbers: secondaryNumbers,
                 ),
@@ -126,6 +133,7 @@ class _FloatingDrawNumbers extends StatelessWidget {
   final String issue;
   final bool isSporttery;
   final bool isSevenStar;
+  final bool isHappyEight;
   final List<String> primaryNumbers;
   final List<String> secondaryNumbers;
 
@@ -133,17 +141,20 @@ class _FloatingDrawNumbers extends StatelessWidget {
     required this.issue,
     required this.isSporttery,
     required this.isSevenStar,
+    required this.isHappyEight,
     required this.primaryNumbers,
     required this.secondaryNumbers,
   });
 
   @override
   Widget build(BuildContext context) {
-    final label = isSevenStar
-        ? '前区6位 / 后区1位'
-        : isSporttery
-            ? '前区 / 后区'
-            : '红球 / 蓝球';
+    final label = isHappyEight
+        ? '开奖号码'
+        : isSevenStar
+            ? '前区6位 / 后区1位'
+            : isSporttery
+                ? '前区 / 后区'
+                : '红球 / 蓝球';
     return Material(
       elevation: 8,
       color: Colors.transparent,
@@ -380,6 +391,120 @@ class _DoubleColorBallTable extends StatelessWidget {
   }
 }
 
+class _HappyEightTable extends StatelessWidget {
+  const _HappyEightTable();
+
+  static const _rules = <(String, String, String)>[
+    ('选十', '中10', '最高500万元'),
+    ('选十', '中9', '8,000元'),
+    ('选十', '中8', '720元'),
+    ('选十', '中7', '80元'),
+    ('选十', '中6', '5元'),
+    ('选十', '中5', '3元'),
+    ('选十', '中0', '2元'),
+    ('选九', '中9', '最高25万元'),
+    ('选九', '中8', '2,000元'),
+    ('选九', '中7', '225元'),
+    ('选九', '中6', '22元'),
+    ('选九', '中5', '5元'),
+    ('选九', '中4', '3元'),
+    ('选九', '中0', '2元'),
+    ('选八', '中8', '50,000元'),
+    ('选八', '中7', '800元'),
+    ('选八', '中6', '80元'),
+    ('选八', '中5', '10元'),
+    ('选八', '中4', '3元'),
+    ('选八', '中0', '2元'),
+    ('选七', '中7', '8,500元'),
+    ('选七', '中6', '300元'),
+    ('选七', '中5', '30元'),
+    ('选七', '中4', '4元'),
+    ('选七', '中0', '2元'),
+    ('选六', '中6', '2,880元'),
+    ('选六', '中5', '30元'),
+    ('选六', '中4', '10元'),
+    ('选六', '中3', '3元'),
+    ('选五', '中5', '1,000元'),
+    ('选五', '中4', '20元'),
+    ('选五', '中3', '3元'),
+    ('选四', '中4', '93元'),
+    ('选四', '中3', '5元'),
+    ('选四', '中2', '3元'),
+    ('选三', '中3', '52元'),
+    ('选三', '中2', '3元'),
+    ('选二', '中2', '19元'),
+    ('选一', '中1', '4.5元'),
+  ];
+
+  @override
+  Widget build(BuildContext context) {
+    return SingleChildScrollView(
+      scrollDirection: Axis.horizontal,
+      child: ConstrainedBox(
+        constraints: const BoxConstraints(minWidth: 280),
+        child: Table(
+          defaultColumnWidth: const IntrinsicColumnWidth(),
+          border: TableBorder.all(color: AppColors.border),
+          defaultVerticalAlignment: TableCellVerticalAlignment.middle,
+          children: [
+            const TableRow(
+              decoration: BoxDecoration(color: AppColors.surfaceMuted),
+              children: [
+                _HappyEightRuleCell('玩法', isHeader: true),
+                _HappyEightRuleCell('中奖条件', isHeader: true),
+                _HappyEightRuleCell('奖金', isHeader: true),
+              ],
+            ),
+            for (final rule in _rules)
+              TableRow(
+                children: [
+                  _HappyEightRuleCell(rule.$1),
+                  _HappyEightRuleCell(rule.$2),
+                  _HappyEightRuleCell(rule.$3),
+                ],
+              ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _HappyEightRuleCell extends StatelessWidget {
+  final String text;
+  final bool isHeader;
+
+  const _HappyEightRuleCell(this.text, {this.isHeader = false});
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
+      child: Text(
+        text,
+        textAlign: TextAlign.center,
+        style: TextStyle(
+          fontSize: 12,
+          fontWeight: isHeader ? FontWeight.w600 : FontWeight.normal,
+          color: AppColors.textSecondary,
+        ),
+      ),
+    );
+  }
+}
+
+class _HappyEightNotes extends StatelessWidget {
+  const _HappyEightNotes();
+
+  @override
+  Widget build(BuildContext context) {
+    return const Text(
+      '快乐8从1至80共80个号码中任选1至10个号码进行投注，每注2元，开奖时摇出20个号码。根据所选号码与开奖号码相同的个数，按上表对应玩法中奖。快乐8每天销售一期，具体销售和开奖安排以中国福利彩票发行管理中心公告为准。',
+      style: TextStyle(color: AppColors.textSecondary, height: 1.65),
+    );
+  }
+}
+
 class _SevenStarTable extends StatelessWidget {
   const _SevenStarTable();
 
@@ -484,21 +609,24 @@ class _DoubleColorBallNotes extends StatelessWidget {
 class _SourceInfo extends StatelessWidget {
   final bool isSporttery;
   final bool isSevenStar;
+  final bool isHappyEight;
 
-  const _SourceInfo({required this.isSporttery, this.isSevenStar = false});
+  const _SourceInfo({
+    required this.isSporttery,
+    this.isSevenStar = false,
+    this.isHappyEight = false,
+  });
 
   @override
   Widget build(BuildContext context) {
-    final source = isSevenStar
-        ? '中国体彩网'
-        : isSporttery
-            ? '江苏体彩网'
-            : '中国福彩网';
-    final url = isSevenStar
-        ? 'https://www.lottery.gov.cn/qxc/index.html'
-        : isSporttery
-            ? 'https://www.js-lottery.com/wfzq/dlt/wfjs/cms/post-146353.html'
-            : 'https://www.cwl.gov.cn/fcpz/yxjs/ssq/';
+    final source = isSporttery ? '中国体彩网' : '中国福彩网';
+    final url = isHappyEight
+        ? 'https://www.cwl.gov.cn/fcpz/yxjs/kl8/'
+        : isSevenStar
+            ? 'https://www.lottery.gov.cn/qxc/index.html'
+            : isSporttery
+                ? 'https://www.js-lottery.com/wfzq/dlt/wfjs/cms/post-146353.html'
+                : 'https://www.cwl.gov.cn/fcpz/yxjs/ssq/';
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -506,8 +634,10 @@ class _SourceInfo extends StatelessWidget {
             style:
                 const TextStyle(color: AppColors.textSecondary, height: 1.5)),
         const SizedBox(height: 4),
-        const Text('规则抓取日期：2026-09-14',
-            style: TextStyle(color: AppColors.textTertiary, fontSize: 12)),
+        Text(
+          isHappyEight ? '规则抓取日期：2026-11-06' : '规则抓取日期：2026-09-14',
+          style: const TextStyle(color: AppColors.textTertiary, fontSize: 12),
+        ),
         const SizedBox(height: 4),
         Tooltip(
           message: '点击复制规则地址',

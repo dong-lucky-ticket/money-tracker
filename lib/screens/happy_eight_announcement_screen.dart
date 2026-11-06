@@ -5,6 +5,7 @@ import 'package:intl/intl.dart';
 import '../models/happy_eight_draw.dart';
 import '../theme/app_colors.dart';
 import '../widgets/common/app_toast.dart';
+import 'lottery_rules_screen.dart';
 
 class HappyEightAnnouncementScreen extends StatefulWidget {
   final HappyEightDraw draw;
@@ -98,6 +99,23 @@ class _HappyEightAnnouncementScreenState
         backgroundColor: Colors.white,
         foregroundColor: AppColors.textPrimary,
         elevation: 0,
+        actions: [
+          IconButton(
+            tooltip: '福彩快乐8中奖规则',
+            onPressed: () => Navigator.of(context).push(
+              MaterialPageRoute(
+                builder: (_) => LotteryRulesScreen(
+                  lotteryType: '福彩快乐8',
+                  issue: draw.issue,
+                  primaryNumbers: draw.numbers,
+                ),
+              ),
+            ),
+            icon: const Icon(Icons.rule, size: 18),
+            style: TextButton.styleFrom(foregroundColor: AppColors.primary),
+          ),
+          const SizedBox(width: 4),
+        ],
       ),
       body: PageView.builder(
         controller: _pageController,

@@ -10,6 +10,7 @@ import '../services/happy_eight_repository.dart';
 import '../theme/app_colors.dart';
 import '../widgets/common/empty_state.dart';
 import 'happy_eight_announcement_screen.dart';
+import 'lottery_rules_screen.dart';
 
 class HappyEightScreen extends StatefulWidget {
   const HappyEightScreen({super.key});
@@ -180,6 +181,19 @@ class _HappyEightScreenState extends State<HappyEightScreen> {
                       child: CircularProgressIndicator(strokeWidth: 2))
                   : const Icon(Icons.sync),
             ),
+            IconButton(
+              tooltip: '福彩快乐8中奖规则',
+              onPressed: () => Navigator.of(context).push(
+                MaterialPageRoute(
+                  builder: (_) => const LotteryRulesScreen(
+                    lotteryType: '福彩快乐8',
+                  ),
+                ),
+              ),
+              icon: const Icon(Icons.rule, size: 18),
+              style: TextButton.styleFrom(foregroundColor: AppColors.primary),
+            ),
+            const SizedBox(width: 4),
           ],
         ),
         body: _body(),

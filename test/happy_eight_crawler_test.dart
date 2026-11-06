@@ -92,6 +92,26 @@ void main() {
     expect(find.text(announcementUrl), findsOneWidget);
     expect(find.text('出球顺序'), findsNothing);
   });
+
+  testWidgets('announcement rules action opens Happy 8 rules with its draw',
+      (tester) async {
+    final draw = HappyEightDraw(
+      issue: '2026295',
+      publishDate: DateTime(2026, 11, 5),
+      numbers: List.generate(20, (index) => '${index + 1}'.padLeft(2, '0')),
+      announcementUrl: 'https://www.cwl.gov.cn/c/2026/11/05/672297.shtml',
+    );
+    await tester.pumpWidget(MaterialApp(
+      home: HappyEightAnnouncementScreen(draw: draw),
+    ));
+
+    await tester.tap(find.byTooltip('福彩快乐8中奖规则'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('福彩快乐8中奖规则'), findsOneWidget);
+    expect(find.text('第2026295期 · 开奖号码'), findsOneWidget);
+    expect(find.text('4.5元'), findsOneWidget);
+  });
 }
 
 class _HappyEightApiAdapter implements HttpClientAdapter {

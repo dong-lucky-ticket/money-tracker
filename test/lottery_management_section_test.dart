@@ -1,4 +1,5 @@
 import 'package:expensetracker/screens/double_color_ball_screen.dart';
+import 'package:expensetracker/screens/happy_eight_screen.dart';
 import 'package:expensetracker/screens/lottery_screen.dart';
 import 'package:expensetracker/screens/seven_star_screen.dart';
 import 'package:expensetracker/widgets/settings/lottery_management_section.dart';
@@ -22,6 +23,7 @@ void main() {
       ('体彩大乐透', LotteryScreen),
       ('体彩七星彩', SevenStarScreen),
       ('福彩双色球', DoubleColorBallScreen),
+      ('福彩快乐8', HappyEightScreen),
     ]) {
       await tester.tap(find.text(label));
       await tester.pump();

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../../screens/betting_simulator_screen.dart';
 import '../../screens/unit_converter_screen.dart';
 import '../../theme/app_colors.dart';
 import 'settings_section.dart';
@@ -16,6 +17,23 @@ class ToolsManagementSection extends StatelessWidget {
         const SettingsSectionTitle(title: '实用工具'),
         SettingsSectionCard(
           children: [
+            SettingsItem(
+              icon: Icons.casino_outlined,
+              iconColor: AppColors.warning,
+              title: '模拟下注',
+              trailingText: '虚拟投注',
+              showArrow: true,
+              onTap: () async {
+                const page = BettingSimulatorScreen();
+                if (onOpenPage != null) {
+                  await onOpenPage!(page);
+                  return;
+                }
+                await Navigator.of(context).push(
+                  MaterialPageRoute(builder: (_) => page),
+                );
+              },
+            ),
             SettingsItem(
               icon: Icons.swap_horiz,
               iconColor: AppColors.primary,

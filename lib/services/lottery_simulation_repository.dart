@@ -4,6 +4,7 @@ import '../models/lottery_simulation.dart';
 
 class LotterySimulationRepository {
   static const boxName = 'lotterySimulationRecords';
+  static const draftBoxName = 'lotterySimulationDrafts';
 
   Future<Box> _getBox() async {
     if (Hive.isBoxOpen(boxName)) return Hive.box(boxName);
@@ -16,6 +17,27 @@ class LotterySimulationRepository {
         .map((value) => SimulationRecord.fromMap(value as Map))
         .toList()
       ..sort((a, b) => b.createdAt.compareTo(a.createdAt));
+  }
+
+  Future<List<SimulationTicket>> loadDraftTickets(
+      SimulationLottery lottery) async {
+    final box = await Hive.openBox(draftBoxName);
+    final tickets =
+        box.get(lottery.name, defaultValue: const <dynamic>[]) as List;
+    return tickets
+        .map((ticket) => SimulationTicket.fromMap(ticket as Map))
+        .toList();
+  }
+
+  Future<void> saveDraftTickets(
+      SimulationLottery lottery, List<SimulationTicket> tickets) async {
+    if (tickets.any((ticket) => !ticket.isValid || ticket.lottery != lottery)) {
+      throw ArgumentError('无效的模拟号码');
+    }
+    final box = await Hive.openBox(draftBoxName);
+    await box.put(
+        lottery.name, tickets.map((ticket) => ticket.toMap()).toList());
+    await box.flush();
   }
 
   Future<void> save(SimulationRecord record) async {

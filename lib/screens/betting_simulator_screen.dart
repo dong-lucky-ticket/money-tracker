@@ -44,10 +44,17 @@ class _BettingSimulatorScreenState extends State<BettingSimulatorScreen> {
     for (final kind in SimulationLottery.values) kind: _SimulationDraft()
   };
   final _scrollController = ScrollController();
+  final Set<SimulationLottery> _changedDrafts = {};
   SimulationLottery _kind = SimulationLottery.superLotto;
   bool _saving = false;
 
   _SimulationDraft get _draft => _drafts[_kind]!;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadDraftCache();
+  }
 
   SimulationTicket get _currentTicket => SimulationTicket(
         lottery: _kind,
@@ -62,6 +69,33 @@ class _BettingSimulatorScreenState extends State<BettingSimulatorScreen> {
   void dispose() {
     _scrollController.dispose();
     super.dispose();
+  }
+
+  Future<void> _loadDraftCache() async {
+    try {
+      for (final kind in SimulationLottery.values) {
+        final tickets = await _repository.loadDraftTickets(kind);
+        if (!_changedDrafts.contains(kind)) {
+          _drafts[kind]!.tickets
+            ..clear()
+            ..addAll(tickets);
+        }
+      }
+    } catch (_) {
+      // Keep the simulator usable if cached drafts cannot be read.
+    } finally {
+      if (mounted) setState(() {});
+    }
+  }
+
+  Future<bool> _persistDraftTickets(SimulationLottery kind) async {
+    try {
+      await _repository.saveDraftTickets(kind, _drafts[kind]!.tickets);
+      return true;
+    } catch (_) {
+      if (mounted) _message('号码缓存失败，请检查存储空间');
+      return false;
+    }
   }
 
   @override
@@ -411,12 +445,16 @@ class _BettingSimulatorScreenState extends State<BettingSimulatorScreen> {
             _yellowButton(
                 '选好了',
                 lines > 0
-                    ? () {
+                    ? () async {
+                        final kind = _kind;
                         setState(() {
+                          _changedDrafts.add(kind);
                           _draft.tickets.add(_currentTicket);
                           _draft.clearSelection();
                         });
+                        final persisted = _persistDraftTickets(kind);
                         _openBasket();
+                        await persisted;
                       }
                     : null),
           ]),
@@ -425,16 +463,26 @@ class _BettingSimulatorScreenState extends State<BettingSimulatorScreen> {
     );
   }
 
-  Widget _yellowButton(String text, VoidCallback? onPressed) => FilledButton(
+  Widget _yellowButton(String text, VoidCallback? onPressed,
+          {bool compact = false}) =>
+      FilledButton(
         style: FilledButton.styleFrom(
           backgroundColor: const Color(0xFFFFD638),
           foregroundColor: const Color(0xFF173458),
           disabledBackgroundColor: const Color(0xFFE4D68E),
           disabledForegroundColor: const Color(0xFF536879),
-          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
+          minimumSize: compact ? Size.zero : null,
+          fixedSize: compact ? const Size.fromHeight(34) : null,
+          padding: EdgeInsets.symmetric(
+            horizontal: compact ? 14 : 20,
+            vertical: compact ? 0 : 8,
+          ),
+          tapTargetSize: compact ? MaterialTapTargetSize.shrinkWrap : null,
         ),
         onPressed: onPressed,
-        child: Text(text, style: const TextStyle(fontWeight: FontWeight.w700)),
+        child: Text(text,
+            style: TextStyle(
+                fontWeight: FontWeight.w700, fontSize: compact ? 13 : null)),
       );
 
   void _randomSelection() {
@@ -488,7 +536,14 @@ class _BettingSimulatorScreenState extends State<BettingSimulatorScreen> {
                 TextButton(
                   onPressed: _saving || _draft.tickets.isEmpty
                       ? null
-                      : () => update(_draft.tickets.clear),
+                      : () async {
+                          final kind = _kind;
+                          update(() {
+                            _changedDrafts.add(kind);
+                            _draft.tickets.clear();
+                          });
+                          await _persistDraftTickets(kind);
+                        },
                   child: const Text('清空全部'),
                 ),
                 IconButton(
@@ -499,28 +554,52 @@ class _BettingSimulatorScreenState extends State<BettingSimulatorScreen> {
               ]),
             ),
             SizedBox(
-              height: 52,
+              height: 44,
               child: ListView(
                 scrollDirection: Axis.horizontal,
                 padding: const EdgeInsets.symmetric(horizontal: 16),
                 children: [
                   for (final count in [1, 5, 10])
                     Padding(
-                      padding: const EdgeInsets.only(right: 8),
-                      child: OutlinedButton(
-                        onPressed: _saving
-                            ? null
-                            : () => update(() {
-                                  _draft.tickets.addAll(List.generate(
-                                      count, (_) => _randomTicket()));
-                                }),
-                        child: Text('+机选$count注'),
+                      padding: const EdgeInsets.only(right: 6),
+                      child: Center(
+                        child: OutlinedButton(
+                          onPressed: _saving
+                              ? null
+                              : () async {
+                                  final kind = _kind;
+                                  update(() {
+                                    _changedDrafts.add(kind);
+                                    _draft.tickets.addAll(List.generate(
+                                        count, (_) => _randomTicket()));
+                                  });
+                                  await _persistDraftTickets(kind);
+                                },
+                          style: OutlinedButton.styleFrom(
+                            fixedSize: const Size.fromHeight(32),
+                            padding: const EdgeInsets.symmetric(horizontal: 12),
+                            tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                            visualDensity: VisualDensity.compact,
+                            textStyle: const TextStyle(fontSize: 14),
+                          ),
+                          child: Text('+机选$count注'),
+                        ),
                       ),
                     ),
-                  TextButton(
+                  Center(
+                    child: TextButton(
                       onPressed:
                           _saving ? null : () => Navigator.pop(sheetContext),
-                      child: const Text('+继续选号')),
+                      style: TextButton.styleFrom(
+                        fixedSize: const Size.fromHeight(32),
+                        padding: const EdgeInsets.symmetric(horizontal: 12),
+                        tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                        visualDensity: VisualDensity.compact,
+                        textStyle: const TextStyle(fontSize: 14),
+                      ),
+                      child: const Text('+继续选号'),
+                    ),
+                  ),
                 ],
               ),
             ),
@@ -543,8 +622,14 @@ class _BettingSimulatorScreenState extends State<BettingSimulatorScreen> {
                               tooltip: '删除此项',
                               onPressed: _saving
                                   ? null
-                                  : () => update(
-                                      () => _draft.tickets.removeAt(index)),
+                                  : () async {
+                                      final kind = _kind;
+                                      update(() {
+                                        _changedDrafts.add(kind);
+                                        _draft.tickets.removeAt(index);
+                                      });
+                                      await _persistDraftTickets(kind);
+                                    },
                               icon: const Icon(Icons.cancel_outlined,
                                   color: AppColors.textMuted, size: 21),
                             ),
@@ -569,10 +654,13 @@ class _BettingSimulatorScreenState extends State<BettingSimulatorScreen> {
                                         _message('请先处理选号区中的号码，再编辑明细');
                                         return;
                                       }
+                                      final kind = _kind;
                                       update(() {
+                                        _changedDrafts.add(kind);
                                         _draft.tickets.removeAt(index);
                                         _restoreSelection(ticket);
                                       });
+                                      _persistDraftTickets(kind);
                                       Navigator.pop(sheetContext);
                                       _scrollController.jumpTo(0);
                                     },
@@ -587,75 +675,83 @@ class _BettingSimulatorScreenState extends State<BettingSimulatorScreen> {
             SafeArea(
               top: false,
               child: Container(
-                margin: const EdgeInsets.fromLTRB(16, 0, 16, 16),
-                padding: const EdgeInsets.all(14),
+                margin: const EdgeInsets.fromLTRB(10, 0, 10, 8),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                 decoration: BoxDecoration(
-                    color: _blue, borderRadius: BorderRadius.circular(16)),
+                    color: _blue, borderRadius: BorderRadius.circular(12)),
                 child: Column(children: [
                   Row(children: [
-                    const Text('倍数', style: TextStyle(color: Colors.white70)),
+                    const Text('倍数',
+                        style: TextStyle(color: Colors.white70, fontSize: 13)),
                     IconButton(
                         tooltip: '减少倍数',
                         onPressed: _saving || _draft.multiple <= 1
                             ? null
                             : () => update(() => _draft.multiple--),
-                        icon: const Icon(Icons.remove),
+                        constraints: const BoxConstraints.tightFor(
+                            width: 32, height: 32),
+                        padding: EdgeInsets.zero,
+                        visualDensity: VisualDensity.compact,
+                        icon: const Icon(Icons.remove, size: 18),
                         color: Colors.white,
                         disabledColor: Colors.white38),
                     Text('${_draft.multiple}',
                         style:
-                            const TextStyle(color: Colors.white, fontSize: 17)),
+                            const TextStyle(color: Colors.white, fontSize: 14)),
                     IconButton(
                         tooltip: '增加倍数',
                         onPressed: _saving || _draft.multiple >= 99
                             ? null
                             : () => update(() => _draft.multiple++),
-                        icon: const Icon(Icons.add),
+                        constraints: const BoxConstraints.tightFor(
+                            width: 32, height: 32),
+                        padding: EdgeInsets.zero,
+                        visualDensity: VisualDensity.compact,
+                        icon: const Icon(Icons.add, size: 18),
                         color: Colors.white,
                         disabledColor: Colors.white38),
                     const Spacer(),
-                    Text('最高99倍',
-                        style: TextStyle(
-                            color: Colors.white.withOpacity(0.6),
-                            fontSize: 11)),
-                  ]),
-                  if (_kind == SimulationLottery.superLotto)
-                    InkWell(
-                      onTap: _saving
-                          ? null
-                          : () => update(
-                              () => _draft.additional = !_draft.additional),
-                      child: Row(children: [
-                        Checkbox(
+                    if (_kind == SimulationLottery.superLotto) ...[
+                      SizedBox(
+                        width: 26,
+                        height: 26,
+                        child: Checkbox(
                           value: _draft.additional,
                           activeColor: const Color(0xFFFFD638),
                           checkColor: _blue,
                           side: const BorderSide(color: Colors.white70),
+                          materialTapTargetSize:
+                              MaterialTapTargetSize.shrinkWrap,
+                          visualDensity: VisualDensity.compact,
                           onChanged: _saving
                               ? null
                               : (value) => update(
                                   () => _draft.additional = value ?? false),
                         ),
-                        const Text('追加投注（每注加1元）',
-                            style:
-                                TextStyle(color: Colors.white, fontSize: 13)),
-                      ]),
-                    ),
-                  const Divider(color: Colors.white24),
+                      ),
+                      const Text('追加投注',
+                          style: TextStyle(color: Colors.white, fontSize: 12)),
+                    ],
+                    const SizedBox(width: 8),
+                    Text('最高99倍',
+                        style: TextStyle(
+                            color: Colors.white.withOpacity(0.6),
+                            fontSize: 10)),
+                  ]),
+                  const Divider(height: 8, color: Colors.white24),
                   Row(children: [
                     Expanded(
-                        child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                          Text('共 ${_draft.lines} 注 × ${_draft.multiple} 倍',
-                              style: const TextStyle(
-                                  color: Colors.white, fontSize: 13)),
-                          Text('虚拟金额 ¥${_draft.amount}',
-                              style: const TextStyle(
-                                  color: Colors.white,
-                                  fontWeight: FontWeight.w700,
-                                  fontSize: 16)),
-                        ])),
+                      child: Text(
+                        '共计 ${_draft.lines} 注  ¥${_draft.amount} 元',
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 12,
+                            fontWeight: FontWeight.w600),
+                      ),
+                    ),
                     _yellowButton(
                         _saving ? '保存中…' : '保存记录',
                         _saving || _draft.tickets.isEmpty
@@ -673,9 +769,6 @@ class _BettingSimulatorScreenState extends State<BettingSimulatorScreen> {
                                 }
                               }),
                   ]),
-                  const SizedBox(height: 6),
-                  const Text('只保存模拟记录，不产生真实投注',
-                      style: TextStyle(color: Colors.white70, fontSize: 11)),
                 ]),
               ),
             ),
@@ -698,7 +791,6 @@ class _BettingSimulatorScreenState extends State<BettingSimulatorScreen> {
     try {
       await _repository.save(record);
       if (!mounted) return true;
-      setState(draft.tickets.clear);
       _message('模拟记录已保存，可从右上角查看');
       return true;
     } catch (_) {

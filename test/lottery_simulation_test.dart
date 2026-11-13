@@ -75,4 +75,26 @@ void main() {
     expect(restored.single.tickets.single.primary, [1, 2, 3, 4, 5]);
     expect(restored.single.tickets.single.secondary, [6, 7]);
   });
+
+  test('persists draft tickets separately and updates them immediately',
+      () async {
+    final ticket = SimulationTicket(
+      lottery: SimulationLottery.superLotto,
+      primary: [1, 2, 3, 4, 5],
+      secondary: [6, 7],
+    );
+    final repository = LotterySimulationRepository();
+
+    await repository.saveDraftTickets(SimulationLottery.superLotto, [ticket]);
+    final restored =
+        await repository.loadDraftTickets(SimulationLottery.superLotto);
+
+    expect(restored, hasLength(1));
+    expect(restored.single.primary, [1, 2, 3, 4, 5]);
+    expect(await repository.load(), isEmpty);
+
+    await repository.saveDraftTickets(SimulationLottery.superLotto, []);
+    expect(await repository.loadDraftTickets(SimulationLottery.superLotto),
+        isEmpty);
+  });
 }

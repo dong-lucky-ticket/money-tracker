@@ -1,8 +1,23 @@
+import 'dart:io';
+
 import 'package:expensetracker/screens/betting_simulator_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:hive/hive.dart';
 
 void main() {
+  late Directory hiveDirectory;
+
+  setUp(() async {
+    hiveDirectory = await Directory.systemTemp.createTemp('simulator-screen-');
+    Hive.init(hiveDirectory.path);
+  });
+
+  tearDown(() async {
+    await Hive.close();
+    await hiveDirectory.delete(recursive: true);
+  });
+
   testWidgets('switches lottery pickers, adds a random ticket and opens rules',
       (tester) async {
     tester.view.devicePixelRatio = 1;
@@ -15,6 +30,9 @@ void main() {
         key: ValueKey(width),
         home: const BettingSimulatorScreen(),
       ));
+      await tester.pumpAndSettle();
+      await tester.runAsync(
+          () => Future<void>.delayed(const Duration(milliseconds: 20)));
       await tester.pumpAndSettle();
 
       expect(find.text('体彩大乐透'), findsNothing);
@@ -34,6 +52,31 @@ void main() {
       await tester.tap(find.text('选好了'));
       await tester.pumpAndSettle();
       expect(find.text('双色球明细'), findsOneWidget);
+      final confirmButton = find.ancestor(
+        of: find.text('保存记录'),
+        matching: find.byType(FilledButton),
+      );
+      expect(tester.getSize(confirmButton).height, 48);
+      for (final label in ['+机选1注', '+机选5注', '+机选10注']) {
+        final button = find.ancestor(
+          of: find.text(label),
+          matching: find.byType(OutlinedButton),
+        );
+        expect(tester.getSize(button).height, 32);
+      }
+      final actionButtons = find
+          .byWidgetPredicate(
+            (widget) =>
+                widget is ListView && widget.scrollDirection == Axis.horizontal,
+          )
+          .last;
+      await tester.drag(actionButtons, const Offset(-400, 0));
+      await tester.pumpAndSettle();
+      final continueButton = find.ancestor(
+        of: find.text('+继续选号'),
+        matching: find.byType(TextButton),
+      );
+      expect(tester.getSize(continueButton).height, 32);
 
       await tester.tap(find.byTooltip('关闭明细'));
       await tester.pumpAndSettle();

@@ -4,7 +4,15 @@ import 'package:flutter/material.dart';
 import 'package:uuid/uuid.dart';
 
 import '../models/lottery_simulation.dart';
+import '../models/double_color_ball_draw.dart';
+import '../models/happy_eight_draw.dart';
+import '../models/seven_star_draw.dart';
+import '../models/super_lotto_draw.dart';
+import '../services/double_color_ball_repository.dart';
+import '../services/happy_eight_repository.dart';
 import '../services/lottery_simulation_repository.dart';
+import '../services/seven_star_repository.dart';
+import '../services/super_lotto_repository.dart';
 import '../theme/app_colors.dart';
 import '../widgets/lottery/simulation_ticket_numbers.dart';
 import 'betting_simulation_records_screen.dart';
@@ -32,6 +40,14 @@ class _SimulationDraft {
   int get amount => lines * multiple * (additional ? 3 : 2);
 }
 
+class _RecentDraw {
+  final String issue;
+  final List<String> primary;
+  final List<String> secondary;
+
+  const _RecentDraw(this.issue, this.primary, [this.secondary = const []]);
+}
+
 class BettingSimulatorScreen extends StatefulWidget {
   const BettingSimulatorScreen({super.key});
 
@@ -50,6 +66,9 @@ class _BettingSimulatorScreenState extends State<BettingSimulatorScreen> {
   final Set<SimulationLottery> _changedDrafts = {};
   SimulationLottery _kind = SimulationLottery.superLotto;
   bool _saving = false;
+  List<_RecentDraw> _recentDraws = const [];
+  bool _recentDrawsLoading = true;
+  bool _recentDrawsExpanded = false;
 
   _SimulationDraft get _draft => _drafts[_kind]!;
 
@@ -57,6 +76,7 @@ class _BettingSimulatorScreenState extends State<BettingSimulatorScreen> {
   void initState() {
     super.initState();
     _loadDraftCache();
+    _loadRecentDraws(_kind);
   }
 
   SimulationTicket get _currentTicket => SimulationTicket(
@@ -156,7 +176,7 @@ class _BettingSimulatorScreenState extends State<BettingSimulatorScreen> {
           Expanded(
             child: ClipRRect(
               borderRadius:
-                  const BorderRadius.vertical(top: Radius.circular(22)),
+                  const BorderRadius.vertical(top: Radius.circular(12)),
               child: ColoredBox(
                 color: AppColors.pageBackground,
                 child: Column(
@@ -165,63 +185,81 @@ class _BettingSimulatorScreenState extends State<BettingSimulatorScreen> {
                     Expanded(
                       child: ListView(
                         controller: _scrollController,
-                        padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
+                        padding: const EdgeInsets.fromLTRB(0, 0, 0, 24),
                         children: [
-                          Row(children: [
-                            Expanded(
-                              child: Text(
-                                _nextDrawLabel,
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
-                                style: const TextStyle(
-                                  color: AppColors.textTertiary,
-                                  fontSize: 12,
+                          _buildRecentDraws(),
+                          Padding(
+                            padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
+                            child: Row(children: [
+                              Expanded(
+                                child: Text(
+                                  _nextDrawLabel,
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: const TextStyle(
+                                    color: AppColors.textTertiary,
+                                    fontSize: 12,
+                                  ),
                                 ),
                               ),
-                            ),
-                            OutlinedButton.icon(
-                              onPressed: _randomSelection,
-                              icon: const Icon(Icons.shuffle, size: 17),
-                              label: const Text('机选'),
-                              style: OutlinedButton.styleFrom(
-                                  backgroundColor: Colors.white,
-                                  side: const BorderSide(
-                                      color: AppColors.border)),
-                            ),
-                          ]),
+                              OutlinedButton.icon(
+                                onPressed: _randomSelection,
+                                icon: const Icon(Icons.shuffle, size: 17),
+                                label: const Text('机选'),
+                                style: OutlinedButton.styleFrom(
+                                    backgroundColor: Colors.white,
+                                    side: const BorderSide(
+                                        color: AppColors.border)),
+                              ),
+                            ]),
+                          ),
                           const SizedBox(height: 12),
                           if (_kind == SimulationLottery.sevenStar)
-                            _buildDigitPicker()
+                            Padding(
+                              padding:
+                                  const EdgeInsets.symmetric(horizontal: 16),
+                              child: _buildDigitPicker(),
+                            )
                           else ...[
-                            _numberSection(
-                              title: _kind == SimulationLottery.happyEight
-                                  ? '号码区'
-                                  : _kind.primaryLabel,
-                              hint: _kind == SimulationLottery.happyEight
-                                  ? '请选择 ${_draft.happyEightCount} 个号码'
-                                  : '至少选择 ${_kind.primaryCount} 个号码',
-                              max: _kind.primaryMax,
-                              selection: _draft.primary,
-                              color: _kind == SimulationLottery.doubleColorBall
-                                  ? AppColors.danger
-                                  : _blue,
-                              limit: _kind == SimulationLottery.happyEight
-                                  ? _draft.happyEightCount
-                                  : null,
+                            Padding(
+                              padding:
+                                  const EdgeInsets.symmetric(horizontal: 16),
+                              child: _numberSection(
+                                title: _kind == SimulationLottery.happyEight
+                                    ? '号码区'
+                                    : _kind.primaryLabel,
+                                hint: _kind == SimulationLottery.happyEight
+                                    ? '请选择 ${_draft.happyEightCount} 个号码'
+                                    : '至少选择 ${_kind.primaryCount} 个号码',
+                                max: _kind.primaryMax,
+                                selection: _draft.primary,
+                                color:
+                                    _kind == SimulationLottery.doubleColorBall
+                                        ? AppColors.danger
+                                        : _blue,
+                                limit: _kind == SimulationLottery.happyEight
+                                    ? _draft.happyEightCount
+                                    : null,
+                              ),
                             ),
                             if (_kind.secondaryCount > 0) ...[
                               const Padding(
-                                  padding: EdgeInsets.symmetric(vertical: 22),
+                                  padding: EdgeInsets.symmetric(
+                                      horizontal: 16, vertical: 22),
                                   child: Divider(height: 1)),
-                              _numberSection(
-                                title: _kind.secondaryLabel,
-                                hint: '至少选择 ${_kind.secondaryCount} 个号码',
-                                max: _kind.secondaryMax,
-                                selection: _draft.secondary,
-                                color:
-                                    _kind == SimulationLottery.doubleColorBall
-                                        ? _blue
-                                        : AppColors.warning,
+                              Padding(
+                                padding:
+                                    const EdgeInsets.symmetric(horizontal: 16),
+                                child: _numberSection(
+                                  title: _kind.secondaryLabel,
+                                  hint: '至少选择 ${_kind.secondaryCount} 个号码',
+                                  max: _kind.secondaryMax,
+                                  selection: _draft.secondary,
+                                  color:
+                                      _kind == SimulationLottery.doubleColorBall
+                                          ? _blue
+                                          : AppColors.warning,
+                                ),
                               ),
                             ],
                           ],
@@ -241,7 +279,7 @@ class _BettingSimulatorScreenState extends State<BettingSimulatorScreen> {
 
   Widget _buildLotterySelector() {
     return SizedBox(
-      height: 56,
+      height: 48,
       child: ListView.separated(
         padding: const EdgeInsets.symmetric(horizontal: 16),
         scrollDirection: Axis.horizontal,
@@ -251,12 +289,7 @@ class _BettingSimulatorScreenState extends State<BettingSimulatorScreen> {
           final kind = SimulationLottery.values[index];
           final selected = kind == _kind;
           return InkWell(
-            onTap: _saving
-                ? null
-                : () => setState(() {
-                      _kind = kind;
-                      _scrollController.jumpTo(0);
-                    }),
+            onTap: _saving ? null : () => _selectLottery(kind),
             child: Padding(
               padding: const EdgeInsets.symmetric(horizontal: 10),
               child: Column(
@@ -286,51 +319,245 @@ class _BettingSimulatorScreenState extends State<BettingSimulatorScreen> {
     );
   }
 
+  void _selectLottery(SimulationLottery kind) {
+    if (kind == _kind) return;
+    setState(() {
+      _kind = kind;
+      _recentDrawsExpanded = false;
+      _recentDraws = const [];
+      _recentDrawsLoading = true;
+      _scrollController.jumpTo(0);
+    });
+    _loadRecentDraws(kind);
+  }
+
   Widget _buildToolbar() {
+    return SizedBox(
+      height: 48,
+      child: Container(
+        color: Colors.white,
+        padding: const EdgeInsets.symmetric(horizontal: 16),
+        child: Row(children: [
+          Expanded(
+            child: _kind == SimulationLottery.happyEight
+                ? DropdownButton<int>(
+                    value: _draft.happyEightCount,
+                    underline: const SizedBox.shrink(),
+                    isExpanded: true,
+                    items: List.generate(
+                        10,
+                        (i) => DropdownMenuItem(
+                            value: i + 1,
+                            child: Text('${happyEightPlayLabel(i + 1)}玩法'))),
+                    onChanged: (value) {
+                      if (value == null) return;
+                      setState(() {
+                        _draft.happyEightCount = value;
+                        _draft.primary.clear();
+                      });
+                    },
+                  )
+                : const Text('基本投注',
+                    style:
+                        TextStyle(fontSize: 16, fontWeight: FontWeight.w700)),
+          ),
+          TextButton(
+              onPressed: _openBasket,
+              style: TextButton.styleFrom(
+                fixedSize: const Size.fromHeight(28),
+                padding: const EdgeInsets.symmetric(horizontal: 12),
+                tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                visualDensity: VisualDensity.compact,
+              ),
+              child: Text('已选 (${_draft.tickets.length})')),
+          SizedBox(
+            width: 36,
+            height: 36,
+            child: IconButton(
+              tooltip: '历史中奖匹配',
+              onPressed: _currentTicket.isValid ? _openHistoricalMatch : null,
+              padding: EdgeInsets.zero,
+              visualDensity: VisualDensity.compact,
+              icon: const Icon(Icons.manage_search, color: _blue, size: 20),
+            ),
+          ),
+          const SizedBox(height: 18, child: VerticalDivider(width: 12)),
+          TextButton(
+            onPressed: () => Navigator.of(context).push(MaterialPageRoute(
+              builder: (_) => LotteryRulesScreen(lotteryType: _kind.label),
+            )),
+            style: TextButton.styleFrom(
+              fixedSize: const Size.fromHeight(28),
+              padding: const EdgeInsets.symmetric(horizontal: 8),
+              tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+              visualDensity: VisualDensity.compact,
+            ),
+            child: const Text('游戏规则'),
+          ),
+        ]),
+      ),
+    );
+  }
+
+  Future<void> _loadRecentDraws(SimulationLottery kind) async {
+    try {
+      late final List<_RecentDraw> draws;
+      switch (kind) {
+        case SimulationLottery.superLotto:
+          draws = (await SuperLottoRepository().loadRecent(limit: 10))
+              .map((draw) => _mapSuperLottoDraw(draw))
+              .toList();
+        case SimulationLottery.doubleColorBall:
+          draws = (await DoubleColorBallRepository().loadRecent(limit: 10))
+              .map((draw) => _mapDoubleColorBallDraw(draw))
+              .toList();
+        case SimulationLottery.sevenStar:
+          draws = (await SevenStarRepository().loadRecent(limit: 10))
+              .map((draw) => _mapSevenStarDraw(draw))
+              .toList();
+        case SimulationLottery.happyEight:
+          draws = (await HappyEightRepository().loadRecent(limit: 10))
+              .map((draw) => _mapHappyEightDraw(draw))
+              .toList();
+      }
+      if (!mounted || kind != _kind) return;
+      setState(() {
+        _recentDraws = draws;
+        _recentDrawsLoading = false;
+      });
+    } catch (_) {
+      if (!mounted || kind != _kind) return;
+      setState(() {
+        _recentDraws = const [];
+        _recentDrawsLoading = false;
+      });
+    }
+  }
+
+  _RecentDraw _mapSuperLottoDraw(SuperLottoDraw draw) =>
+      _RecentDraw(draw.issue, draw.frontNumbers, draw.backNumbers);
+
+  _RecentDraw _mapDoubleColorBallDraw(DoubleColorBallDraw draw) =>
+      _RecentDraw(draw.issue, draw.redNumbers, [draw.blueNumber]);
+
+  _RecentDraw _mapSevenStarDraw(SevenStarDraw draw) =>
+      _RecentDraw(draw.issue, draw.numbers);
+
+  _RecentDraw _mapHappyEightDraw(HappyEightDraw draw) =>
+      _RecentDraw(draw.issue, draw.numbers);
+
+  Widget _buildRecentDraws() {
+    final visible = _recentDrawsExpanded
+        ? _recentDraws.take(10).toList()
+        : _recentDraws.take(1).toList();
     return Container(
-      color: Colors.white,
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
-      child: Row(children: [
-        Expanded(
-          child: _kind == SimulationLottery.happyEight
-              ? DropdownButton<int>(
-                  value: _draft.happyEightCount,
-                  underline: const SizedBox.shrink(),
-                  isExpanded: true,
-                  items: List.generate(
-                      10,
-                      (i) => DropdownMenuItem(
-                          value: i + 1,
-                          child: Text('${happyEightPlayLabel(i + 1)}玩法'))),
-                  onChanged: (value) {
-                    if (value == null) return;
-                    setState(() {
-                      _draft.happyEightCount = value;
-                      _draft.primary.clear();
-                    });
-                  },
-                )
-              : const Text('基本投注',
-                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700)),
+      decoration: const BoxDecoration(
+        color: Color(0xFFEFF2F5),
+        border: Border(
+          top: BorderSide(color: AppColors.border),
+          bottom: BorderSide(color: AppColors.border),
         ),
-        TextButton(
-            onPressed: _openBasket,
-            child: Text('已选 (${_draft.tickets.length})')),
-        IconButton(
-          tooltip: '历史中奖匹配',
-          onPressed: _currentTicket.isValid ? _openHistoricalMatch : null,
-          icon: const Icon(Icons.manage_search, color: _blue),
-        ),
-        const SizedBox(height: 20, child: VerticalDivider(width: 12)),
-        TextButton(
-          onPressed: () => Navigator.of(context).push(MaterialPageRoute(
-            builder: (_) => LotteryRulesScreen(lotteryType: _kind.label),
-          )),
-          child: const Text('游戏规则'),
-        ),
+      ),
+      child: Column(mainAxisSize: MainAxisSize.min, children: [
+        if (_recentDrawsLoading)
+          const SizedBox(
+            height: 38,
+            child: Center(
+              child: Text('正在读取开奖记录',
+                  style:
+                      TextStyle(color: AppColors.textTertiary, fontSize: 12)),
+            ),
+          )
+        else if (_recentDraws.isEmpty)
+          const SizedBox(
+            height: 38,
+            child: Center(
+              child: Text('暂无本地开奖记录',
+                  style:
+                      TextStyle(color: AppColors.textTertiary, fontSize: 12)),
+            ),
+          )
+        else
+          for (var index = 0; index < visible.length; index++)
+            _recentDrawRow(visible[index], index),
       ]),
     );
   }
+
+  Widget _recentDrawRow(_RecentDraw draw, int index) {
+    final latest = index == 0;
+    final primaryColor =
+        _kind == SimulationLottery.doubleColorBall ? AppColors.danger : _blue;
+    final secondaryColor =
+        _kind == SimulationLottery.doubleColorBall ? _blue : AppColors.warning;
+    return Material(
+      color: latest ? const Color(0xFFEFF2F5) : const Color(0xFFE9EDF1),
+      child: InkWell(
+        onTap: latest && _recentDraws.length > 1
+            ? () => setState(() => _recentDrawsExpanded = !_recentDrawsExpanded)
+            : null,
+        child: SizedBox(
+          height: 34,
+          child: Padding(
+            padding: const EdgeInsets.only(left: 8, right: 4),
+            child: Row(children: [
+              SizedBox(
+                width: 64,
+                child: Text('第${draw.issue}期',
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(
+                        color: latest
+                            ? AppColors.textSecondary
+                            : AppColors.textTertiary,
+                        fontSize: 11,
+                        fontWeight: FontWeight.w600)),
+              ),
+              Expanded(
+                child: SingleChildScrollView(
+                  scrollDirection: Axis.horizontal,
+                  child: Row(children: [
+                    ...draw.primary
+                        .map((number) => _recentNumber(number, primaryColor)),
+                    if (draw.secondary.isNotEmpty) ...[
+                      const Padding(
+                        padding: EdgeInsets.symmetric(horizontal: 4),
+                        child: Text('+',
+                            style: TextStyle(
+                                color: AppColors.textTertiary, fontSize: 12)),
+                      ),
+                      ...draw.secondary.map(
+                          (number) => _recentNumber(number, secondaryColor)),
+                    ],
+                  ]),
+                ),
+              ),
+              if (index == 0 && _recentDraws.length > 1)
+                SizedBox(
+                  width: 24,
+                  child: Icon(
+                    _recentDrawsExpanded
+                        ? Icons.expand_less
+                        : Icons.expand_more,
+                    size: 19,
+                    color: AppColors.textTertiary,
+                  ),
+                )
+              else
+                const SizedBox(width: 24),
+            ]),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _recentNumber(String value, Color color) => Padding(
+        padding: const EdgeInsets.only(right: 6),
+        child: Text(value.padLeft(2, '0'),
+            style: TextStyle(
+                color: color, fontSize: 13, fontWeight: FontWeight.w700)),
+      );
 
   Future<void> _openHistoricalMatch() async {
     await showModalBottomSheet<void>(

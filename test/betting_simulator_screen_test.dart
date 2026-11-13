@@ -49,6 +49,19 @@ void main() {
       await tester.tap(find.text('机选'));
       await tester.pump();
       expect(find.text('已选 1注，共2元', findRichText: true), findsOneWidget);
+      await tester.tap(find.text('已选 (0)'));
+      await tester.pumpAndSettle();
+      final actionsWithNewSelection = find
+          .byWidgetPredicate(
+            (widget) =>
+                widget is ListView && widget.scrollDirection == Axis.horizontal,
+          )
+          .last;
+      await tester.drag(actionsWithNewSelection, const Offset(-400, 0));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('+继续选号'));
+      await tester.pumpAndSettle();
+      expect(find.text('已选 1注，共2元', findRichText: true), findsOneWidget);
       await tester.tap(find.text('选好了'));
       await tester.pumpAndSettle();
       expect(find.text('双色球明细'), findsOneWidget);
@@ -77,9 +90,47 @@ void main() {
         matching: find.byType(TextButton),
       );
       expect(tester.getSize(continueButton).height, 32);
-
-      await tester.tap(find.byTooltip('关闭明细'));
+      await tester.drag(actionButtons, const Offset(400, 0));
       await tester.pumpAndSettle();
+
+      await tester.tap(find.text('+机选1注'));
+      await tester.pumpAndSettle();
+      expect(find.text('第01注'), findsOneWidget);
+      expect(find.text('第02注'), findsOneWidget);
+
+      await tester.tap(find.byTooltip('编辑号码').at(0));
+      await tester.pumpAndSettle();
+      expect(find.text('已选 (2)'), findsOneWidget);
+
+      await tester.tap(find.text('已选 (2)'));
+      await tester.pumpAndSettle();
+      expect(find.text('第01注'), findsOneWidget);
+      expect(find.text('第02注'), findsOneWidget);
+      await tester.tap(find.byTooltip('编辑号码').at(1));
+      await tester.pumpAndSettle();
+      expect(find.text('保存修改'), findsOneWidget);
+
+      await tester.tap(find.text('保存修改'));
+      await tester.pumpAndSettle();
+      expect(find.text('第01注'), findsOneWidget);
+      expect(find.text('第02注'), findsOneWidget);
+
+      await tester.tap(find.byTooltip('编辑号码').at(0));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('已选 (2)'));
+      await tester.pumpAndSettle();
+      final actionsAfterEdit = find
+          .byWidgetPredicate(
+            (widget) =>
+                widget is ListView && widget.scrollDirection == Axis.horizontal,
+          )
+          .last;
+      await tester.drag(actionsAfterEdit, const Offset(-400, 0));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('+继续选号'));
+      await tester.pumpAndSettle();
+      expect(find.text('已选 0注，共0元', findRichText: true), findsOneWidget);
+
       await tester.tap(find.text('游戏规则'));
       await tester.pumpAndSettle();
       expect(find.text('福彩双色球中奖规则'), findsOneWidget);

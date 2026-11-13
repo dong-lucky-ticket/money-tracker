@@ -9,6 +9,7 @@ import '../theme/app_colors.dart';
 import '../widgets/lottery/simulation_ticket_numbers.dart';
 import 'betting_simulation_records_screen.dart';
 import 'lottery_rules_screen.dart';
+import 'historical_match_sheet.dart';
 
 class _SimulationDraft {
   final Set<int> primary = {};
@@ -18,11 +19,13 @@ class _SimulationDraft {
   int happyEightCount = 10;
   int multiple = 1;
   bool additional = false;
+  int? editingTicketIndex;
 
   void clearSelection() {
     primary.clear();
     secondary.clear();
     digits.fillRange(0, 7, null);
+    editingTicketIndex = null;
   }
 
   int get lines => tickets.fold(0, (sum, ticket) => sum + ticket.lines);
@@ -64,6 +67,34 @@ class _BettingSimulatorScreenState extends State<BettingSimulatorScreen> {
         secondary: _draft.secondary.toList(),
         happyEightCount: _draft.happyEightCount,
       );
+
+  String get _nextDrawLabel {
+    const weekdays = ['周一', '周二', '周三', '周四', '周五', '周六', '周日'];
+    final drawWeekdays = switch (_kind) {
+      SimulationLottery.superLotto => {
+          DateTime.monday,
+          DateTime.wednesday,
+          DateTime.saturday
+        },
+      SimulationLottery.doubleColorBall => {
+          DateTime.tuesday,
+          DateTime.thursday,
+          DateTime.sunday
+        },
+      SimulationLottery.sevenStar => {
+          DateTime.tuesday,
+          DateTime.friday,
+          DateTime.sunday
+        },
+      SimulationLottery.happyEight => {1, 2, 3, 4, 5, 6, 7},
+    };
+    final today = DateTime.now();
+    var nextDraw = DateTime(today.year, today.month, today.day);
+    while (!drawWeekdays.contains(nextDraw.weekday)) {
+      nextDraw = nextDraw.add(const Duration(days: 1));
+    }
+    return '下一期开奖：${nextDraw.month}月${nextDraw.day}日 ${weekdays[nextDraw.weekday - 1]}';
+  }
 
   @override
   void dispose() {
@@ -137,11 +168,17 @@ class _BettingSimulatorScreenState extends State<BettingSimulatorScreen> {
                         padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
                         children: [
                           Row(children: [
-                            const Expanded(
-                                child: Text('仅作模拟 · 每注2元',
-                                    style: TextStyle(
-                                        color: AppColors.textTertiary,
-                                        fontSize: 12))),
+                            Expanded(
+                              child: Text(
+                                _nextDrawLabel,
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                                style: const TextStyle(
+                                  color: AppColors.textTertiary,
+                                  fontSize: 12,
+                                ),
+                              ),
+                            ),
                             OutlinedButton.icon(
                               onPressed: _randomSelection,
                               icon: const Icon(Icons.shuffle, size: 17),
@@ -279,6 +316,11 @@ class _BettingSimulatorScreenState extends State<BettingSimulatorScreen> {
         TextButton(
             onPressed: _openBasket,
             child: Text('已选 (${_draft.tickets.length})')),
+        IconButton(
+          tooltip: '历史中奖匹配',
+          onPressed: _currentTicket.isValid ? _openHistoricalMatch : null,
+          icon: const Icon(Icons.manage_search, color: _blue),
+        ),
         const SizedBox(height: 20, child: VerticalDivider(width: 12)),
         TextButton(
           onPressed: () => Navigator.of(context).push(MaterialPageRoute(
@@ -287,6 +329,16 @@ class _BettingSimulatorScreenState extends State<BettingSimulatorScreen> {
           child: const Text('游戏规则'),
         ),
       ]),
+    );
+  }
+
+  Future<void> _openHistoricalMatch() async {
+    await showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      useSafeArea: true,
+      backgroundColor: Colors.transparent,
+      builder: (_) => HistoricalMatchSheet(ticket: _currentTicket),
     );
   }
 
@@ -443,13 +495,20 @@ class _BettingSimulatorScreenState extends State<BettingSimulatorScreen> {
               ),
             ),
             _yellowButton(
-                '选好了',
+                _draft.editingTicketIndex == null ? '选好了' : '保存修改',
                 lines > 0
                     ? () async {
                         final kind = _kind;
                         setState(() {
                           _changedDrafts.add(kind);
-                          _draft.tickets.add(_currentTicket);
+                          final editingIndex = _draft.editingTicketIndex;
+                          if (editingIndex != null &&
+                              editingIndex >= 0 &&
+                              editingIndex < _draft.tickets.length) {
+                            _draft.tickets[editingIndex] = _currentTicket;
+                          } else {
+                            _draft.tickets.add(_currentTicket);
+                          }
                           _draft.clearSelection();
                         });
                         final persisted = _persistDraftTickets(kind);
@@ -541,6 +600,7 @@ class _BettingSimulatorScreenState extends State<BettingSimulatorScreen> {
                           update(() {
                             _changedDrafts.add(kind);
                             _draft.tickets.clear();
+                            _draft.clearSelection();
                           });
                           await _persistDraftTickets(kind);
                         },
@@ -588,8 +648,16 @@ class _BettingSimulatorScreenState extends State<BettingSimulatorScreen> {
                     ),
                   Center(
                     child: TextButton(
-                      onPressed:
-                          _saving ? null : () => Navigator.pop(sheetContext),
+                      onPressed: _saving
+                          ? null
+                          : () {
+                              if (_draft.editingTicketIndex != null) {
+                                setState(_draft.clearSelection);
+                                updateSheet(() {});
+                              }
+                              Navigator.pop(sheetContext);
+                              _scrollController.jumpTo(0);
+                            },
                       style: TextButton.styleFrom(
                         fixedSize: const Size.fromHeight(32),
                         padding: const EdgeInsets.symmetric(horizontal: 12),
@@ -609,65 +677,128 @@ class _BettingSimulatorScreenState extends State<BettingSimulatorScreen> {
                       child: Text('还没有号码，先机选或继续选号',
                           style: TextStyle(color: AppColors.textTertiary)))
                   : ListView.separated(
-                      padding: const EdgeInsets.all(16),
+                      padding: const EdgeInsets.fromLTRB(16, 10, 16, 16),
                       itemCount: _draft.tickets.length,
-                      separatorBuilder: (_, __) => const Divider(height: 1),
+                      separatorBuilder: (_, __) => const SizedBox(height: 10),
                       itemBuilder: (context, index) {
                         final ticket = _draft.tickets[index];
                         return Container(
-                          color: Colors.white,
-                          padding: const EdgeInsets.symmetric(vertical: 16),
-                          child: Row(children: [
-                            IconButton(
-                              tooltip: '删除此项',
-                              onPressed: _saving
-                                  ? null
-                                  : () async {
-                                      final kind = _kind;
-                                      update(() {
-                                        _changedDrafts.add(kind);
-                                        _draft.tickets.removeAt(index);
-                                      });
-                                      await _persistDraftTickets(kind);
-                                    },
-                              icon: const Icon(Icons.cancel_outlined,
-                                  color: AppColors.textMuted, size: 21),
-                            ),
-                            Expanded(
+                          padding: const EdgeInsets.fromLTRB(12, 12, 8, 12),
+                          decoration: BoxDecoration(
+                            color: Colors.white,
+                            borderRadius: BorderRadius.circular(8),
+                            border: Border.all(color: AppColors.border),
+                          ),
+                          child: Row(
+                            crossAxisAlignment: CrossAxisAlignment.center,
+                            children: [
+                              Expanded(
                                 child: Column(
-                                    crossAxisAlignment:
-                                        CrossAxisAlignment.start,
-                                    children: [
-                                  SimulationTicketNumbers(ticket: ticket),
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Row(children: [
+                                      Text(
+                                        '第${(index + 1).toString().padLeft(2, '0')}注',
+                                        style: const TextStyle(
+                                          color: AppColors.textSecondary,
+                                          fontSize: 12,
+                                          fontWeight: FontWeight.w600,
+                                        ),
+                                      ),
+                                      const SizedBox(width: 8),
+                                      Container(
+                                        padding: const EdgeInsets.symmetric(
+                                            horizontal: 7, vertical: 3),
+                                        decoration: BoxDecoration(
+                                          color: _blue.withOpacity(.08),
+                                          borderRadius:
+                                              BorderRadius.circular(4),
+                                        ),
+                                        child: Text(
+                                          ticket.playLabel,
+                                          style: const TextStyle(
+                                            color: _blue,
+                                            fontSize: 11,
+                                            fontWeight: FontWeight.w600,
+                                          ),
+                                        ),
+                                      ),
+                                      const Spacer(),
+                                      Text('${ticket.lines}注',
+                                          style: const TextStyle(
+                                            color: AppColors.textTertiary,
+                                            fontSize: 11,
+                                          )),
+                                    ]),
+                                    const SizedBox(height: 10),
+                                    SimulationTicketNumbers(ticket: ticket),
+                                  ],
+                                ),
+                              ),
+                              const SizedBox(width: 6),
+                              Column(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  IconButton(
+                                    tooltip: '编辑号码',
+                                    onPressed: _saving
+                                        ? null
+                                        : () {
+                                            update(() {
+                                              _restoreSelection(ticket);
+                                              _draft.editingTicketIndex = index;
+                                            });
+                                            Navigator.pop(sheetContext);
+                                            _scrollController.jumpTo(0);
+                                          },
+                                    constraints: const BoxConstraints.tightFor(
+                                        width: 34, height: 34),
+                                    padding: EdgeInsets.zero,
+                                    visualDensity: VisualDensity.compact,
+                                    style: IconButton.styleFrom(
+                                      foregroundColor: _blue,
+                                      backgroundColor: const Color(0xFFEFF5FD),
+                                    ),
+                                    icon: const Icon(Icons.edit_outlined,
+                                        size: 17),
+                                  ),
                                   const SizedBox(height: 6),
-                                  Text('${ticket.playLabel} · ${ticket.lines}注',
-                                      style: const TextStyle(
-                                          color: AppColors.textTertiary,
-                                          fontSize: 12)),
-                                ])),
-                            IconButton(
-                              tooltip: '编辑号码',
-                              onPressed: _saving
-                                  ? null
-                                  : () {
-                                      if (_currentTicket.primary.isNotEmpty) {
-                                        _message('请先处理选号区中的号码，再编辑明细');
-                                        return;
-                                      }
-                                      final kind = _kind;
-                                      update(() {
-                                        _changedDrafts.add(kind);
-                                        _draft.tickets.removeAt(index);
-                                        _restoreSelection(ticket);
-                                      });
-                                      _persistDraftTickets(kind);
-                                      Navigator.pop(sheetContext);
-                                      _scrollController.jumpTo(0);
-                                    },
-                              icon: const Icon(Icons.chevron_right,
-                                  color: AppColors.textMuted),
-                            ),
-                          ]),
+                                  IconButton(
+                                    tooltip: '删除此项',
+                                    onPressed: _saving
+                                        ? null
+                                        : () async {
+                                            final kind = _kind;
+                                            update(() {
+                                              _changedDrafts.add(kind);
+                                              _draft.tickets.removeAt(index);
+                                              final editingIndex =
+                                                  _draft.editingTicketIndex;
+                                              if (editingIndex == index) {
+                                                _draft.clearSelection();
+                                              } else if (editingIndex != null &&
+                                                  editingIndex > index) {
+                                                _draft.editingTicketIndex =
+                                                    editingIndex - 1;
+                                              }
+                                            });
+                                            await _persistDraftTickets(kind);
+                                          },
+                                    constraints: const BoxConstraints.tightFor(
+                                        width: 34, height: 34),
+                                    padding: EdgeInsets.zero,
+                                    visualDensity: VisualDensity.compact,
+                                    style: IconButton.styleFrom(
+                                      foregroundColor: AppColors.textTertiary,
+                                      backgroundColor: AppColors.surfaceSoft,
+                                    ),
+                                    icon: const Icon(Icons.delete_outline,
+                                        size: 18),
+                                  ),
+                                ],
+                              ),
+                            ],
+                          ),
                         );
                       },
                     ),

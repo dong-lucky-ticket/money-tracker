@@ -168,6 +168,7 @@ void main() {
     await tester.tap(find.text('选好了'));
     await tester.pumpAndSettle();
     expect(find.text('选五复式'), findsOneWidget);
+    expect(find.text('选五'), findsOneWidget);
     expect(tester.takeException(), isNull);
   });
 }

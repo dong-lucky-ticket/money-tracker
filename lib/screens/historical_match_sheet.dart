@@ -167,15 +167,9 @@ class _HistoricalMatchSheetState extends State<HistoricalMatchSheet> {
                                 color: AppColors.textTertiary, fontSize: 12)),
                       ]),
                       const SizedBox(height: 12),
-                      if (ticket.lottery == SimulationLottery.sevenStar) ...[
-                        _numberGroup(
-                            '前区', ticket.primary, const Color(0xFF4A9BD6),
-                            pad: false),
-                        const SizedBox(height: 10),
-                        _numberGroup(
-                            '后区', ticket.secondary, const Color(0xFFE7A51B),
-                            pad: false),
-                      ] else ...[
+                      if (ticket.lottery == SimulationLottery.sevenStar)
+                        _sevenStarBalls()
+                      else ...[
                         _numberGroup(ticket.lottery.primaryLabel,
                             ticket.primary, const Color(0xFF4A9BD6)),
                         if (ticket.secondary.isNotEmpty) ...[
@@ -291,10 +285,7 @@ class _HistoricalMatchSheetState extends State<HistoricalMatchSheet> {
   }
 
   Widget _numberGroup(String label, List<int> numbers, Color color,
-          {bool pad = true,
-          bool sevenStar = false,
-          _HistoricalDraw? draw,
-          List<int>? selected}) =>
+          {bool pad = true, _HistoricalDraw? draw, List<int>? selected}) =>
       Row(
         crossAxisAlignment: CrossAxisAlignment.center,
         children: [
@@ -305,17 +296,12 @@ class _HistoricalMatchSheetState extends State<HistoricalMatchSheet> {
                       color: AppColors.textSecondary, fontSize: 12))),
           Expanded(
               child: _balls(numbers,
-                  color: color,
-                  pad: pad,
-                  sevenStar: sevenStar,
-                  draw: draw,
-                  selected: selected))
+                  color: color, pad: pad, draw: draw, selected: selected))
         ],
       );
 
   Widget _balls(List<int> numbers,
       {Color color = const Color(0xFF4A9BD6),
-      bool sevenStar = false,
       _HistoricalDraw? draw,
       List<int>? selected,
       bool pad = true}) {
@@ -323,11 +309,7 @@ class _HistoricalMatchSheetState extends State<HistoricalMatchSheet> {
     final List<Widget> balls = [
       for (var index = 0; index < numbers.length; index++)
         _ball(numbers[index], color,
-            hit: draw != null &&
-                (sevenStar
-                    ? index < selectedNumbers.length &&
-                        selectedNumbers[index] == numbers[index]
-                    : selectedNumbers.contains(numbers[index])),
+            hit: draw != null && selectedNumbers.contains(numbers[index]),
             pad: pad),
     ];
     final defaultSize = draw == null ? 37.0 : 34.0;
@@ -348,11 +330,7 @@ class _HistoricalMatchSheetState extends State<HistoricalMatchSheet> {
             for (var index = 0; index < numbers.length; index++) ...[
               if (index > 0) const SizedBox(width: spacing),
               _ball(numbers[index], color,
-                  hit: draw != null &&
-                      (sevenStar
-                          ? index < selectedNumbers.length &&
-                              selectedNumbers[index] == numbers[index]
-                          : selectedNumbers.contains(numbers[index])),
+                  hit: draw != null && selectedNumbers.contains(numbers[index]),
                   pad: pad,
                   size: size.clamp(minSize, defaultSize)),
             ],
@@ -360,6 +338,46 @@ class _HistoricalMatchSheetState extends State<HistoricalMatchSheet> {
         );
       }
       return Wrap(spacing: 7, runSpacing: 7, children: balls);
+    });
+  }
+
+  Widget _sevenStarBalls({_HistoricalDraw? draw}) {
+    final selected = [...widget.ticket.primary, ...widget.ticket.secondary];
+    final numbers =
+        draw == null ? selected : [...draw.primary, ...draw.secondary];
+    const spacing = 5.0;
+    const minSize = 24.0;
+    final defaultSize = draw == null ? 37.0 : 34.0;
+    return LayoutBuilder(builder: (context, constraints) {
+      if (numbers.isEmpty) return const SizedBox.shrink();
+      final available =
+          (constraints.maxWidth - (numbers.length - 1) * spacing) /
+              numbers.length;
+      final size = available.clamp(minSize, defaultSize);
+      final balls = [
+        for (var index = 0; index < numbers.length; index++)
+          _ball(
+            numbers[index],
+            index < 6 ? const Color(0xFF4A9BD6) : const Color(0xFFE7A51B),
+            pad: false,
+            hit: draw != null &&
+                index < selected.length &&
+                selected[index] == numbers[index],
+            size: size,
+          ),
+      ];
+      if (available >= minSize) {
+        return Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            for (var index = 0; index < balls.length; index++) ...[
+              if (index > 0) const SizedBox(width: spacing),
+              balls[index],
+            ],
+          ],
+        );
+      }
+      return Wrap(spacing: spacing, runSpacing: 7, children: balls);
     });
   }
 
@@ -410,19 +428,9 @@ class _HistoricalMatchSheetState extends State<HistoricalMatchSheet> {
                   fontWeight: winning ? FontWeight.w700 : FontWeight.normal)),
         ]),
         const SizedBox(height: 11),
-        if (lottery == SimulationLottery.sevenStar) ...[
-          _numberGroup('前区', draw.primary, const Color(0xFF4A9BD6),
-              pad: false,
-              draw: draw,
-              sevenStar: true,
-              selected: widget.ticket.primary),
-          const SizedBox(height: 8),
-          _numberGroup('后区', draw.secondary, const Color(0xFFE7A51B),
-              pad: false,
-              draw: draw,
-              selected: widget.ticket.secondary,
-              sevenStar: true),
-        ] else
+        if (lottery == SimulationLottery.sevenStar)
+          _sevenStarBalls(draw: draw)
+        else
           _drawBalls(draw, primaryColor),
       ]),
     );

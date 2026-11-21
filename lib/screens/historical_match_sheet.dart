@@ -92,8 +92,12 @@ class _HistoricalMatchSheetState extends State<HistoricalMatchSheet> {
       draw.publishDate,
       _numbers(draw.redNumbers),
       _numbers([draw.blueNumber]));
-  _HistoricalDraw _sevenStar(SevenStarDraw draw) =>
-      _HistoricalDraw(draw.issue, draw.publishDate, _numbers(draw.numbers));
+  _HistoricalDraw _sevenStar(SevenStarDraw draw) => _HistoricalDraw(
+        draw.issue,
+        draw.publishDate,
+        _numbers(draw.numbers.take(6).toList()),
+        _numbers(draw.numbers.skip(6).take(1).toList()),
+      );
   _HistoricalDraw _happyEight(HappyEightDraw draw) =>
       _HistoricalDraw(draw.issue, draw.publishDate, _numbers(draw.numbers));
   List<int> _numbers(List<String> values) =>
@@ -163,9 +167,15 @@ class _HistoricalMatchSheetState extends State<HistoricalMatchSheet> {
                                 color: AppColors.textTertiary, fontSize: 12)),
                       ]),
                       const SizedBox(height: 12),
-                      if (ticket.lottery == SimulationLottery.sevenStar)
-                        _balls(ticket.primary, color: _blue, sevenStar: true)
-                      else ...[
+                      if (ticket.lottery == SimulationLottery.sevenStar) ...[
+                        _numberGroup(
+                            '前区', ticket.primary, const Color(0xFF4A9BD6),
+                            pad: false),
+                        const SizedBox(height: 10),
+                        _numberGroup(
+                            '后区', ticket.secondary, const Color(0xFFE7A51B),
+                            pad: false),
+                      ] else ...[
                         _numberGroup(ticket.lottery.primaryLabel,
                             ticket.primary, const Color(0xFF4A9BD6)),
                         if (ticket.secondary.isNotEmpty) ...[
@@ -280,7 +290,12 @@ class _HistoricalMatchSheetState extends State<HistoricalMatchSheet> {
     return ranks[label.substring(0, 1)] ?? 99;
   }
 
-  Widget _numberGroup(String label, List<int> numbers, Color color) => Row(
+  Widget _numberGroup(String label, List<int> numbers, Color color,
+          {bool pad = true,
+          bool sevenStar = false,
+          _HistoricalDraw? draw,
+          List<int>? selected}) =>
+      Row(
         crossAxisAlignment: CrossAxisAlignment.center,
         children: [
           SizedBox(
@@ -288,7 +303,13 @@ class _HistoricalMatchSheetState extends State<HistoricalMatchSheet> {
               child: Text(label,
                   style: const TextStyle(
                       color: AppColors.textSecondary, fontSize: 12))),
-          Expanded(child: _balls(numbers, color: color))
+          Expanded(
+              child: _balls(numbers,
+                  color: color,
+                  pad: pad,
+                  sevenStar: sevenStar,
+                  draw: draw,
+                  selected: selected))
         ],
       );
 
@@ -296,16 +317,18 @@ class _HistoricalMatchSheetState extends State<HistoricalMatchSheet> {
       {Color color = const Color(0xFF4A9BD6),
       bool sevenStar = false,
       _HistoricalDraw? draw,
-      List<int>? selected}) {
+      List<int>? selected,
+      bool pad = true}) {
+    final selectedNumbers = selected ?? widget.ticket.primary;
     final List<Widget> balls = [
       for (var index = 0; index < numbers.length; index++)
         _ball(numbers[index], color,
             hit: draw != null &&
                 (sevenStar
-                    ? index < widget.ticket.primary.length &&
-                        widget.ticket.primary[index] == numbers[index]
-                    : (selected ?? widget.ticket.primary)
-                        .contains(numbers[index]))),
+                    ? index < selectedNumbers.length &&
+                        selectedNumbers[index] == numbers[index]
+                    : selectedNumbers.contains(numbers[index])),
+            pad: pad),
     ];
     final defaultSize = draw == null ? 37.0 : 34.0;
     const minSize = 24.0;
@@ -327,10 +350,10 @@ class _HistoricalMatchSheetState extends State<HistoricalMatchSheet> {
               _ball(numbers[index], color,
                   hit: draw != null &&
                       (sevenStar
-                          ? index < widget.ticket.primary.length &&
-                              widget.ticket.primary[index] == numbers[index]
-                          : (selected ?? widget.ticket.primary)
-                              .contains(numbers[index])),
+                          ? index < selectedNumbers.length &&
+                              selectedNumbers[index] == numbers[index]
+                          : selectedNumbers.contains(numbers[index])),
+                  pad: pad,
                   size: size.clamp(minSize, defaultSize)),
             ],
           ],
@@ -340,7 +363,8 @@ class _HistoricalMatchSheetState extends State<HistoricalMatchSheet> {
     });
   }
 
-  Widget _ball(int number, Color color, {bool hit = false, double size = 37}) =>
+  Widget _ball(int number, Color color,
+          {bool hit = false, bool pad = true, double size = 37}) =>
       Container(
         width: size,
         height: size,
@@ -350,7 +374,7 @@ class _HistoricalMatchSheetState extends State<HistoricalMatchSheet> {
             color: hit ? color : Colors.white,
             border: Border.all(
                 color: color.withOpacity(hit ? 1 : .65), width: hit ? 1 : .8)),
-        child: Text(number.toString().padLeft(2, '0'),
+        child: Text(pad ? number.toString().padLeft(2, '0') : '$number',
             style: TextStyle(
                 color: hit ? Colors.white : color,
                 fontSize: size < 30
@@ -386,9 +410,19 @@ class _HistoricalMatchSheetState extends State<HistoricalMatchSheet> {
                   fontWeight: winning ? FontWeight.w700 : FontWeight.normal)),
         ]),
         const SizedBox(height: 11),
-        if (lottery == SimulationLottery.sevenStar)
-          _balls(draw.primary, sevenStar: true, draw: draw)
-        else
+        if (lottery == SimulationLottery.sevenStar) ...[
+          _numberGroup('前区', draw.primary, const Color(0xFF4A9BD6),
+              pad: false,
+              draw: draw,
+              sevenStar: true,
+              selected: widget.ticket.primary),
+          const SizedBox(height: 8),
+          _numberGroup('后区', draw.secondary, const Color(0xFFE7A51B),
+              pad: false,
+              draw: draw,
+              selected: widget.ticket.secondary,
+              sevenStar: true),
+        ] else
           _drawBalls(draw, primaryColor),
       ]),
     );

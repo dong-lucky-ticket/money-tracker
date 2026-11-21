@@ -49,14 +49,24 @@ void main() {
       () {
     final sevenStar = SimulationTicket(
       lottery: SimulationLottery.sevenStar,
-      primary: [1, 2, 3, 4, 5, 6, 7],
+      primary: [1, 2, 3, 4, 5, 6],
+      secondary: [7],
     );
     expect(
       simulationPrizeLabel(
         ticket: sevenStar,
-        primaryDraw: [1, 2, 3, 4, 5, 6, 0],
+        primaryDraw: [1, 2, 3, 4, 5, 6],
+        secondaryDraw: [0],
       ),
       '二等奖',
+    );
+    expect(
+      simulationPrizeLabel(
+        ticket: sevenStar,
+        primaryDraw: [1, 2, 3, 4, 5, 6],
+        secondaryDraw: [7],
+      ),
+      '一等奖',
     );
 
     final happyEight = SimulationTicket(

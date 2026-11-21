@@ -17,7 +17,7 @@ class SimulationTicketNumbers extends StatelessWidget {
       children: [
         _row(
           isSevenStar
-              ? '七位'
+              ? lottery.primaryLabel
               : lottery == SimulationLottery.happyEight
                   ? happyEightPlayLabel(ticket.happyEightCount)
                   : lottery.primaryLabel,
@@ -32,9 +32,12 @@ class SimulationTicketNumbers extends StatelessWidget {
           _row(
               lottery.secondaryLabel,
               ticket.secondary,
-              lottery == SimulationLottery.doubleColorBall
-                  ? AppColors.primary
-                  : AppColors.warning),
+              isSevenStar
+                  ? AppColors.warning
+                  : lottery == SimulationLottery.doubleColorBall
+                      ? AppColors.primary
+                      : AppColors.warning,
+              pad: !isSevenStar),
         ],
       ],
     );

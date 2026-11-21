@@ -171,4 +171,33 @@ void main() {
     expect(find.text('选五'), findsOneWidget);
     expect(tester.takeException(), isNull);
   });
+
+  testWidgets('Seven Star selection preserves the front six and back one',
+      (tester) async {
+    tester.view.devicePixelRatio = 1;
+    tester.view.physicalSize = const Size(390, 844);
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+
+    await tester.pumpWidget(const MaterialApp(
+      home: BettingSimulatorScreen(),
+    ));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('七星彩'));
+    await tester.pumpAndSettle();
+
+    for (var position = 0; position < 7; position++) {
+      final picker =
+          find.byKey(ValueKey('digit-picker-$position-${position + 1}'));
+      await tester.ensureVisible(picker);
+      await tester.tap(picker);
+      await tester.pumpAndSettle();
+    }
+
+    await tester.tap(find.text('选好了'));
+    await tester.pumpAndSettle();
+    expect(find.text('前区6位'), findsOneWidget);
+    expect(find.text('后区'), findsOneWidget);
+    expect(tester.takeException(), isNull);
+  });
 }

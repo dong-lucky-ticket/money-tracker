@@ -1,7 +1,10 @@
 import 'dart:io';
+import 'dart:math';
 
 import 'package:expensetracker/models/lottery_simulation.dart';
 import 'package:expensetracker/services/lottery_simulation_repository.dart';
+import 'package:expensetracker/widgets/lottery/simulation_ticket_numbers.dart';
+import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:hive/hive.dart';
 
@@ -35,12 +38,21 @@ void main() {
           secondary: [1],
         ).isValid,
         isTrue);
-    expect(
-        SimulationTicket(
-          lottery: SimulationLottery.sevenStar,
-          primary: [1, 1, 3, 4, 5, 6, 7],
-        ).isValid,
-        isTrue);
+    final sevenStar = SimulationTicket(
+      lottery: SimulationLottery.sevenStar,
+      primary: [1, 1, 3, 4, 5, 6, 7],
+    );
+    expect(sevenStar.isValid, isTrue);
+    expect(sevenStar.primary, [1, 1, 3, 4, 5, 6]);
+    expect(sevenStar.secondary, [7]);
+    final restoredLegacySevenStar = SimulationTicket.fromMap({
+      'lottery': SimulationLottery.sevenStar.name,
+      'primary': [1, 1, 3, 4, 5, 6, 7],
+      'secondary': <int>[],
+      'happyEightCount': 10,
+    });
+    expect(restoredLegacySevenStar.primary, [1, 1, 3, 4, 5, 6]);
+    expect(restoredLegacySevenStar.secondary, [7]);
     expect(
         SimulationTicket(
           lottery: SimulationLottery.happyEight,
@@ -57,6 +69,29 @@ void main() {
     expect(happyEightCompound.isValid, isTrue);
     expect(happyEightCompound.lines, 28);
     expect(happyEightCompound.playLabel, '选六复式');
+
+    final randomSevenStar =
+        SimulationTicket.random(SimulationLottery.sevenStar, Random(1));
+    expect(randomSevenStar.primary, hasLength(6));
+    expect(randomSevenStar.secondary, hasLength(1));
+  });
+
+  testWidgets(
+      'Seven Star ticket numbers display six front digits and one back digit',
+      (tester) async {
+    final ticket = SimulationTicket(
+      lottery: SimulationLottery.sevenStar,
+      primary: [1, 2, 3, 4, 5, 6],
+      secondary: [7],
+    );
+    await tester.pumpWidget(MaterialApp(
+      home: Scaffold(body: SimulationTicketNumbers(ticket: ticket)),
+    ));
+
+    expect(find.text('前区'), findsOneWidget);
+    expect(find.text('后区'), findsOneWidget);
+    expect(find.text('七位'), findsNothing);
+    expect(find.text('7'), findsOneWidget);
   });
 
   test('stores and restores virtual tickets from the dedicated cache',

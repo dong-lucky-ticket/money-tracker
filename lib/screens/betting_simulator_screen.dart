@@ -82,9 +82,11 @@ class _BettingSimulatorScreenState extends State<BettingSimulatorScreen> {
   SimulationTicket get _currentTicket => SimulationTicket(
         lottery: _kind,
         primary: _kind == SimulationLottery.sevenStar
-            ? _draft.digits.whereType<int>().toList()
+            ? _draft.digits.take(6).whereType<int>().toList()
             : _draft.primary.toList(),
-        secondary: _draft.secondary.toList(),
+        secondary: _kind == SimulationLottery.sevenStar
+            ? (_draft.digits[6] == null ? [] : [_draft.digits[6]!])
+            : _draft.secondary.toList(),
         happyEightCount: _draft.happyEightCount,
       );
 
@@ -438,8 +440,8 @@ class _BettingSimulatorScreenState extends State<BettingSimulatorScreen> {
   _RecentDraw _mapDoubleColorBallDraw(DoubleColorBallDraw draw) =>
       _RecentDraw(draw.issue, draw.redNumbers, [draw.blueNumber]);
 
-  _RecentDraw _mapSevenStarDraw(SevenStarDraw draw) =>
-      _RecentDraw(draw.issue, draw.numbers);
+  _RecentDraw _mapSevenStarDraw(SevenStarDraw draw) => _RecentDraw(draw.issue,
+      draw.numbers.take(6).toList(), draw.numbers.skip(6).take(1).toList());
 
   _RecentDraw _mapHappyEightDraw(HappyEightDraw draw) =>
       _RecentDraw(draw.issue, draw.numbers);
@@ -515,8 +517,9 @@ class _BettingSimulatorScreenState extends State<BettingSimulatorScreen> {
                 child: SingleChildScrollView(
                   scrollDirection: Axis.horizontal,
                   child: Row(children: [
-                    ...draw.primary
-                        .map((number) => _recentNumber(number, primaryColor)),
+                    ...draw.primary.map((number) => _recentNumber(
+                        number, primaryColor,
+                        pad: _kind != SimulationLottery.sevenStar)),
                     if (draw.secondary.isNotEmpty) ...[
                       const Padding(
                         padding: EdgeInsets.symmetric(horizontal: 4),
@@ -524,8 +527,9 @@ class _BettingSimulatorScreenState extends State<BettingSimulatorScreen> {
                             style: TextStyle(
                                 color: AppColors.textTertiary, fontSize: 12)),
                       ),
-                      ...draw.secondary.map(
-                          (number) => _recentNumber(number, secondaryColor)),
+                      ...draw.secondary.map((number) => _recentNumber(
+                          number, secondaryColor,
+                          pad: _kind != SimulationLottery.sevenStar)),
                     ],
                   ]),
                 ),
@@ -550,9 +554,9 @@ class _BettingSimulatorScreenState extends State<BettingSimulatorScreen> {
     );
   }
 
-  Widget _recentNumber(String value, Color color) => Padding(
+  Widget _recentNumber(String value, Color color, {bool pad = true}) => Padding(
         padding: const EdgeInsets.only(right: 6),
-        child: Text(value.padLeft(2, '0'),
+        child: Text(pad ? value.padLeft(2, '0') : value,
             style: TextStyle(
                 color: color, fontSize: 13, fontWeight: FontWeight.w700)),
       );
@@ -637,6 +641,7 @@ class _BettingSimulatorScreenState extends State<BettingSimulatorScreen> {
           return Wrap(spacing: 10, runSpacing: 10, children: [
             for (var digit = 0; digit < 10; digit++)
               SizedBox(
+                  key: ValueKey('digit-picker-$position-$digit'),
                   width: size,
                   height: min(size, 44),
                   child: _ball(
@@ -782,9 +787,10 @@ class _BettingSimulatorScreenState extends State<BettingSimulatorScreen> {
   void _restoreSelection(SimulationTicket ticket) {
     _draft.clearSelection();
     if (_kind == SimulationLottery.sevenStar) {
-      for (var i = 0; i < 7; i++) {
+      for (var i = 0; i < 6; i++) {
         _draft.digits[i] = ticket.primary[i];
       }
+      _draft.digits[6] = ticket.secondary.single;
     } else {
       _draft.primary.addAll(ticket.primary);
       _draft.secondary.addAll(ticket.secondary);

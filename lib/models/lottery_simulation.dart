@@ -6,15 +6,15 @@ extension SimulationLotteryInfo on SimulationLottery {
   String get label => const ['体彩大乐透', '福彩双色球', '体彩七星彩', '福彩快乐8'][index];
   String get shortLabel => const ['大乐透', '双色球', '七星彩', '快乐8'][index];
   int get primaryMax => const [35, 33, 10, 80][index];
-  int get primaryCount => const [5, 6, 7, 10][index];
-  int get secondaryMax => const [12, 16, 0, 0][index];
-  int get secondaryCount => const [2, 1, 0, 0][index];
+  int get primaryCount => const [5, 6, 6, 10][index];
+  int get secondaryMax => const [12, 16, 9, 0][index];
+  int get secondaryCount => const [2, 1, 1, 0][index];
   String get primaryLabel => this == SimulationLottery.doubleColorBall
       ? '红球'
       : this == SimulationLottery.happyEight
           ? '号码'
           : this == SimulationLottery.sevenStar
-              ? '前区6位'
+              ? '前区'
               : '前区';
   String get secondaryLabel =>
       this == SimulationLottery.doubleColorBall ? '蓝球' : '后区';
@@ -43,16 +43,18 @@ class SimulationTicket {
     required List<int> primary,
     List<int> secondary = const [],
     this.happyEightCount = 10,
-  })  : primary = List.unmodifiable(lottery == SimulationLottery.sevenStar
-            ? primary
-            : (List<int>.of(primary)..sort())),
-        secondary = List.unmodifiable(List<int>.of(secondary)..sort());
+  })  : primary =
+            List.unmodifiable(_normalizePrimary(lottery, primary, secondary)),
+        secondary =
+            List.unmodifiable(_normalizeSecondary(lottery, primary, secondary));
 
   bool get isValid {
     if (lottery == SimulationLottery.sevenStar) {
-      return primary.length == 7 &&
+      return primary.length == 6 &&
           primary.every((n) => n >= 0 && n <= 9) &&
-          secondary.isEmpty;
+          secondary.length == 1 &&
+          secondary.single >= 0 &&
+          secondary.single <= 9;
     }
     if (primary.toSet().length != primary.length ||
         primary.any((n) => n < 1 || n > lottery.primaryMax)) return false;
@@ -91,13 +93,15 @@ class SimulationTicket {
     return SimulationTicket(
       lottery: lottery,
       primary: lottery == SimulationLottery.sevenStar
-          ? List.generate(7, (_) => random.nextInt(10))
+          ? List.generate(6, (_) => random.nextInt(10))
           : sample(
               lottery.primaryMax,
               lottery == SimulationLottery.happyEight
                   ? happyEightCount
                   : lottery.primaryCount),
-      secondary: sample(lottery.secondaryMax, lottery.secondaryCount),
+      secondary: lottery == SimulationLottery.sevenStar
+          ? [random.nextInt(10)]
+          : sample(lottery.secondaryMax, lottery.secondaryCount),
       happyEightCount: happyEightCount,
     );
   }
@@ -115,6 +119,30 @@ class SimulationTicket {
         secondary: List<int>.from(map['secondary'] as List),
         happyEightCount: map['happyEightCount'] as int,
       );
+}
+
+List<int> _normalizePrimary(
+    SimulationLottery lottery, List<int> primary, List<int> secondary) {
+  if (lottery == SimulationLottery.sevenStar &&
+      primary.length == 7 &&
+      secondary.isEmpty) {
+    return primary.take(6).toList();
+  }
+  return lottery == SimulationLottery.sevenStar
+      ? List<int>.of(primary)
+      : (List<int>.of(primary)..sort());
+}
+
+List<int> _normalizeSecondary(
+    SimulationLottery lottery, List<int> primary, List<int> secondary) {
+  if (lottery == SimulationLottery.sevenStar &&
+      primary.length == 7 &&
+      secondary.isEmpty) {
+    return [primary.last];
+  }
+  return lottery == SimulationLottery.sevenStar
+      ? List<int>.of(secondary)
+      : (List<int>.of(secondary)..sort());
 }
 
 class SimulationRecord {

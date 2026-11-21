@@ -21,10 +21,18 @@ String? simulationPrizeLabel({
   }
 
   if (ticket.lottery == SimulationLottery.sevenStar) {
+    final drawnBackDigit = secondaryDraw.isNotEmpty
+        ? secondaryDraw.first
+        : primaryDraw.length > 6
+            ? primaryDraw[6]
+            : null;
+    if (!ticket.isValid || primaryDraw.length < 6 || drawnBackDigit == null) {
+      return null;
+    }
     final frontHits = List.generate(6, (index) => index)
         .where((index) => ticket.primary[index] == primaryDraw[index])
         .length;
-    final backHits = ticket.primary[6] == primaryDraw[6] ? 1 : 0;
+    final backHits = ticket.secondary.single == drawnBackDigit ? 1 : 0;
     const tiers = [
       [
         [6, 1]

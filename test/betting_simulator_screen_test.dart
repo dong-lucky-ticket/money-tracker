@@ -95,25 +95,24 @@ void main() {
 
       await tester.tap(find.text('+机选1注'));
       await tester.pumpAndSettle();
-      expect(find.text('第01注'), findsOneWidget);
-      expect(find.text('第02注'), findsOneWidget);
+      expect(find.byTooltip('编辑号码'), findsNWidgets(2));
+      expect(find.byTooltip('删除此项'), findsNWidgets(2));
 
-      await tester.tap(find.byTooltip('编辑号码').at(0));
+      await tester.tap(find.byKey(const ValueKey('ticket-content-1')));
       await tester.pumpAndSettle();
       expect(find.text('已选 (2)'), findsOneWidget);
+      expect(find.text('保存修改'), findsOneWidget);
 
       await tester.tap(find.text('已选 (2)'));
       await tester.pumpAndSettle();
-      expect(find.text('第01注'), findsOneWidget);
-      expect(find.text('第02注'), findsOneWidget);
+      expect(find.byTooltip('编辑号码'), findsNWidgets(2));
       await tester.tap(find.byTooltip('编辑号码').at(1));
       await tester.pumpAndSettle();
       expect(find.text('保存修改'), findsOneWidget);
 
       await tester.tap(find.text('保存修改'));
       await tester.pumpAndSettle();
-      expect(find.text('第01注'), findsOneWidget);
-      expect(find.text('第02注'), findsOneWidget);
+      expect(find.byTooltip('编辑号码'), findsNWidgets(2));
 
       await tester.tap(find.byTooltip('编辑号码').at(0));
       await tester.pumpAndSettle();

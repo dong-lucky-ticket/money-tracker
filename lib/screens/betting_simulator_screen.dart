@@ -908,121 +908,152 @@ class _BettingSimulatorScreenState extends State<BettingSimulatorScreen> {
                       itemCount: _draft.tickets.length,
                       separatorBuilder: (_, __) => const SizedBox(height: 10),
                       itemBuilder: (context, index) {
-                        final ticket = _draft.tickets[index];
+                        final ticketIndex = _draft.tickets.length - 1 - index;
+                        final ticket = _draft.tickets[ticketIndex];
+                        void editTicket() {
+                          if (_saving) return;
+                          update(() {
+                            _restoreSelection(ticket);
+                            _draft.editingTicketIndex = ticketIndex;
+                          });
+                          Navigator.pop(sheetContext);
+                          _scrollController.jumpTo(0);
+                        }
+
+                        final playTag = _kind == SimulationLottery.happyEight
+                            ? ticket.playLabel
+                            : ticket.lines > 1
+                                ? '复式'
+                                : '单式';
+
                         return Container(
-                          padding: const EdgeInsets.fromLTRB(12, 12, 8, 12),
-                          decoration: BoxDecoration(
+                          padding: const EdgeInsets.fromLTRB(10, 10, 4, 10),
+                          decoration: const BoxDecoration(
                             color: Colors.white,
-                            borderRadius: BorderRadius.circular(8),
-                            border: Border.all(color: AppColors.border),
+                            border: Border(
+                                bottom: BorderSide(color: AppColors.border)),
                           ),
-                          child: Row(
-                            crossAxisAlignment: CrossAxisAlignment.center,
+                          child: Stack(
+                            clipBehavior: Clip.none,
                             children: [
-                              Expanded(
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Row(children: [
-                                      Text(
-                                        '第${(index + 1).toString().padLeft(2, '0')}注',
-                                        style: const TextStyle(
-                                          color: AppColors.textSecondary,
-                                          fontSize: 12,
-                                          fontWeight: FontWeight.w600,
-                                        ),
-                                      ),
-                                      const SizedBox(width: 8),
-                                      Container(
-                                        padding: const EdgeInsets.symmetric(
-                                            horizontal: 7, vertical: 3),
-                                        decoration: BoxDecoration(
-                                          color: _blue.withOpacity(.08),
-                                          borderRadius:
-                                              BorderRadius.circular(4),
-                                        ),
-                                        child: Text(
-                                          ticket.playLabel,
-                                          style: const TextStyle(
-                                            color: _blue,
-                                            fontSize: 11,
-                                            fontWeight: FontWeight.w600,
-                                          ),
-                                        ),
-                                      ),
-                                      const Spacer(),
-                                      Text('${ticket.lines}注',
-                                          style: const TextStyle(
-                                            color: AppColors.textTertiary,
-                                            fontSize: 11,
-                                          )),
-                                    ]),
-                                    const SizedBox(height: 10),
-                                    SimulationTicketNumbers(ticket: ticket),
-                                  ],
-                                ),
-                              ),
-                              const SizedBox(width: 6),
-                              Column(
-                                mainAxisSize: MainAxisSize.min,
+                              Row(
+                                crossAxisAlignment: CrossAxisAlignment.center,
                                 children: [
+                                  Container(
+                                    width: 24,
+                                    height: 24,
+                                    decoration: BoxDecoration(
+                                      shape: BoxShape.circle,
+                                      border:
+                                          Border.all(color: AppColors.border),
+                                    ),
+                                    child: IconButton(
+                                      tooltip: '删除此项',
+                                      onPressed: _saving
+                                          ? null
+                                          : () async {
+                                              final kind = _kind;
+                                              update(() {
+                                                _changedDrafts.add(kind);
+                                                _draft.tickets
+                                                    .removeAt(ticketIndex);
+                                                final editingIndex =
+                                                    _draft.editingTicketIndex;
+                                                if (editingIndex ==
+                                                    ticketIndex) {
+                                                  _draft.clearSelection();
+                                                } else if (editingIndex !=
+                                                        null &&
+                                                    editingIndex >
+                                                        ticketIndex) {
+                                                  _draft.editingTicketIndex =
+                                                      editingIndex - 1;
+                                                }
+                                              });
+                                              await _persistDraftTickets(kind);
+                                            },
+                                      constraints:
+                                          const BoxConstraints.tightFor(
+                                              width: 24, height: 24),
+                                      padding: EdgeInsets.zero,
+                                      visualDensity: VisualDensity.compact,
+                                      icon: const Icon(Icons.close, size: 13),
+                                    ),
+                                  ),
+                                  Expanded(
+                                    child: InkWell(
+                                      key: ValueKey(
+                                          'ticket-content-$ticketIndex'),
+                                      onTap: _saving ? null : editTicket,
+                                      borderRadius: BorderRadius.circular(6),
+                                      child: Padding(
+                                        padding: const EdgeInsets.symmetric(
+                                            horizontal: 6, vertical: 2),
+                                        child: Padding(
+                                          padding:
+                                              const EdgeInsets.only(top: 23),
+                                          child: SimulationTicketNumbers(
+                                              ticket: ticket),
+                                        ),
+                                      ),
+                                    ),
+                                  ),
                                   IconButton(
                                     tooltip: '编辑号码',
-                                    onPressed: _saving
-                                        ? null
-                                        : () {
-                                            update(() {
-                                              _restoreSelection(ticket);
-                                              _draft.editingTicketIndex = index;
-                                            });
-                                            Navigator.pop(sheetContext);
-                                            _scrollController.jumpTo(0);
-                                          },
+                                    onPressed: _saving ? null : editTicket,
                                     constraints: const BoxConstraints.tightFor(
-                                        width: 34, height: 34),
+                                        width: 32, height: 36),
                                     padding: EdgeInsets.zero,
                                     visualDensity: VisualDensity.compact,
-                                    style: IconButton.styleFrom(
-                                      foregroundColor: _blue,
-                                      backgroundColor: const Color(0xFFEFF5FD),
-                                    ),
-                                    icon: const Icon(Icons.edit_outlined,
-                                        size: 17),
-                                  ),
-                                  const SizedBox(height: 6),
-                                  IconButton(
-                                    tooltip: '删除此项',
-                                    onPressed: _saving
-                                        ? null
-                                        : () async {
-                                            final kind = _kind;
-                                            update(() {
-                                              _changedDrafts.add(kind);
-                                              _draft.tickets.removeAt(index);
-                                              final editingIndex =
-                                                  _draft.editingTicketIndex;
-                                              if (editingIndex == index) {
-                                                _draft.clearSelection();
-                                              } else if (editingIndex != null &&
-                                                  editingIndex > index) {
-                                                _draft.editingTicketIndex =
-                                                    editingIndex - 1;
-                                              }
-                                            });
-                                            await _persistDraftTickets(kind);
-                                          },
-                                    constraints: const BoxConstraints.tightFor(
-                                        width: 34, height: 34),
-                                    padding: EdgeInsets.zero,
-                                    visualDensity: VisualDensity.compact,
-                                    style: IconButton.styleFrom(
-                                      foregroundColor: AppColors.textTertiary,
-                                      backgroundColor: AppColors.surfaceSoft,
-                                    ),
-                                    icon: const Icon(Icons.delete_outline,
-                                        size: 18),
+                                    icon: const Icon(Icons.chevron_right,
+                                        color: AppColors.textTertiary,
+                                        size: 22),
                                   ),
                                 ],
+                              ),
+                              Positioned(
+                                top: 0,
+                                left: 0,
+                                child: IgnorePointer(
+                                  child: Container(
+                                    padding: const EdgeInsets.symmetric(
+                                        horizontal: 7, vertical: 2),
+                                    decoration: BoxDecoration(
+                                      color: _blue.withOpacity(.08),
+                                      borderRadius: BorderRadius.circular(4),
+                                    ),
+                                    child: Text(
+                                      playTag,
+                                      style: const TextStyle(
+                                        color: _blue,
+                                        fontSize: 11,
+                                        fontWeight: FontWeight.w600,
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                              ),
+                              Positioned(
+                                top: 0,
+                                right: 8,
+                                child: IgnorePointer(
+                                  child: Container(
+                                    padding: const EdgeInsets.symmetric(
+                                        horizontal: 7, vertical: 2),
+                                    decoration: BoxDecoration(
+                                      color: _blue.withOpacity(.08),
+                                      borderRadius: BorderRadius.circular(4),
+                                    ),
+                                    child: Text(
+                                      '${ticket.lines}注',
+                                      style: const TextStyle(
+                                        color: _blue,
+                                        fontSize: 11,
+                                        fontWeight: FontWeight.w600,
+                                      ),
+                                    ),
+                                  ),
+                                ),
                               ),
                             ],
                           ),

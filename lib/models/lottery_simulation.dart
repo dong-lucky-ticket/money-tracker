@@ -59,7 +59,7 @@ class SimulationTicket {
     if (lottery == SimulationLottery.happyEight) {
       return happyEightCount >= 1 &&
           happyEightCount <= 10 &&
-          primary.length == happyEightCount &&
+          primary.length >= happyEightCount &&
           secondary.isEmpty;
     }
     return primary.length >= lottery.primaryCount &&
@@ -70,14 +70,16 @@ class SimulationTicket {
 
   int get lines {
     if (!isValid) return 0;
-    if (lottery == SimulationLottery.sevenStar ||
-        lottery == SimulationLottery.happyEight) return 1;
+    if (lottery == SimulationLottery.sevenStar) return 1;
+    if (lottery == SimulationLottery.happyEight) {
+      return simulationCombinations(primary.length, happyEightCount);
+    }
     return simulationCombinations(primary.length, lottery.primaryCount) *
         simulationCombinations(secondary.length, lottery.secondaryCount);
   }
 
   String get playLabel => lottery == SimulationLottery.happyEight
-      ? happyEightPlayLabel(happyEightCount)
+      ? '${happyEightPlayLabel(happyEightCount)}${primary.length > happyEightCount ? '复式' : ''}'
       : (lines > 1 ? '复式' : '单式');
 
   factory SimulationTicket.random(SimulationLottery lottery, Random random,

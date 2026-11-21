@@ -121,4 +121,41 @@ void main() {
       isNull,
     );
   });
+
+  test('Happy 8 compound play matches prizes across generated lines', () {
+    final ticket = SimulationTicket(
+      lottery: SimulationLottery.happyEight,
+      primary: [1, 2, 3, 4, 5, 6, 7, 8],
+      happyEightCount: 5,
+    );
+
+    expect(
+      simulationPrizeLabel(
+        ticket: ticket,
+        primaryDraw: [
+          1,
+          2,
+          3,
+          20,
+          21,
+          22,
+          23,
+          24,
+          25,
+          26,
+          27,
+          28,
+          29,
+          30,
+          31,
+          32,
+          33,
+          34,
+          35,
+          36,
+        ],
+      ),
+      '中3个',
+    );
+  });
 }

@@ -136,4 +136,38 @@ void main() {
     }
     expect(tester.takeException(), isNull);
   });
+
+  testWidgets(
+      'Happy 8 selection above the chosen play counts as a compound bet',
+      (tester) async {
+    tester.view.devicePixelRatio = 1;
+    tester.view.physicalSize = const Size(390, 844);
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+
+    await tester.pumpWidget(const MaterialApp(
+      home: BettingSimulatorScreen(),
+    ));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('快乐8'));
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.byType(DropdownButton<int>));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('选五玩法').last);
+    await tester.pumpAndSettle();
+
+    for (var number = 1; number <= 6; number++) {
+      final picker = find.byKey(ValueKey('pick-happyEight-$number'));
+      await tester.ensureVisible(picker);
+      await tester.tap(picker);
+      await tester.pump();
+    }
+
+    expect(find.text('已选 6注，共12元', findRichText: true), findsOneWidget);
+    await tester.tap(find.text('选好了'));
+    await tester.pumpAndSettle();
+    expect(find.text('选五复式'), findsOneWidget);
+    expect(tester.takeException(), isNull);
+  });
 }

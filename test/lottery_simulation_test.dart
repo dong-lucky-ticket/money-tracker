@@ -48,6 +48,15 @@ void main() {
           happyEightCount: 10,
         ).lines,
         1);
+
+    final happyEightCompound = SimulationTicket(
+      lottery: SimulationLottery.happyEight,
+      primary: List.generate(8, (index) => index + 1),
+      happyEightCount: 6,
+    );
+    expect(happyEightCompound.isValid, isTrue);
+    expect(happyEightCompound.lines, 28);
+    expect(happyEightCompound.playLabel, '选六复式');
   });
 
   test('stores and restores virtual tickets from the dedicated cache',

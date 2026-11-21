@@ -9,7 +9,15 @@ String? simulationPrizeLabel({
   if (ticket.lottery == SimulationLottery.happyEight) {
     final hits =
         ticket.primary.toSet().intersection(primaryDraw.toSet()).length;
-    return _happyEightPrize(ticket.happyEightCount, hits);
+    final minHits = (ticket.happyEightCount - (ticket.primary.length - hits))
+        .clamp(0, ticket.happyEightCount)
+        .toInt();
+    final maxHits = hits.clamp(0, ticket.happyEightCount).toInt();
+    for (var lineHits = maxHits; lineHits >= minHits; lineHits--) {
+      final prize = _happyEightPrize(ticket.happyEightCount, lineHits);
+      if (prize != null) return prize;
+    }
+    return null;
   }
 
   if (ticket.lottery == SimulationLottery.sevenStar) {

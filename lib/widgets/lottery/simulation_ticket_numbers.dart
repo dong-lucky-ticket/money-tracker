@@ -19,7 +19,7 @@ class SimulationTicketNumbers extends StatelessWidget {
           isSevenStar
               ? '七位'
               : lottery == SimulationLottery.happyEight
-                  ? ticket.playLabel
+                  ? ''
                   : lottery.primaryLabel,
           ticket.primary,
           lottery == SimulationLottery.doubleColorBall
@@ -44,11 +44,14 @@ class SimulationTicketNumbers extends StatelessWidget {
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        SizedBox(
-            width: 38,
-            child: Text(label,
-                style: const TextStyle(
-                    color: AppColors.textTertiary, fontSize: 12, height: 1.7))),
+        if (label.isNotEmpty)
+          SizedBox(
+              width: 38,
+              child: Text(label,
+                  style: const TextStyle(
+                      color: AppColors.textTertiary,
+                      fontSize: 12,
+                      height: 1.7))),
         Expanded(
           child: Wrap(
             spacing: 8,

@@ -229,7 +229,7 @@ class _BettingSimulatorScreenState extends State<BettingSimulatorScreen> {
                                     ? '号码区'
                                     : _kind.primaryLabel,
                                 hint: _kind == SimulationLottery.happyEight
-                                    ? '请选择 ${_draft.happyEightCount} 个号码'
+                                    ? '至少选择 ${_draft.happyEightCount} 个号码，超出按复式计算'
                                     : '至少选择 ${_kind.primaryCount} 个号码',
                                 max: _kind.primaryMax,
                                 selection: _draft.primary,
@@ -237,9 +237,7 @@ class _BettingSimulatorScreenState extends State<BettingSimulatorScreen> {
                                     _kind == SimulationLottery.doubleColorBall
                                         ? AppColors.danger
                                         : _blue,
-                                limit: _kind == SimulationLottery.happyEight
-                                    ? _draft.happyEightCount
-                                    : null,
+                                limit: null,
                               ),
                             ),
                             if (_kind.secondaryCount > 0) ...[
@@ -599,6 +597,7 @@ class _BettingSimulatorScreenState extends State<BettingSimulatorScreen> {
           return Wrap(spacing: spacing, runSpacing: 14, children: [
             for (var number = 1; number <= max; number++)
               SizedBox(
+                key: ValueKey('pick-${_kind.name}-$number'),
                 width: size,
                 height: size,
                 child: _ball(

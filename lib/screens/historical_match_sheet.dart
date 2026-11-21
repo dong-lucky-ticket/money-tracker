@@ -11,6 +11,7 @@ import '../services/happy_eight_repository.dart';
 import '../services/seven_star_repository.dart';
 import '../services/super_lotto_repository.dart';
 import '../theme/app_colors.dart';
+import '../utils/simulation_prize_match.dart';
 
 class _HistoricalDraw {
   final String issue;
@@ -33,6 +34,7 @@ class HistoricalMatchSheet extends StatefulWidget {
 
 class _HistoricalMatchSheetState extends State<HistoricalMatchSheet> {
   static const _blue = Color(0xFF1D67D4);
+  static const _summaryHighlight = Color(0xFFE5737A);
   List<_HistoricalDraw> _draws = const [];
   bool _loading = true;
   bool _winnersOnly = false;
@@ -97,34 +99,26 @@ class _HistoricalMatchSheetState extends State<HistoricalMatchSheet> {
   List<int> _numbers(List<String> values) =>
       values.map((value) => int.tryParse(value) ?? -1).toList();
 
-  int _primaryHits(_HistoricalDraw draw) {
-    if (widget.ticket.lottery == SimulationLottery.sevenStar) {
-      return List.generate(7, (index) => index)
-          .where((index) => widget.ticket.primary[index] == draw.primary[index])
-          .length;
-    }
-    return widget.ticket.primary
-        .toSet()
-        .intersection(draw.primary.toSet())
-        .length;
-  }
+  String? _prizeLabel(_HistoricalDraw draw) => simulationPrizeLabel(
+        ticket: widget.ticket,
+        primaryDraw: draw.primary,
+        secondaryDraw: draw.secondary,
+      );
 
-  int _secondaryHits(_HistoricalDraw draw) => widget.ticket.secondary
-      .toSet()
-      .intersection(draw.secondary.toSet())
-      .length;
-
-  bool _hasHits(_HistoricalDraw draw) =>
-      _primaryHits(draw) + _secondaryHits(draw) > 0;
-
-  List<_HistoricalDraw> get _visibleDraws =>
-      _draws.where((draw) => !_winnersOnly || _hasHits(draw)).toList();
+  List<_HistoricalDraw> get _visibleDraws => _draws
+      .where((draw) => !_winnersOnly || _prizeLabel(draw) != null)
+      .toList();
 
   @override
   Widget build(BuildContext context) {
     final ticket = widget.ticket;
     final visible = _visibleDraws;
-    final wins = _draws.where(_hasHits).length;
+    final winningDraws =
+        _draws.map((draw) => _prizeLabel(draw)).whereType<String>().toList();
+    final bestPrize = winningDraws.isEmpty
+        ? null
+        : winningDraws.reduce((best, current) =>
+            _prizeRank(current) < _prizeRank(best) ? current : best);
     return FractionallySizedBox(
       heightFactor: .94,
       child: Material(
@@ -206,7 +200,7 @@ class _HistoricalMatchSheetState extends State<HistoricalMatchSheet> {
                 ]),
               ),
               const Spacer(),
-              const Text('只看命中期次',
+              const Text('只显示中奖期次',
                   style: TextStyle(color: AppColors.textSecondary)),
               Switch.adaptive(
                   value: _winnersOnly,
@@ -218,12 +212,33 @@ class _HistoricalMatchSheetState extends State<HistoricalMatchSheet> {
             width: double.infinity,
             color: const Color(0xFFF3F5F7),
             padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 13),
-            child: Text(
-                _loading
-                    ? '正在读取本地开奖记录…'
-                    : '已匹配${_draws.length}期 · ${wins == 0 ? '暂无命中号码' : '有号码命中 $wins 期'}',
-                style: const TextStyle(
-                    color: AppColors.textSecondary, fontSize: 14)),
+            child: _loading
+                ? const Text('正在读取本地开奖记录…',
+                    style:
+                        TextStyle(color: AppColors.textSecondary, fontSize: 14))
+                : _draws.isEmpty
+                    ? const Text('暂无本地开奖记录',
+                        style: TextStyle(
+                            color: AppColors.textSecondary, fontSize: 14))
+                    : Text.rich(
+                        TextSpan(
+                          style: const TextStyle(
+                              color: AppColors.textSecondary, fontSize: 14),
+                          children: [
+                            TextSpan(text: '已匹配${_draws.length}期 · '),
+                            TextSpan(
+                              text: bestPrize == null
+                                  ? '最高未中奖'
+                                  : bestPrize.startsWith('中')
+                                      ? '最高$bestPrize'
+                                      : '最高中$bestPrize',
+                              style: const TextStyle(
+                                  color: _summaryHighlight,
+                                  fontWeight: FontWeight.w600),
+                            ),
+                          ],
+                        ),
+                      ),
           ),
           Expanded(
               child: _loading
@@ -231,7 +246,7 @@ class _HistoricalMatchSheetState extends State<HistoricalMatchSheet> {
                   : _draws.isEmpty
                       ? _empty('暂无本地开奖记录', '先在开奖页面同步该彩种的历史数据')
                       : visible.isEmpty
-                          ? _empty('没有符合条件的期次', '关闭“只看命中期次”查看全部结果')
+                          ? _empty('没有中奖期次', '关闭“只显示中奖期次”查看全部结果')
                           : ListView.separated(
                               padding: const EdgeInsets.fromLTRB(20, 4, 20, 20),
                               itemCount: visible.length,
@@ -257,6 +272,14 @@ class _HistoricalMatchSheetState extends State<HistoricalMatchSheet> {
     );
   }
 
+  int _prizeRank(String label) {
+    if (label.startsWith('中')) {
+      return -int.parse(label.substring(1, label.length - 1));
+    }
+    const ranks = {'一': 1, '二': 2, '三': 3, '四': 4, '五': 5, '六': 6, '七': 7};
+    return ranks[label.substring(0, 1)] ?? 99;
+  }
+
   Widget _numberGroup(String label, List<int> numbers, Color color) => Row(
         crossAxisAlignment: CrossAxisAlignment.center,
         children: [
@@ -274,7 +297,7 @@ class _HistoricalMatchSheetState extends State<HistoricalMatchSheet> {
       bool sevenStar = false,
       _HistoricalDraw? draw,
       List<int>? selected}) {
-    return Wrap(spacing: 7, runSpacing: 7, children: [
+    final List<Widget> balls = [
       for (var index = 0; index < numbers.length; index++)
         _ball(numbers[index], color,
             hit: draw != null &&
@@ -282,16 +305,45 @@ class _HistoricalMatchSheetState extends State<HistoricalMatchSheet> {
                     ? index < widget.ticket.primary.length &&
                         widget.ticket.primary[index] == numbers[index]
                     : (selected ?? widget.ticket.primary)
-                        .contains(numbers[index])),
-            compact: draw != null),
-    ]);
+                        .contains(numbers[index]))),
+    ];
+    final defaultSize = draw == null ? 37.0 : 34.0;
+    const minSize = 24.0;
+    const spacing = 5.0;
+    return LayoutBuilder(builder: (context, constraints) {
+      final requiredWidth = numbers.length * minSize +
+          (numbers.isEmpty ? 0 : (numbers.length - 1) * spacing);
+      if (constraints.maxWidth.isFinite &&
+          constraints.maxWidth >= requiredWidth) {
+        final size = numbers.isEmpty
+            ? defaultSize
+            : (constraints.maxWidth - (numbers.length - 1) * spacing) /
+                numbers.length;
+        return Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            for (var index = 0; index < numbers.length; index++) ...[
+              if (index > 0) const SizedBox(width: spacing),
+              _ball(numbers[index], color,
+                  hit: draw != null &&
+                      (sevenStar
+                          ? index < widget.ticket.primary.length &&
+                              widget.ticket.primary[index] == numbers[index]
+                          : (selected ?? widget.ticket.primary)
+                              .contains(numbers[index])),
+                  size: size.clamp(minSize, defaultSize)),
+            ],
+          ],
+        );
+      }
+      return Wrap(spacing: 7, runSpacing: 7, children: balls);
+    });
   }
 
-  Widget _ball(int number, Color color,
-          {bool hit = false, bool compact = false}) =>
+  Widget _ball(int number, Color color, {bool hit = false, double size = 37}) =>
       Container(
-        width: compact ? 34 : 37,
-        height: compact ? 34 : 37,
+        width: size,
+        height: size,
         alignment: Alignment.center,
         decoration: BoxDecoration(
             shape: BoxShape.circle,
@@ -301,14 +353,17 @@ class _HistoricalMatchSheetState extends State<HistoricalMatchSheet> {
         child: Text(number.toString().padLeft(2, '0'),
             style: TextStyle(
                 color: hit ? Colors.white : color,
-                fontSize: compact ? 13 : 14,
+                fontSize: size < 30
+                    ? size * .42
+                    : size < 35
+                        ? 13
+                        : 14,
                 fontWeight: hit ? FontWeight.w700 : FontWeight.w500)),
       );
 
   Widget _drawRow(_HistoricalDraw draw) {
-    final primary = _primaryHits(draw);
-    final secondary = _secondaryHits(draw);
-    final winning = primary + secondary > 0;
+    final prize = _prizeLabel(draw);
+    final winning = prize != null;
     final lottery = widget.ticket.lottery;
     final primaryColor = lottery == SimulationLottery.doubleColorBall
         ? AppColors.danger
@@ -324,35 +379,61 @@ class _HistoricalMatchSheetState extends State<HistoricalMatchSheet> {
               style:
                   const TextStyle(color: AppColors.textTertiary, fontSize: 12)),
           const Spacer(),
-          Text(
-              lottery == SimulationLottery.sevenStar
-                  ? '命中 $primary/7 位'
-                  : lottery == SimulationLottery.happyEight
-                      ? '命中 $primary 个'
-                      : '前区 $primary/${lottery.primaryCount} · 后区 $secondary/${lottery.secondaryCount}',
+          Text(prize ?? '未中奖',
               style: TextStyle(
-                  fontSize: 12,
-                  color: winning
-                      ? const Color(0xFFD76B68)
-                      : AppColors.textTertiary,
-                  fontWeight: winning ? FontWeight.w600 : FontWeight.normal)),
+                  fontSize: winning ? 13 : 12,
+                  color: winning ? _summaryHighlight : AppColors.textTertiary,
+                  fontWeight: winning ? FontWeight.w700 : FontWeight.normal)),
         ]),
         const SizedBox(height: 11),
         if (lottery == SimulationLottery.sevenStar)
           _balls(draw.primary, sevenStar: true, draw: draw)
-        else ...[
-          _balls(draw.primary,
-              color: primaryColor, draw: draw, selected: widget.ticket.primary),
-          if (draw.secondary.isNotEmpty) ...[
-            const SizedBox(height: 8),
-            _balls(draw.secondary,
-                color: const Color(0xFFE7A51B),
-                draw: draw,
-                selected: widget.ticket.secondary),
-          ],
-        ],
+        else
+          _drawBalls(draw, primaryColor),
       ]),
     );
+  }
+
+  Widget _drawBalls(_HistoricalDraw draw, Color primaryColor) {
+    const spacing = 5.0;
+    const groupSpacing = 12.0;
+    const minSize = 24.0;
+    const defaultSize = 34.0;
+    final balls = <(int, Color, bool)>[
+      for (final number in draw.primary)
+        (number, primaryColor, widget.ticket.primary.contains(number)),
+      for (final number in draw.secondary)
+        (
+          number,
+          const Color(0xFFE7A51B),
+          widget.ticket.secondary.contains(number)
+        ),
+    ];
+    final gaps = (balls.length > 1 ? (balls.length - 1) * spacing : 0) +
+        (draw.primary.isNotEmpty && draw.secondary.isNotEmpty
+            ? groupSpacing - spacing
+            : 0);
+
+    return LayoutBuilder(builder: (context, constraints) {
+      if (balls.isEmpty) return const SizedBox.shrink();
+      final availableSize = (constraints.maxWidth - gaps) / balls.length;
+      final useSingleLine = availableSize >= minSize;
+      final size = useSingleLine
+          ? availableSize.clamp(minSize, defaultSize)
+          : defaultSize;
+      final children = <Widget>[
+        for (var index = 0; index < balls.length; index++) ...[
+          if (index > 0)
+            SizedBox(
+                width: index == draw.primary.length ? groupSpacing : spacing),
+          _ball(balls[index].$1, balls[index].$2,
+              hit: balls[index].$3, size: size),
+        ],
+      ];
+      return useSingleLine
+          ? Row(mainAxisSize: MainAxisSize.min, children: children)
+          : Wrap(spacing: spacing, runSpacing: 7, children: children);
+    });
   }
 
   Widget _empty(String title, String subtitle) => Center(

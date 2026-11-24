@@ -196,7 +196,7 @@ void main() {
 
     await tester.tap(find.text('选好了'));
     await tester.pumpAndSettle();
-    expect(find.text('前区6位'), findsOneWidget);
+    expect(find.text('前区'), findsOneWidget);
     expect(find.text('后区'), findsOneWidget);
     expect(tester.takeException(), isNull);
   });

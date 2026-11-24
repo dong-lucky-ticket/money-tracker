@@ -26,6 +26,9 @@ void main() {
       expect(find.text('奖级与中奖条件'), findsOneWidget);
       expect(find.text('最高500万元'), findsOneWidget);
       expect(find.text('4.5元'), findsOneWidget);
+      await tester.scrollUntilVisible(
+          find.text('https://www.cwl.gov.cn/fcpz/yxjs/kl8/'), 300,
+          scrollable: find.byType(Scrollable).first);
       expect(
           find.text('https://www.cwl.gov.cn/fcpz/yxjs/kl8/'), findsOneWidget);
     }

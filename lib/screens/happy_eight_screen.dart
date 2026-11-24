@@ -232,20 +232,29 @@ class _HappyEightScreenState extends State<HappyEightScreen> {
         physics: const AlwaysScrollableScrollPhysics(),
         children: [
           Row(children: [
-            const Expanded(
-                child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                  Text('福彩快乐8',
-                      style: TextStyle(
-                          fontSize: 20,
-                          fontWeight: FontWeight.bold,
-                          color: AppColors.textPrimary)),
-                  SizedBox(height: 4),
-                  Text('中国福彩网历史数据',
-                      style: TextStyle(
-                          fontSize: 12, color: AppColors.textTertiary)),
-                ])),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text(
+                    '福彩快乐8',
+                    style: TextStyle(
+                      fontSize: 20,
+                      fontWeight: FontWeight.bold,
+                      color: AppColors.textPrimary,
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    '中国福彩网历史数据（${_draws.length}条）',
+                    style: const TextStyle(
+                      fontSize: 12,
+                      color: AppColors.textTertiary,
+                    ),
+                  ),
+                ],
+              ),
+            ),
             PopupMenuButton<int>(
               enabled: !_loading,
               tooltip: '选择显示范围',

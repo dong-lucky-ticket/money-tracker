@@ -6,10 +6,12 @@ import 'package:uuid/uuid.dart';
 import '../models/lottery_simulation.dart';
 import '../models/double_color_ball_draw.dart';
 import '../models/happy_eight_draw.dart';
+import '../models/qilecai_draw.dart';
 import '../models/seven_star_draw.dart';
 import '../models/super_lotto_draw.dart';
 import '../services/double_color_ball_repository.dart';
 import '../services/happy_eight_repository.dart';
+import '../services/qilecai_repository.dart';
 import '../services/lottery_simulation_repository.dart';
 import '../services/seven_star_repository.dart';
 import '../services/super_lotto_repository.dart';
@@ -109,6 +111,11 @@ class _BettingSimulatorScreenState extends State<BettingSimulatorScreen> {
           DateTime.sunday
         },
       SimulationLottery.happyEight => {1, 2, 3, 4, 5, 6, 7},
+      SimulationLottery.qilecai => {
+          DateTime.monday,
+          DateTime.wednesday,
+          DateTime.friday
+        },
     };
     final today = DateTime.now();
     var nextDraw = DateTime(today.year, today.month, today.day);
@@ -235,10 +242,12 @@ class _BettingSimulatorScreenState extends State<BettingSimulatorScreen> {
                                     : '至少选择 ${_kind.primaryCount} 个号码',
                                 max: _kind.primaryMax,
                                 selection: _draft.primary,
-                                color:
-                                    _kind == SimulationLottery.doubleColorBall
-                                        ? AppColors.danger
-                                        : _blue,
+                                color: (_kind ==
+                                            SimulationLottery
+                                                .doubleColorBall ||
+                                        _kind == SimulationLottery.qilecai)
+                                    ? AppColors.danger
+                                    : _blue,
                                 limit: null,
                               ),
                             ),
@@ -419,6 +428,10 @@ class _BettingSimulatorScreenState extends State<BettingSimulatorScreen> {
           draws = (await HappyEightRepository().loadRecent(limit: 10))
               .map((draw) => _mapHappyEightDraw(draw))
               .toList();
+        case SimulationLottery.qilecai:
+          draws = (await QilecaiRepository().loadRecent(limit: 10))
+              .map((draw) => _mapQilecaiDraw(draw))
+              .toList();
       }
       if (!mounted || kind != _kind) return;
       setState(() {
@@ -445,6 +458,9 @@ class _BettingSimulatorScreenState extends State<BettingSimulatorScreen> {
 
   _RecentDraw _mapHappyEightDraw(HappyEightDraw draw) =>
       _RecentDraw(draw.issue, draw.numbers);
+
+  _RecentDraw _mapQilecaiDraw(QilecaiDraw draw) =>
+      _RecentDraw(draw.issue, draw.redNumbers, [draw.blueNumber]);
 
   Widget _buildRecentDraws() {
     final visible = _recentDrawsExpanded
@@ -486,10 +502,14 @@ class _BettingSimulatorScreenState extends State<BettingSimulatorScreen> {
 
   Widget _recentDrawRow(_RecentDraw draw, int index) {
     final latest = index == 0;
-    final primaryColor =
-        _kind == SimulationLottery.doubleColorBall ? AppColors.danger : _blue;
-    final secondaryColor =
-        _kind == SimulationLottery.doubleColorBall ? _blue : AppColors.warning;
+    final primaryColor = _kind == SimulationLottery.doubleColorBall ||
+            _kind == SimulationLottery.qilecai
+        ? AppColors.danger
+        : _blue;
+    final secondaryColor = _kind == SimulationLottery.doubleColorBall ||
+            _kind == SimulationLottery.qilecai
+        ? _blue
+        : AppColors.warning;
     return Material(
       color: latest ? const Color(0xFFEFF2F5) : const Color(0xFFE9EDF1),
       child: InkWell(

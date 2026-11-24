@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../../screens/double_color_ball_screen.dart';
 import '../../screens/happy_eight_screen.dart';
 import '../../screens/lottery_screen.dart';
+import '../../screens/qilecai_screen.dart';
 import '../../screens/seven_star_screen.dart';
 import '../../theme/app_colors.dart';
 import 'settings_section.dart';
@@ -38,7 +39,6 @@ class LotteryManagementSection extends StatelessWidget {
               iconColor: Colors.redAccent,
               title: '福彩双色球',
               showArrow: true,
-              isLast: true,
               onTap: () => _openPage(context, const DoubleColorBallScreen()),
             ),
             SettingsItem(
@@ -47,6 +47,14 @@ class LotteryManagementSection extends StatelessWidget {
               title: '福彩快乐8',
               showArrow: true,
               onTap: () => _openPage(context, const HappyEightScreen()),
+            ),
+            SettingsItem(
+              icon: Icons.confirmation_number_outlined,
+              iconColor: Colors.purpleAccent,
+              title: '福彩七乐彩',
+              showArrow: true,
+              isLast: true,
+              onTap: () => _openPage(context, const QilecaiScreen()),
             ),
           ],
         ),

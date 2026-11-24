@@ -1,23 +1,26 @@
 import 'dart:math';
 
-enum SimulationLottery { superLotto, doubleColorBall, sevenStar, happyEight }
+enum SimulationLottery { superLotto, doubleColorBall, sevenStar, happyEight, qilecai }
 
 extension SimulationLotteryInfo on SimulationLottery {
-  String get label => const ['体彩大乐透', '福彩双色球', '体彩七星彩', '福彩快乐8'][index];
-  String get shortLabel => const ['大乐透', '双色球', '七星彩', '快乐8'][index];
-  int get primaryMax => const [35, 33, 10, 80][index];
-  int get primaryCount => const [5, 6, 6, 10][index];
-  int get secondaryMax => const [12, 16, 9, 0][index];
-  int get secondaryCount => const [2, 1, 1, 0][index];
-  String get primaryLabel => this == SimulationLottery.doubleColorBall
-      ? '红球'
-      : this == SimulationLottery.happyEight
-          ? '号码'
-          : this == SimulationLottery.sevenStar
-              ? '前区'
-              : '前区';
-  String get secondaryLabel =>
-      this == SimulationLottery.doubleColorBall ? '蓝球' : '后区';
+  String get label => const ['体彩大乐透', '福彩双色球', '体彩七星彩', '福彩快乐8', '福彩七乐彩'][index];
+  String get shortLabel => const ['大乐透', '双色球', '七星彩', '快乐8', '七乐彩'][index];
+  int get primaryMax => const [35, 33, 10, 80, 30][index];
+  int get primaryCount => const [5, 6, 6, 10, 7][index];
+  int get secondaryMax => const [12, 16, 9, 0, 0][index];
+  int get secondaryCount => const [2, 1, 1, 0, 0][index];
+  String get primaryLabel {
+    if (this == SimulationLottery.doubleColorBall) return '红球';
+    if (this == SimulationLottery.happyEight) return '号码';
+    if (this == SimulationLottery.qilecai) return '基本号码';
+    return '前区';
+  }
+
+  String get secondaryLabel {
+    if (this == SimulationLottery.doubleColorBall) return '蓝球';
+    if (this == SimulationLottery.qilecai) return '特别号码';
+    return '后区';
+  }
 }
 
 int simulationCombinations(int n, int k) {

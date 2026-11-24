@@ -20,6 +20,47 @@ String? simulationPrizeLabel({
     return null;
   }
 
+  if (ticket.lottery == SimulationLottery.qilecai) {
+    if (!ticket.isValid || primaryDraw.length < 7 || secondaryDraw.isEmpty) {
+      return null;
+    }
+    final baseHits = ticket.primary
+        .toSet()
+        .intersection(primaryDraw.take(7).toSet())
+        .length;
+    final specialHit = ticket.primary.contains(secondaryDraw.single) ? 1 : 0;
+    final frontCounts = _possibleHits(
+        ticket.primary.length, baseHits, ticket.lottery.primaryCount);
+    const tiers = [
+      [
+        [7, 0]
+      ],
+      [
+        [6, 1]
+      ],
+      [
+        [6, 0]
+      ],
+      [
+        [5, 1]
+      ],
+      [
+        [5, 0]
+      ],
+      [
+        [4, 1]
+      ],
+      [
+        [4, 0]
+      ],
+    ];
+    final tier = _tierIndex(
+        tiers,
+        (condition) =>
+            frontCounts.contains(condition[0]) &&
+            (condition[1] == 1 ? specialHit == 1 : specialHit == 0));
+    return _tierLabel(tier);
+  }
   if (ticket.lottery == SimulationLottery.sevenStar) {
     final drawnBackDigit = secondaryDraw.isNotEmpty
         ? secondaryDraw.first

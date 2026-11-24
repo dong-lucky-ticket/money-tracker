@@ -6,6 +6,7 @@ import '../models/category_group.dart';
 import '../models/data_sync_progress.dart';
 import '../models/double_color_ball_draw.dart';
 import '../models/happy_eight_draw.dart';
+import '../models/qilecai_draw.dart';
 import '../models/record.dart';
 import '../models/seven_star_draw.dart';
 import '../models/super_lotto_draw.dart';
@@ -85,6 +86,12 @@ class AppBootstrapService {
     }
     if (!Hive.isAdapterRegistered(10)) {
       Hive.registerAdapter(HappyEightPrizeTierAdapter());
+    }
+    if (!Hive.isAdapterRegistered(11)) {
+      Hive.registerAdapter(QilecaiDrawAdapter());
+    }
+    if (!Hive.isAdapterRegistered(12)) {
+      Hive.registerAdapter(QilecaiPrizeTierAdapter());
     }
   }
 }

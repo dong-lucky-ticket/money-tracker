@@ -3,11 +3,13 @@ import 'package:intl/intl.dart';
 
 import '../models/double_color_ball_draw.dart';
 import '../models/happy_eight_draw.dart';
+import '../models/qilecai_draw.dart';
 import '../models/lottery_simulation.dart';
 import '../models/seven_star_draw.dart';
 import '../models/super_lotto_draw.dart';
 import '../services/double_color_ball_repository.dart';
 import '../services/happy_eight_repository.dart';
+import '../services/qilecai_repository.dart';
 import '../services/seven_star_repository.dart';
 import '../services/super_lotto_repository.dart';
 import '../theme/app_colors.dart';
@@ -65,6 +67,9 @@ class _HistoricalMatchSheetState extends State<HistoricalMatchSheet> {
         case SimulationLottery.happyEight:
           final items = await HappyEightRepository().loadRecent(limit: _limit);
           draws = items.map(_happyEight).toList();
+        case SimulationLottery.qilecai:
+          final items = await QilecaiRepository().loadRecent(limit: _limit);
+          draws = items.map(_qilecai).toList();
       }
       if (mounted) {
         setState(() {
@@ -100,6 +105,11 @@ class _HistoricalMatchSheetState extends State<HistoricalMatchSheet> {
       );
   _HistoricalDraw _happyEight(HappyEightDraw draw) =>
       _HistoricalDraw(draw.issue, draw.publishDate, _numbers(draw.numbers));
+  _HistoricalDraw _qilecai(QilecaiDraw draw) => _HistoricalDraw(
+      draw.issue,
+      draw.publishDate,
+      _numbers(draw.redNumbers),
+      _numbers([draw.blueNumber]));
   List<int> _numbers(List<String> values) =>
       values.map((value) => int.tryParse(value) ?? -1).toList();
 
@@ -407,7 +417,8 @@ class _HistoricalMatchSheetState extends State<HistoricalMatchSheet> {
     final prize = _prizeLabel(draw);
     final winning = prize != null;
     final lottery = widget.ticket.lottery;
-    final primaryColor = lottery == SimulationLottery.doubleColorBall
+    final primaryColor = lottery == SimulationLottery.doubleColorBall ||
+            lottery == SimulationLottery.qilecai
         ? AppColors.danger
         : const Color(0xFF4A9BD6);
     return Padding(
@@ -448,7 +459,9 @@ class _HistoricalMatchSheetState extends State<HistoricalMatchSheet> {
         (
           number,
           const Color(0xFFE7A51B),
-          widget.ticket.secondary.contains(number)
+          widget.ticket.lottery == SimulationLottery.qilecai
+              ? widget.ticket.primary.contains(number)
+              : widget.ticket.secondary.contains(number)
         ),
     ];
     final gaps = (balls.length > 1 ? (balls.length - 1) * spacing : 0) +

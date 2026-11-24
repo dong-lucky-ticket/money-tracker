@@ -961,8 +961,10 @@ class _BettingSimulatorScreenState extends State<BettingSimulatorScreen> {
                           child: Stack(
                             clipBehavior: Clip.none,
                             children: [
-                              Row(
-                                crossAxisAlignment: CrossAxisAlignment.center,
+                              Padding(
+                                padding: const EdgeInsets.only(top: 23),
+                                child: Row(
+                                  crossAxisAlignment: CrossAxisAlignment.center,
                                 children: [
                                   Container(
                                     width: 24,
@@ -1014,12 +1016,8 @@ class _BettingSimulatorScreenState extends State<BettingSimulatorScreen> {
                                       child: Padding(
                                         padding: const EdgeInsets.symmetric(
                                             horizontal: 6, vertical: 2),
-                                        child: Padding(
-                                          padding:
-                                              const EdgeInsets.only(top: 23),
-                                          child: SimulationTicketNumbers(
-                                              ticket: ticket),
-                                        ),
+                                        child: SimulationTicketNumbers(
+                                            ticket: ticket),
                                       ),
                                     ),
                                   ),
@@ -1034,7 +1032,8 @@ class _BettingSimulatorScreenState extends State<BettingSimulatorScreen> {
                                         color: AppColors.textTertiary,
                                         size: 22),
                                   ),
-                                ],
+                                  ],
+                                ),
                               ),
                               Positioned(
                                 top: 0,

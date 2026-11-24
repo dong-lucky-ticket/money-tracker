@@ -20,7 +20,9 @@ class SimulationTicketNumbers extends StatelessWidget {
               ? lottery.primaryLabel
               : lottery == SimulationLottery.happyEight
                   ? happyEightPlayLabel(ticket.happyEightCount)
-                  : lottery.primaryLabel,
+                  : lottery == SimulationLottery.qilecai
+                      ? '基本'
+                      : lottery.primaryLabel,
           ticket.primary,
           lottery == SimulationLottery.doubleColorBall ||
                   lottery == SimulationLottery.qilecai

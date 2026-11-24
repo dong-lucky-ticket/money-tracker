@@ -452,14 +452,18 @@ class _QilecaiScreenState extends State<QilecaiScreen> {
               children: [
                 Row(
                   children: [
-                    Text(
-                      '第${draw.issue}期',
-                      style: const TextStyle(
-                        fontWeight: FontWeight.bold,
-                        color: AppColors.textPrimary,
+                    Expanded(
+                      child: Text(
+                        '第${draw.issue}期',
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(
+                          fontWeight: FontWeight.bold,
+                          color: AppColors.textPrimary,
+                        ),
                       ),
                     ),
-                    const Spacer(),
+                    const SizedBox(width: 8),
                     Text(
                       DateFormat('yyyy-MM-dd').format(draw.publishDate),
                       style: const TextStyle(

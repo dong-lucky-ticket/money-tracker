@@ -19,13 +19,13 @@ class BettingSimulationRecordsScreen extends StatefulWidget {
 
 class _BettingSimulationRecordsScreenState
     extends State<BettingSimulationRecordsScreen> {
-  static const _purple = Color(0xFF7C5CFC);
   final _repository = LotterySimulationRepository();
   List<SimulationRecord> _records = [];
   SimulationLottery? _filter;
   bool _loading = true;
   bool _deleting = false;
   String? _error;
+  final Set<String> _expandedRecordIds = {};
 
   List<SimulationRecord> get _visibleRecords {
     final records = _records
@@ -219,29 +219,36 @@ class _BettingSimulationRecordsScreenState
     );
   }
 
-  Color _lotteryColor(SimulationLottery lottery) => switch (lottery) {
-        SimulationLottery.superLotto => AppColors.warning,
-        SimulationLottery.doubleColorBall => AppColors.danger,
-        SimulationLottery.sevenStar => AppColors.primary,
-        SimulationLottery.happyEight => AppColors.success,
-        SimulationLottery.qilecai => _purple,
+  String _lotteryAsset(SimulationLottery lottery) => switch (lottery) {
+        SimulationLottery.superLotto => 'assets/lottery/dlt.jpg',
+        SimulationLottery.doubleColorBall => 'assets/lottery/block-ssq-m.png',
+        SimulationLottery.sevenStar => 'assets/lottery/qxc.jpg',
+        SimulationLottery.happyEight => 'assets/lottery/block-kl8-m.png',
+        SimulationLottery.qilecai => 'assets/lottery/block-qlc-m.png',
       };
 
-  Widget _lotteryBadge(SimulationLottery lottery) {
-    final color = _lotteryColor(lottery);
-    return Container(
-      width: 42,
-      height: 42,
-      alignment: Alignment.center,
-      decoration: BoxDecoration(
-        color: color.withOpacity(.12),
-        borderRadius: BorderRadius.circular(12),
-      ),
-      child: Text(lottery.shortLabel,
-          style: TextStyle(
-              color: color, fontSize: 12, fontWeight: FontWeight.w700)),
-    );
-  }
+  Widget _lotteryIcon(SimulationLottery lottery) => Container(
+        width: 44,
+        height: 44,
+        padding: const EdgeInsets.all(4),
+        clipBehavior: Clip.antiAlias,
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: AppColors.border),
+        ),
+        child: Image.asset(
+          _lotteryAsset(lottery),
+          fit: BoxFit.contain,
+          errorBuilder: (_, __, ___) => Center(
+            child: Text(lottery.shortLabel,
+                style: const TextStyle(
+                    color: AppColors.primary,
+                    fontSize: 12,
+                    fontWeight: FontWeight.w700)),
+          ),
+        ),
+      );
 
   Widget _ticketBadge(int index) => Container(
         width: 22,
@@ -293,103 +300,127 @@ class _BettingSimulationRecordsScreenState
     );
   }
 
+  void _toggleExpand(String id) {
+    setState(() {
+      if (!_expandedRecordIds.add(id)) {
+        _expandedRecordIds.remove(id);
+      }
+    });
+  }
+
   Widget _recordCard(SimulationRecord record) {
     final date = DateFormat('yyyy-MM-dd HH:mm')
         .format(record.createdAt.toLocal());
+    final expanded = _expandedRecordIds.contains(record.id);
     return Material(
       color: Colors.white,
       borderRadius: BorderRadius.circular(16),
       clipBehavior: Clip.antiAlias,
-      child: Theme(
-        data: Theme.of(context).copyWith(dividerColor: Colors.transparent),
-        child: ExpansionTile(
-          key: PageStorageKey(record.id),
-          maintainState: true,
-          shape: const Border(),
-          collapsedShape: const Border(),
-          tilePadding:
-              const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-          childrenPadding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
-          iconColor: AppColors.textTertiary,
-          collapsedIconColor: AppColors.textTertiary,
-          leading: _lotteryBadge(record.lottery),
-          title: Row(children: [
-            Expanded(
-              child: Text(record.lottery.label,
-                  style: const TextStyle(
-                      fontSize: 15, fontWeight: FontWeight.w700)),
-            ),
-            Text('¥${record.amount}',
-                style: const TextStyle(
-                    color: AppColors.danger,
-                    fontSize: 16,
-                    fontWeight: FontWeight.w700)),
-          ]),
-          subtitle: Padding(
-            padding: const EdgeInsets.only(top: 4),
+      child: Column(children: [
+        InkWell(
+          onTap: () => _toggleExpand(record.id),
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(16, 12, 12, 10),
             child: Row(children: [
+              _lotteryIcon(record.lottery),
+              const SizedBox(width: 12),
               Expanded(
-                child: Text(date,
-                    style: const TextStyle(
-                        color: AppColors.textTertiary, fontSize: 12)),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(record.lottery.label,
+                        style: const TextStyle(
+                            fontSize: 15, fontWeight: FontWeight.w700)),
+                    const SizedBox(height: 4),
+                    Text(date,
+                        style: const TextStyle(
+                            color: AppColors.textTertiary, fontSize: 12)),
+                    const SizedBox(height: 2),
+                    Text(
+                        '${record.lines}注 · ${record.multiple}倍${record.additional ? ' · 追加' : ''}',
+                        style: const TextStyle(
+                            color: AppColors.textSecondary,
+                            fontSize: 12,
+                            fontWeight: FontWeight.w600)),
+                  ],
+                ),
               ),
-              Text(
-                  '${record.lines}注 · ${record.multiple}倍${record.additional ? ' · 追加' : ''}',
-                  style: const TextStyle(
-                      color: AppColors.textSecondary,
-                      fontSize: 12,
-                      fontWeight: FontWeight.w600)),
+              const SizedBox(width: 8),
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.end,
+                children: [
+                  Text('¥${record.amount}',
+                      style: const TextStyle(
+                          color: AppColors.danger,
+                          fontSize: 16,
+                          fontWeight: FontWeight.w700)),
+                  const SizedBox(height: 4),
+                  Icon(
+                    expanded ? Icons.expand_less : Icons.expand_more,
+                    size: 20,
+                    color: AppColors.textTertiary,
+                  ),
+                ],
+              ),
             ]),
           ),
-          children: [
-            const Divider(height: 1, color: AppColors.divider),
-            const SizedBox(height: 12),
-            for (var i = 0; i < record.tickets.length; i++) ...[
-              if (i > 0) const SizedBox(height: 8),
-              _ticketCard(record, i),
+        ),
+        Padding(
+          padding: const EdgeInsets.fromLTRB(16, 2, 16, 12),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.end,
+            children: [
+              FilledButton.icon(
+                onPressed: _deleting
+                    ? null
+                    : () => _openHistoricalMatch(record),
+                style: FilledButton.styleFrom(
+                  backgroundColor: AppColors.primary,
+                  foregroundColor: Colors.white,
+                  padding: const EdgeInsets.symmetric(
+                      horizontal: 14, vertical: 8),
+                  visualDensity: VisualDensity.compact,
+                  tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                  shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(10)),
+                ),
+                icon: const Icon(Icons.manage_search, size: 16),
+                label: const Text('历史中奖匹配'),
+              ),
+              const SizedBox(width: 8),
+              OutlinedButton.icon(
+                onPressed: _deleting ? null : () => _delete([record]),
+                style: OutlinedButton.styleFrom(
+                  foregroundColor: AppColors.danger,
+                  side: const BorderSide(color: AppColors.danger),
+                  padding: const EdgeInsets.symmetric(
+                      horizontal: 14, vertical: 8),
+                  visualDensity: VisualDensity.compact,
+                  tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                  shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(10)),
+                ),
+                icon: const Icon(Icons.delete_outline, size: 16),
+                label: const Text('删除记录'),
+              ),
             ],
-            const SizedBox(height: 12),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.end,
+          ),
+        ),
+        if (expanded) ...[
+          const Divider(height: 1, color: AppColors.divider),
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 12, 16, 12),
+            child: Column(
               children: [
-                FilledButton.icon(
-                  onPressed: _deleting
-                      ? null
-                      : () => _openHistoricalMatch(record),
-                  style: FilledButton.styleFrom(
-                    backgroundColor: AppColors.primary,
-                    foregroundColor: Colors.white,
-                    padding: const EdgeInsets.symmetric(
-                        horizontal: 14, vertical: 8),
-                    visualDensity: VisualDensity.compact,
-                    tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                    shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(10)),
-                  ),
-                  icon: const Icon(Icons.manage_search, size: 16),
-                  label: const Text('历史中奖匹配'),
-                ),
-                const SizedBox(width: 8),
-                OutlinedButton.icon(
-                  onPressed: _deleting ? null : () => _delete([record]),
-                  style: OutlinedButton.styleFrom(
-                    foregroundColor: AppColors.danger,
-                    side: const BorderSide(color: AppColors.danger),
-                    padding: const EdgeInsets.symmetric(
-                        horizontal: 14, vertical: 8),
-                    visualDensity: VisualDensity.compact,
-                    tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                    shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(10)),
-                  ),
-                  icon: const Icon(Icons.delete_outline, size: 16),
-                  label: const Text('删除记录'),
-                ),
+                for (var i = 0; i < record.tickets.length; i++) ...[
+                  if (i > 0) const SizedBox(height: 8),
+                  _ticketCard(record, i),
+                ],
               ],
             ),
-          ],
-        ),
-      ),
+          ),
+        ],
+      ]),
     );
   }
 }

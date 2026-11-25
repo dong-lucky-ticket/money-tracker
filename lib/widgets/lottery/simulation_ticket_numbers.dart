@@ -13,16 +13,30 @@ class SimulationTicketNumbers extends StatelessWidget {
     final lottery = ticket.lottery;
     final isSevenStar = lottery == SimulationLottery.sevenStar;
     if (ticket.isDanTuo) {
-      const danger = AppColors.danger;
+      final isSuperLotto = lottery == SimulationLottery.superLotto;
+      final frontColor = isSuperLotto ? AppColors.primary : AppColors.danger;
+      final backColor = isSuperLotto ? AppColors.warning : AppColors.primary;
+      final frontDanLabel = isSuperLotto ? '前胆' : '红胆';
+      final frontTuoLabel = isSuperLotto ? '前拖' : '红拖';
+      final backDanLabel = isSuperLotto ? '后胆' : '蓝胆';
+      final backTuoLabel = isSuperLotto ? '后拖' : '蓝拖';
       return Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          _row('红胆', ticket.primaryDan, danger),
-          const SizedBox(height: 6),
-          _row('红拖', ticket.primaryTuo, danger),
-          if (ticket.secondary.isNotEmpty) ...[
+          if (ticket.isPrimaryDanTuo) ...[
+            _row(frontDanLabel, ticket.primaryDan, frontColor),
             const SizedBox(height: 6),
-            _row(lottery.secondaryLabel, ticket.secondary, AppColors.primary),
+            _row(frontTuoLabel, ticket.primaryTuo, frontColor),
+          ] else
+            _row(lottery.primaryLabel, ticket.primary, frontColor),
+          if (ticket.isSecondaryDanTuo) ...[
+            const SizedBox(height: 6),
+            _row(backDanLabel, ticket.secondaryDan, backColor),
+            const SizedBox(height: 6),
+            _row(backTuoLabel, ticket.secondaryTuo, backColor),
+          ] else if (ticket.secondary.isNotEmpty) ...[
+            const SizedBox(height: 6),
+            _row(lottery.secondaryLabel, ticket.secondary, backColor),
           ],
         ],
       );

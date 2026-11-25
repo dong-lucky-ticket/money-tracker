@@ -189,7 +189,7 @@ void main() {
     await tester.tap(find.text('双色球'));
     await tester.pumpAndSettle();
 
-    await tester.tap(find.byType(DropdownButton<bool>));
+    await tester.tap(find.text('基本投注'));
     await tester.pumpAndSettle();
     await tester.tap(find.text('胆拖投注').last);
     await tester.pumpAndSettle();
@@ -242,7 +242,7 @@ void main() {
     await tester.tap(find.text('双色球'));
     await tester.pumpAndSettle();
 
-    await tester.tap(find.byType(DropdownButton<bool>));
+    await tester.tap(find.text('基本投注'));
     await tester.pumpAndSettle();
     await tester.tap(find.text('胆拖投注').last);
     await tester.pumpAndSettle();
@@ -254,6 +254,105 @@ void main() {
     expect(find.text('基本投注'), findsNothing);
     expect(find.text('红球胆码'), findsOneWidget);
     expect(find.text('红球拖码'), findsOneWidget);
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('Super Lotto front dan-tuo builds a valid ticket',
+      (tester) async {
+    tester.view.devicePixelRatio = 1;
+    tester.view.physicalSize = const Size(390, 844);
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+
+    await tester.pumpWidget(const MaterialApp(
+      home: BettingSimulatorScreen(),
+    ));
+    await tester.runAsync(
+        () => Future<void>.delayed(const Duration(milliseconds: 20)));
+    await tester.pumpAndSettle();
+
+    // Default kind is Super Lotto; switch through the toolbar dropdown.
+    await tester.tap(find.text('基本投注'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('前区胆拖').last);
+    await tester.pumpAndSettle();
+
+    for (final number in [1, 2]) {
+      final dan = find.byKey(ValueKey('pick-superLotto-dan-$number'));
+      await tester.ensureVisible(dan);
+      await tester.tap(dan);
+      await tester.pump();
+    }
+    for (final number in [3, 4, 5, 6]) {
+      final tuo = find.byKey(ValueKey('pick-superLotto-tuo-$number'));
+      await tester.ensureVisible(tuo);
+      await tester.tap(tuo);
+      await tester.pump();
+    }
+    for (final number in [1, 2]) {
+      final back = find.byKey(ValueKey('pick-superLotto-$number'));
+      await tester.ensureVisible(back);
+      await tester.tap(back);
+      await tester.pump();
+    }
+    await tester.pumpAndSettle();
+
+    expect(find.text('已选 4注，共8元', findRichText: true), findsOneWidget);
+
+    await tester.tap(find.text('选好了'));
+    await tester.pumpAndSettle();
+    expect(find.text('胆拖'), findsOneWidget);
+    expect(find.text('前胆'), findsOneWidget);
+    expect(find.text('前拖'), findsOneWidget);
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('Super Lotto back dan-tuo builds a valid ticket',
+      (tester) async {
+    tester.view.devicePixelRatio = 1;
+    tester.view.physicalSize = const Size(390, 844);
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+
+    await tester.pumpWidget(const MaterialApp(
+      home: BettingSimulatorScreen(),
+    ));
+    await tester.runAsync(
+        () => Future<void>.delayed(const Duration(milliseconds: 20)));
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.text('基本投注'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('后区胆拖').last);
+    await tester.pumpAndSettle();
+
+    for (final number in [1, 2, 3, 4, 5]) {
+      final front = find.byKey(ValueKey('pick-superLotto-$number'));
+      await tester.ensureVisible(front);
+      await tester.tap(front);
+      await tester.pump();
+    }
+
+    final backDan = find.byKey(const ValueKey('pick-superLotto-backDan-1'));
+    await tester.ensureVisible(backDan);
+    await tester.tap(backDan);
+    await tester.pump();
+
+    for (final number in [2, 3]) {
+      final backTuo = find.byKey(ValueKey('pick-superLotto-backTuo-$number'));
+      await tester.ensureVisible(backTuo);
+      await tester.tap(backTuo);
+      await tester.pump();
+    }
+    await tester.pumpAndSettle();
+
+    expect(find.text('已选 2注，共4元', findRichText: true), findsOneWidget);
+
+    await tester.tap(find.text('选好了'));
+    await tester.pumpAndSettle();
+    expect(find.text('胆拖'), findsOneWidget);
+    expect(find.text('后胆'), findsOneWidget);
+    expect(find.text('后拖'), findsOneWidget);
     expect(tester.takeException(), isNull);
   });
 

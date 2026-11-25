@@ -21,17 +21,21 @@ import 'betting_simulation_records_screen.dart';
 import 'lottery_rules_screen.dart';
 import 'historical_match_sheet.dart';
 
+enum _DanTuoMode { none, front, back, both }
+
 class _SimulationDraft {
   final Set<int> primary = {};
   final Set<int> secondary = {};
   final Set<int> primaryDan = {};
   final Set<int> primaryTuo = {};
+  final Set<int> secondaryDan = {};
+  final Set<int> secondaryTuo = {};
   final List<int?> digits = List.filled(7, null);
   final List<SimulationTicket> tickets = [];
   int happyEightCount = 10;
   int multiple = 1;
   bool additional = false;
-  bool danTuoMode = false;
+  _DanTuoMode danTuoMode = _DanTuoMode.none;
   int? editingTicketIndex;
 
   void clearSelection() {
@@ -39,6 +43,8 @@ class _SimulationDraft {
     secondary.clear();
     primaryDan.clear();
     primaryTuo.clear();
+    secondaryDan.clear();
+    secondaryTuo.clear();
     digits.fillRange(0, 7, null);
     editingTicketIndex = null;
   }
@@ -79,6 +85,18 @@ class _BettingSimulatorScreenState extends State<BettingSimulatorScreen> {
 
   _SimulationDraft get _draft => _drafts[_kind]!;
 
+  bool get _frontDanTuo =>
+      (_kind == SimulationLottery.doubleColorBall &&
+          _draft.danTuoMode != _DanTuoMode.none) ||
+      (_kind == SimulationLottery.superLotto &&
+          (_draft.danTuoMode == _DanTuoMode.front ||
+              _draft.danTuoMode == _DanTuoMode.both));
+
+  bool get _backDanTuo =>
+      _kind == SimulationLottery.superLotto &&
+      (_draft.danTuoMode == _DanTuoMode.back ||
+          _draft.danTuoMode == _DanTuoMode.both);
+
   @override
   void initState() {
     super.initState();
@@ -87,20 +105,22 @@ class _BettingSimulatorScreenState extends State<BettingSimulatorScreen> {
   }
 
   SimulationTicket get _currentTicket {
-    final danTuo = _kind == SimulationLottery.doubleColorBall &&
-        _draft.danTuoMode;
     return SimulationTicket(
       lottery: _kind,
       primary: _kind == SimulationLottery.sevenStar
           ? _draft.digits.take(6).whereType<int>().toList()
-          : danTuo
+          : _frontDanTuo
               ? {..._draft.primaryDan, ..._draft.primaryTuo}.toList()
               : _draft.primary.toList(),
       secondary: _kind == SimulationLottery.sevenStar
           ? (_draft.digits[6] == null ? [] : [_draft.digits[6]!])
-          : _draft.secondary.toList(),
-      primaryDan: danTuo ? _draft.primaryDan.toList() : const [],
-      primaryTuo: danTuo ? _draft.primaryTuo.toList() : const [],
+          : _backDanTuo
+              ? {..._draft.secondaryDan, ..._draft.secondaryTuo}.toList()
+              : _draft.secondary.toList(),
+      primaryDan: _frontDanTuo ? _draft.primaryDan.toList() : const [],
+      primaryTuo: _frontDanTuo ? _draft.primaryTuo.toList() : const [],
+      secondaryDan: _backDanTuo ? _draft.secondaryDan.toList() : const [],
+      secondaryTuo: _backDanTuo ? _draft.secondaryTuo.toList() : const [],
       happyEightCount: _draft.happyEightCount,
     );
   }
@@ -312,10 +332,10 @@ class _BettingSimulatorScreenState extends State<BettingSimulatorScreen> {
     _loadRecentDraws(kind);
   }
 
-  void _setDanTuoMode(bool enabled) {
-    if (_draft.danTuoMode == enabled) return;
+  void _setDanTuoMode(_DanTuoMode mode) {
+    if (_draft.danTuoMode == mode) return;
     setState(() {
-      _draft.danTuoMode = enabled;
+      _draft.danTuoMode = mode;
       _draft.clearSelection();
     });
   }
@@ -346,17 +366,35 @@ class _BettingSimulatorScreenState extends State<BettingSimulatorScreen> {
                       });
                     },
                   )
-                : _kind == SimulationLottery.doubleColorBall
-                    ? DropdownButton<bool>(
+                : (_kind == SimulationLottery.doubleColorBall ||
+                        _kind == SimulationLottery.superLotto)
+                    ? DropdownButton<_DanTuoMode>(
                         value: _draft.danTuoMode,
                         underline: const SizedBox.shrink(),
                         isExpanded: true,
-                        items: const [
-                          DropdownMenuItem(
-                              value: false, child: Text('基本投注')),
-                          DropdownMenuItem(
-                              value: true, child: Text('胆拖投注')),
-                        ],
+                        items: _kind == SimulationLottery.doubleColorBall
+                            ? const [
+                                DropdownMenuItem(
+                                    value: _DanTuoMode.none,
+                                    child: Text('基本投注')),
+                                DropdownMenuItem(
+                                    value: _DanTuoMode.front,
+                                    child: Text('胆拖投注')),
+                              ]
+                            : const [
+                                DropdownMenuItem(
+                                    value: _DanTuoMode.none,
+                                    child: Text('基本投注')),
+                                DropdownMenuItem(
+                                    value: _DanTuoMode.front,
+                                    child: Text('前区胆拖')),
+                                DropdownMenuItem(
+                                    value: _DanTuoMode.back,
+                                    child: Text('后区胆拖')),
+                                DropdownMenuItem(
+                                    value: _DanTuoMode.both,
+                                    child: Text('双区胆拖')),
+                              ],
                         onChanged: (value) {
                           if (value == null) return;
                           _setDanTuoMode(value);
@@ -588,56 +626,111 @@ class _BettingSimulatorScreenState extends State<BettingSimulatorScreen> {
   }
 
   List<Widget> _buildNumberPickers() {
-    final danTuo = _kind == SimulationLottery.doubleColorBall &&
-        _draft.danTuoMode;
-    if (danTuo) {
+    if (_frontDanTuo || _backDanTuo) {
+      final isSuperLotto = _kind == SimulationLottery.superLotto;
+      final frontColor = isSuperLotto ? _blue : AppColors.danger;
       return [
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 16),
-          child: _numberSection(
-            title: '红球胆码',
-            hint: '胆码1-5个，每注必含，不能与拖码重复',
-            max: _kind.primaryMax,
-            selection: _draft.primaryDan,
-            color: AppColors.danger,
-            limit: 5,
-            excluded: _draft.primaryTuo,
-            blockedMessage: '该号码已选为拖码',
-            keyPrefix: 'dan',
+        if (_frontDanTuo) ...[
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16),
+            child: _numberSection(
+              title: isSuperLotto ? '前区胆码' : '红球胆码',
+              hint: isSuperLotto
+                  ? '胆码1-4个，每注必含，不能与拖码重复'
+                  : '胆码1-5个，每注必含，不能与拖码重复',
+              max: _kind.primaryMax,
+              selection: _draft.primaryDan,
+              color: frontColor,
+              limit: isSuperLotto ? 4 : 5,
+              excluded: _draft.primaryTuo,
+              blockedMessage: '该号码已选为拖码',
+              keyPrefix: 'dan',
+            ),
           ),
-        ),
+          const Padding(
+              padding: EdgeInsets.symmetric(horizontal: 16, vertical: 22),
+              child: Divider(height: 1)),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16),
+            child: _numberSection(
+              title: isSuperLotto ? '前区拖码' : '红球拖码',
+              hint: isSuperLotto
+                  ? '胆码+拖码合计不少于6个前区号码'
+                  : '胆码+拖码合计不少于7个红球',
+              max: _kind.primaryMax,
+              selection: _draft.primaryTuo,
+              color: frontColor,
+              excluded: _draft.primaryDan,
+              blockedMessage: '该号码已选为胆码',
+              keyPrefix: 'tuo',
+            ),
+          ),
+        ] else ...[
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16),
+            child: _numberSection(
+              title: _kind.primaryLabel,
+              hint: '至少选择 ${_kind.primaryCount} 个号码',
+              max: _kind.primaryMax,
+              selection: _draft.primary,
+              color: frontColor,
+            ),
+          ),
+        ],
         const Padding(
             padding: EdgeInsets.symmetric(horizontal: 16, vertical: 22),
             child: Divider(height: 1)),
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 16),
-          child: _numberSection(
-            title: '红球拖码',
-            hint: '胆码+拖码合计不少于7个红球',
-            max: _kind.primaryMax,
-            selection: _draft.primaryTuo,
-            color: AppColors.danger,
-            excluded: _draft.primaryDan,
-            blockedMessage: '该号码已选为胆码',
-            keyPrefix: 'tuo',
+        if (_backDanTuo) ...[
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16),
+            child: _numberSection(
+              title: '后区胆码',
+              hint: '胆码1个，每注必含，不能与拖码重复',
+              max: _kind.secondaryMax,
+              selection: _draft.secondaryDan,
+              color: AppColors.warning,
+              limit: 1,
+              excluded: _draft.secondaryTuo,
+              blockedMessage: '该号码已选为拖码',
+              keyPrefix: 'backDan',
+            ),
           ),
-        ),
-        const Padding(
-            padding: EdgeInsets.symmetric(horizontal: 16, vertical: 22),
-            child: Divider(height: 1)),
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 16),
-          child: _numberSection(
-            title: '蓝球',
-            hint: '至少选择 ${_kind.secondaryCount} 个号码，多个蓝球为复式胆拖',
-            max: _kind.secondaryMax,
-            selection: _draft.secondary,
-            color: _blue,
-            keyPrefix: 'blue',
+          const Padding(
+              padding: EdgeInsets.symmetric(horizontal: 16, vertical: 22),
+              child: Divider(height: 1)),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16),
+            child: _numberSection(
+              title: '后区拖码',
+              hint: '拖码至少2个，与胆码不重复',
+              max: _kind.secondaryMax,
+              selection: _draft.secondaryTuo,
+              color: AppColors.warning,
+              excluded: _draft.secondaryDan,
+              blockedMessage: '该号码已选为胆码',
+              keyPrefix: 'backTuo',
+            ),
           ),
-        ),
+        ] else ...[
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16),
+            child: _numberSection(
+              title: isSuperLotto ? '后区' : _kind.secondaryLabel,
+              hint: isSuperLotto
+                  ? '至少选择 ${_kind.secondaryCount} 个号码'
+                  : '至少选择 1 个号码，多个蓝球为复式',
+              max: _kind.secondaryMax,
+              selection: _draft.secondary,
+              color: _kind == SimulationLottery.doubleColorBall
+                  ? _blue
+                  : AppColors.warning,
+              keyPrefix: isSuperLotto ? null : 'blue',
+            ),
+          ),
+        ],
       ];
     }
+
     return [
       Padding(
         padding: const EdgeInsets.symmetric(horizontal: 16),
@@ -907,11 +1000,22 @@ class _BettingSimulatorScreenState extends State<BettingSimulatorScreen> {
     _scrollController.jumpTo(0);
   }
 
-  SimulationTicket _randomTicket() =>
-      _kind == SimulationLottery.doubleColorBall && _draft.danTuoMode
-          ? SimulationTicket.danTuoRandom(_kind, _random)
-          : SimulationTicket.random(_kind, _random,
-              happyEightCount: _draft.happyEightCount);
+  SimulationTicket _randomTicket() {
+    if (_kind == SimulationLottery.doubleColorBall && _frontDanTuo) {
+      return SimulationTicket.danTuoRandom(_kind, _random, front: true);
+    }
+    if (_kind == SimulationLottery.superLotto &&
+        (_frontDanTuo || _backDanTuo)) {
+      return SimulationTicket.danTuoRandom(
+        _kind,
+        _random,
+        front: _frontDanTuo,
+        back: _backDanTuo,
+      );
+    }
+    return SimulationTicket.random(_kind, _random,
+        happyEightCount: _draft.happyEightCount);
+  }
 
   void _restoreSelection(SimulationTicket ticket) {
     _draft.clearSelection();
@@ -920,15 +1024,26 @@ class _BettingSimulatorScreenState extends State<BettingSimulatorScreen> {
         _draft.digits[i] = ticket.primary[i];
       }
       _draft.digits[6] = ticket.secondary.single;
-    } else if (ticket.isDanTuo) {
-      _draft.danTuoMode = true;
-      _draft.primaryDan.addAll(ticket.primaryDan);
-      _draft.primaryTuo.addAll(ticket.primaryTuo);
-      _draft.secondary.addAll(ticket.secondary);
     } else {
-      _draft.danTuoMode = false;
-      _draft.primary.addAll(ticket.primary);
-      _draft.secondary.addAll(ticket.secondary);
+      _draft.danTuoMode = ticket.isPrimaryDanTuo && ticket.isSecondaryDanTuo
+          ? _DanTuoMode.both
+          : ticket.isPrimaryDanTuo
+              ? _DanTuoMode.front
+              : ticket.isSecondaryDanTuo
+                  ? _DanTuoMode.back
+                  : _DanTuoMode.none;
+      if (ticket.isPrimaryDanTuo) {
+        _draft.primaryDan.addAll(ticket.primaryDan);
+        _draft.primaryTuo.addAll(ticket.primaryTuo);
+      } else {
+        _draft.primary.addAll(ticket.primary);
+      }
+      if (ticket.isSecondaryDanTuo) {
+        _draft.secondaryDan.addAll(ticket.secondaryDan);
+        _draft.secondaryTuo.addAll(ticket.secondaryTuo);
+      } else {
+        _draft.secondary.addAll(ticket.secondary);
+      }
     }
     _draft.happyEightCount = ticket.happyEightCount;
   }

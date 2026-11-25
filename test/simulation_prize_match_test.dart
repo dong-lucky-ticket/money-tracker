@@ -164,6 +164,48 @@ void main() {
     );
   });
 
+  test('Super Lotto front dan-tuo restricts hits to dan-plus-tuo lines', () {
+    final ticket = SimulationTicket(
+      lottery: SimulationLottery.superLotto,
+      primary: [1, 2, 3, 4, 5, 6],
+      secondary: [1, 2],
+      primaryDan: [1, 2],
+      primaryTuo: [3, 4, 5, 6],
+    );
+
+    // Both dan codes miss and all four tuo codes hit, so every generated
+    // front line carries exactly three front hits -> fifth prize, not third.
+    expect(
+      simulationPrizeLabel(
+        ticket: ticket,
+        primaryDraw: [3, 4, 5, 6, 7],
+        secondaryDraw: [1, 2],
+      ),
+      '五等奖',
+    );
+  });
+
+  test('Super Lotto back dan-tuo keeps the back dan code in every line', () {
+    final ticket = SimulationTicket(
+      lottery: SimulationLottery.superLotto,
+      primary: [1, 2, 3, 4, 5],
+      secondary: [1, 2, 3],
+      secondaryDan: [1],
+      secondaryTuo: [2, 3],
+    );
+
+    // The back dan code misses while both back tuo codes hit. The back dan
+    // cannot be dropped, so each line has exactly one back hit -> second prize.
+    expect(
+      simulationPrizeLabel(
+        ticket: ticket,
+        primaryDraw: [1, 2, 3, 4, 5],
+        secondaryDraw: [2, 3],
+      ),
+      '二等奖',
+    );
+  });
+
   test('Happy 8 compound play matches prizes across generated lines', () {
     final ticket = SimulationTicket(
       lottery: SimulationLottery.happyEight,

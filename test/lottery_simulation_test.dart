@@ -221,4 +221,86 @@ void main() {
       expect(ticket.lines, greaterThan(0));
     }
   });
+
+  test('Super Lotto dan-tuo rules for front, back and dual zones', () {
+    SimulationTicket superLottoDanTuo({
+      List<int> frontDan = const [],
+      List<int> frontTuo = const [],
+      List<int> front = const [1, 2, 3, 4, 5],
+      List<int> backDan = const [],
+      List<int> backTuo = const [],
+      List<int> back = const [1, 2],
+    }) =>
+        SimulationTicket(
+          lottery: SimulationLottery.superLotto,
+          primary: (frontDan.isNotEmpty || frontTuo.isNotEmpty)
+              ? [...frontDan, ...frontTuo]
+              : front,
+          secondary: (backDan.isNotEmpty || backTuo.isNotEmpty)
+              ? [...backDan, ...backTuo]
+              : back,
+          primaryDan: frontDan,
+          primaryTuo: frontTuo,
+          secondaryDan: backDan,
+          secondaryTuo: backTuo,
+        );
+
+    final front = superLottoDanTuo(
+        frontDan: [1, 2], frontTuo: [3, 4, 5, 6]);
+    expect(front.isValid, isTrue);
+    expect(front.playLabel, '胆拖');
+    expect(front.isPrimaryDanTuo, isTrue);
+    expect(front.isSecondaryDanTuo, isFalse);
+    expect(front.lines, 4); // C(4, 3) * C(2, 2)
+
+    // Front dan codes must be 1-4 and the front total must reach six.
+    expect(
+        superLottoDanTuo(frontDan: [1, 2, 3, 4], frontTuo: [5]).isValid,
+        isFalse);
+    expect(
+        superLottoDanTuo(
+                frontDan: [1, 2, 3, 4, 5], frontTuo: [6])
+            .isValid,
+        isFalse);
+
+    final back = superLottoDanTuo(
+        backDan: [1], backTuo: [2, 3], back: const [1, 2]);
+    expect(back.isValid, isTrue);
+    expect(back.isPrimaryDanTuo, isFalse);
+    expect(back.isSecondaryDanTuo, isTrue);
+    expect(back.lines, 2); // C(5, 5) * C(2, 1)
+
+    final dual = superLottoDanTuo(
+        frontDan: [1],
+        frontTuo: [2, 3, 4, 5, 6],
+        backDan: [1],
+        backTuo: [2, 3],
+        back: const [1, 2]);
+    expect(dual.isValid, isTrue);
+    expect(dual.lines, 10); // C(5, 4) * C(2, 1)
+  });
+
+  test('Super Lotto dan-tuo random picks match each zone mode', () {
+    for (var seed = 0; seed < 30; seed++) {
+      final frontOnly = SimulationTicket.danTuoRandom(
+          SimulationLottery.superLotto, Random(seed),
+          front: true, back: false);
+      expect(frontOnly.isValid, isTrue);
+      expect(frontOnly.isPrimaryDanTuo, isTrue);
+      expect(frontOnly.isSecondaryDanTuo, isFalse);
+      expect(frontOnly.primaryDan.length, inInclusiveRange(1, 4));
+      expect(frontOnly.primaryDan.length + frontOnly.primaryTuo.length, 6);
+      expect(frontOnly.secondary, hasLength(2));
+
+      final backOnly = SimulationTicket.danTuoRandom(
+          SimulationLottery.superLotto, Random(seed),
+          front: false, back: true);
+      expect(backOnly.isValid, isTrue);
+      expect(backOnly.isPrimaryDanTuo, isFalse);
+      expect(backOnly.isSecondaryDanTuo, isTrue);
+      expect(backOnly.primary, hasLength(5));
+      expect(backOnly.secondaryDan, hasLength(1));
+      expect(backOnly.secondaryTuo, hasLength(2));
+    }
+  });
 }

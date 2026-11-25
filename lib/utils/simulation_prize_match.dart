@@ -108,10 +108,36 @@ String? simulationPrizeLabel({
       ticket.primary.toSet().intersection(primaryDraw.toSet()).length;
   final backHits =
       ticket.secondary.toSet().intersection(secondaryDraw.toSet()).length;
-  final frontCounts = _possibleHits(
-      ticket.primary.length, frontHits, ticket.lottery.primaryCount);
-  final backCounts = _possibleHits(
-      ticket.secondary.length, backHits, ticket.lottery.secondaryCount);
+  final frontCounts = ticket.isPrimaryDanTuo
+      ? _danTuoPossibleHits(
+          danHits: ticket.primaryDan
+              .toSet()
+              .intersection(primaryDraw.toSet())
+              .length,
+          tuoHits: ticket.primaryTuo
+              .toSet()
+              .intersection(primaryDraw.toSet())
+              .length,
+          danCount: ticket.primaryDan.length,
+          tuoCount: ticket.primaryTuo.length,
+          lineSize: ticket.lottery.primaryCount)
+      : _possibleHits(ticket.primary.length, frontHits,
+          ticket.lottery.primaryCount);
+  final backCounts = ticket.isSecondaryDanTuo
+      ? _danTuoPossibleHits(
+          danHits: ticket.secondaryDan
+              .toSet()
+              .intersection(secondaryDraw.toSet())
+              .length,
+          tuoHits: ticket.secondaryTuo
+              .toSet()
+              .intersection(secondaryDraw.toSet())
+              .length,
+          danCount: ticket.secondaryDan.length,
+          tuoCount: ticket.secondaryTuo.length,
+          lineSize: ticket.lottery.secondaryCount)
+      : _possibleHits(ticket.secondary.length, backHits,
+          ticket.lottery.secondaryCount);
 
   if (ticket.lottery == SimulationLottery.superLotto) {
     const tiers = [
@@ -147,55 +173,6 @@ String? simulationPrizeLabel({
         tiers,
         (condition) =>
             frontCounts.contains(condition[0]) &&
-            backCounts.contains(condition[1]));
-    return _tierLabel(tier);
-  }
-
-  if (ticket.isDanTuo) {
-    const tiers = [
-      [
-        [6, 1]
-      ],
-      [
-        [6, 0]
-      ],
-      [
-        [5, 1]
-      ],
-      [
-        [5, 0],
-        [4, 1]
-      ],
-      [
-        [4, 0],
-        [3, 1]
-      ],
-      [
-        [2, 1],
-        [1, 1],
-        [0, 1]
-      ],
-    ];
-    final danHits = ticket.primaryDan
-        .toSet()
-        .intersection(primaryDraw.toSet())
-        .length;
-    final tuoHits = ticket.primaryTuo
-        .toSet()
-        .intersection(primaryDraw.toSet())
-        .length;
-    final tuoNeeded = ticket.lottery.primaryCount - ticket.primaryDan.length;
-    final tuoMisses = ticket.primaryTuo.length - tuoHits;
-    final minTuoHits = (tuoNeeded - tuoMisses).clamp(0, tuoNeeded).toInt();
-    final maxTuoHits = tuoHits < tuoNeeded ? tuoHits : tuoNeeded;
-    final danTuoFrontHits = {
-      for (var hits = minTuoHits; hits <= maxTuoHits; hits++)
-        danHits + hits,
-    };
-    final tier = _tierIndex(
-        tiers,
-        (condition) =>
-            danTuoFrontHits.contains(condition[0]) &&
             backCounts.contains(condition[1]));
     return _tierLabel(tier);
   }
@@ -241,6 +218,22 @@ Set<int> _possibleHits(int selectedCount, int selectedHits, int lineSize) {
   return {
     for (var hits = 0; hits <= lineSize; hits++)
       if (hits <= selectedHits && lineSize - hits <= selectedMisses) hits,
+  };
+}
+
+Set<int> _danTuoPossibleHits({
+  required int danHits,
+  required int tuoHits,
+  required int danCount,
+  required int tuoCount,
+  required int lineSize,
+}) {
+  final tuoNeeded = lineSize - danCount;
+  final tuoMisses = tuoCount - tuoHits;
+  final minTuoHits = (tuoNeeded - tuoMisses).clamp(0, tuoNeeded).toInt();
+  final maxTuoHits = tuoHits < tuoNeeded ? tuoHits : tuoNeeded;
+  return {
+    for (var hits = minTuoHits; hits <= maxTuoHits; hits++) danHits + hits,
   };
 }
 

@@ -626,9 +626,27 @@ class _SportteryNotes extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return const Text(
-      '每注从前区01-35中选5个号码、后区01-12中选2个号码。追加投注是在基本投注基础上，每注多投入1元；中奖时可额外获得追加奖金。\n\n一等奖奖金由当期奖级奖金的75%与奖池资金组成（奖池超过1亿元时按官方比例分配），单注最高限额500万元。二至六等奖按固定或浮动规则派发。',
-      style: TextStyle(color: AppColors.textSecondary, height: 1.65),
+    return const Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          '每注从前区01-35中选5个号码、后区01-12中选2个号码。追加投注是在基本投注基础上，每注多投入1元；中奖时可额外获得追加奖金。\n\n一等奖奖金由当期奖级奖金的75%与奖池资金组成（奖池超过1亿元时按官方比例分配），单注最高限额500万元。二至六等奖按固定或浮动规则派发。',
+          style: TextStyle(color: AppColors.textSecondary, height: 1.65),
+        ),
+        SizedBox(height: 10),
+        Text(
+          '胆拖投注',
+          style: TextStyle(
+            fontWeight: FontWeight.w600,
+            color: AppColors.textPrimary,
+          ),
+        ),
+        SizedBox(height: 4),
+        Text(
+          '前区胆拖：前区选1-4个胆码，再选与前区胆码不重复的拖码，胆码+拖码合计不少于6个，后区选2个号码。后区胆拖：前区选5个号码，后区选1个胆码，再选除胆码外2个及以上的拖码；双区胆拖为二者组合。每注由全部胆码加上从对应拖码中补充的号码组成。',
+          style: TextStyle(color: AppColors.textSecondary, height: 1.65),
+        ),
+      ],
     );
   }
 }

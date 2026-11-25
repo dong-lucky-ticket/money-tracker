@@ -41,6 +41,8 @@ class SimulationTicket {
   final List<int> secondary;
   final List<int> primaryDan;
   final List<int> primaryTuo;
+  final List<int> secondaryDan;
+  final List<int> secondaryTuo;
   final int happyEightCount;
 
   SimulationTicket({
@@ -50,19 +52,25 @@ class SimulationTicket {
     this.happyEightCount = 10,
     List<int> primaryDan = const [],
     List<int> primaryTuo = const [],
+    List<int> secondaryDan = const [],
+    List<int> secondaryTuo = const [],
   })  : primaryDan = List.unmodifiable(_sortedNumbers(primaryDan)),
         primaryTuo = List.unmodifiable(_sortedNumbers(primaryTuo)),
+        secondaryDan = List.unmodifiable(_sortedNumbers(secondaryDan)),
+        secondaryTuo = List.unmodifiable(_sortedNumbers(secondaryTuo)),
         primary = List.unmodifiable(
-            lottery == SimulationLottery.doubleColorBall &&
-                    (primaryDan.isNotEmpty || primaryTuo.isNotEmpty)
+            (primaryDan.isNotEmpty || primaryTuo.isNotEmpty)
                 ? _unionNumbers(primaryDan, primaryTuo)
                 : _normalizePrimary(lottery, primary, secondary)),
-        secondary =
-            List.unmodifiable(_normalizeSecondary(lottery, primary, secondary));
+        secondary = List.unmodifiable(
+            (secondaryDan.isNotEmpty || secondaryTuo.isNotEmpty)
+                ? _unionNumbers(secondaryDan, secondaryTuo)
+                : _normalizeSecondary(lottery, primary, secondary));
 
-  bool get isDanTuo =>
-      lottery == SimulationLottery.doubleColorBall &&
-      (primaryDan.isNotEmpty || primaryTuo.isNotEmpty);
+  bool get isPrimaryDanTuo => primaryDan.isNotEmpty || primaryTuo.isNotEmpty;
+  bool get isSecondaryDanTuo =>
+      secondaryDan.isNotEmpty || secondaryTuo.isNotEmpty;
+  bool get isDanTuo => isPrimaryDanTuo || isSecondaryDanTuo;
 
   bool get isValid {
     if (lottery == SimulationLottery.sevenStar) {
@@ -72,14 +80,26 @@ class SimulationTicket {
           secondary.single >= 0 &&
           secondary.single <= 9;
     }
-    if (isDanTuo) {
+    if (isPrimaryDanTuo) {
       if (primaryDan.isEmpty ||
           primaryTuo.isEmpty ||
-          primaryDan.length > 5 ||
+          primaryDan.length >= lottery.primaryCount ||
           primaryDan.toSet().length != primaryDan.length ||
           primaryTuo.toSet().length != primaryTuo.length ||
           primaryDan.toSet().intersection(primaryTuo.toSet()).isNotEmpty ||
-          primaryDan.length + primaryTuo.length < 7) {
+          primaryDan.length + primaryTuo.length < lottery.primaryCount + 1) {
+        return false;
+      }
+    }
+    if (isSecondaryDanTuo) {
+      if (lottery.secondaryCount < 2 ||
+          secondaryDan.length != lottery.secondaryCount - 1 ||
+          secondaryTuo.isEmpty ||
+          secondaryDan.toSet().length != secondaryDan.length ||
+          secondaryTuo.toSet().length != secondaryTuo.length ||
+          secondaryDan.toSet().intersection(secondaryTuo.toSet()).isNotEmpty ||
+          secondaryDan.length + secondaryTuo.length <
+              lottery.secondaryCount + 1) {
         return false;
       }
     }
@@ -100,16 +120,19 @@ class SimulationTicket {
   int get lines {
     if (!isValid) return 0;
     if (lottery == SimulationLottery.sevenStar) return 1;
-    if (isDanTuo) {
-      return simulationCombinations(
-              primaryTuo.length, lottery.primaryCount - primaryDan.length) *
-          simulationCombinations(secondary.length, lottery.secondaryCount);
-    }
-    if (lottery == SimulationLottery.happyEight) {
-      return simulationCombinations(primary.length, happyEightCount);
-    }
-    return simulationCombinations(primary.length, lottery.primaryCount) *
-        simulationCombinations(secondary.length, lottery.secondaryCount);
+    final primaryLines = isPrimaryDanTuo
+        ? simulationCombinations(
+            primaryTuo.length, lottery.primaryCount - primaryDan.length)
+        : lottery == SimulationLottery.happyEight
+            ? simulationCombinations(primary.length, happyEightCount)
+            : simulationCombinations(
+                primary.length, lottery.primaryCount);
+    final secondaryLines = isSecondaryDanTuo
+        ? simulationCombinations(
+            secondaryTuo.length, lottery.secondaryCount - secondaryDan.length)
+        : simulationCombinations(
+            secondary.length, lottery.secondaryCount);
+    return primaryLines * secondaryLines;
   }
 
   String get playLabel {
@@ -143,29 +166,55 @@ class SimulationTicket {
     );
   }
 
-  /// Builds a random Double Color Ball dan-tuo ticket that stays within the
-  /// official rules: 1-5 dan codes plus enough tuo codes to reach seven red
-  /// numbers, giving a small fixed-size compound bet.
+  /// Builds a random rule-compliant dan-tuo ticket. [front] enables a front
+  /// (red/front-zone) dan-tuo with a total one above the basic front count;
+  /// [back] enables a back-zone dan-tuo with the single back dan code plus two
+  /// tuo codes.
   factory SimulationTicket.danTuoRandom(
-      SimulationLottery lottery, Random random) {
-    final danCount = 1 + random.nextInt(5);
-    final tuoCount = 7 - danCount;
-    final redPool =
-        (List<int>.generate(lottery.primaryMax, (index) => index + 1)
-          ..shuffle(random));
-    final dan = redPool.take(danCount).toList();
-    final tuo = redPool.skip(danCount).take(tuoCount).toList();
-    final secondary =
-        (List<int>.generate(lottery.secondaryMax, (index) => index + 1)
-          ..shuffle(random))
-            .take(lottery.secondaryCount)
-            .toList();
+    SimulationLottery lottery,
+    Random random, {
+    bool front = true,
+    bool back = false,
+  }) {
+    final primaryPool =
+        List<int>.generate(lottery.primaryMax, (index) => index + 1)
+          ..shuffle(random);
+    final secondaryPool =
+        List<int>.generate(lottery.secondaryMax, (index) => index + 1)
+          ..shuffle(random);
+
+    List<int> dan = const [];
+    List<int> tuo = const [];
+    List<int> primary = const [];
+    if (front) {
+      final danCount = 1 + random.nextInt(lottery.primaryCount - 1);
+      final tuoCount = (lottery.primaryCount + 1) - danCount;
+      dan = primaryPool.take(danCount).toList();
+      tuo = primaryPool.skip(danCount).take(tuoCount).toList();
+    } else {
+      primary = primaryPool.take(lottery.primaryCount).toList();
+    }
+
+    List<int> secondaryDan = const [];
+    List<int> secondaryTuo = const [];
+    List<int> secondary = const [];
+    if (back) {
+      final danCount = lottery.secondaryCount - 1;
+      final tuoCount = (lottery.secondaryCount + 1) - danCount;
+      secondaryDan = secondaryPool.take(danCount).toList();
+      secondaryTuo = secondaryPool.skip(danCount).take(tuoCount).toList();
+    } else {
+      secondary = secondaryPool.take(lottery.secondaryCount).toList();
+    }
+
     return SimulationTicket(
       lottery: lottery,
-      primary: [...dan, ...tuo],
-      secondary: secondary,
+      primary: front ? [...dan, ...tuo] : primary,
+      secondary: back ? [...secondaryDan, ...secondaryTuo] : secondary,
       primaryDan: dan,
       primaryTuo: tuo,
+      secondaryDan: secondaryDan,
+      secondaryTuo: secondaryTuo,
     );
   }
 
@@ -176,6 +225,8 @@ class SimulationTicket {
         'happyEightCount': happyEightCount,
         'primaryDan': primaryDan,
         'primaryTuo': primaryTuo,
+        'secondaryDan': secondaryDan,
+        'secondaryTuo': secondaryTuo,
       };
 
   factory SimulationTicket.fromMap(Map map) => SimulationTicket(
@@ -189,6 +240,12 @@ class SimulationTicket {
         primaryTuo: map['primaryTuo'] == null
             ? const []
             : List<int>.from(map['primaryTuo'] as List),
+        secondaryDan: map['secondaryDan'] == null
+            ? const []
+            : List<int>.from(map['secondaryDan'] as List),
+        secondaryTuo: map['secondaryTuo'] == null
+            ? const []
+            : List<int>.from(map['secondaryTuo'] as List),
       );
 }
 

@@ -180,12 +180,31 @@ class _HistoricalMatchSheetState extends State<HistoricalMatchSheet> {
                       if (ticket.lottery == SimulationLottery.sevenStar)
                         _sevenStarBalls()
                       else if (ticket.isDanTuo) ...[
-                        _numberGroup('红胆', ticket.primaryDan,
-                            const Color(0xFF4A9BD6)),
-                        const SizedBox(height: 10),
-                        _numberGroup('红拖', ticket.primaryTuo,
-                            const Color(0xFF4A9BD6)),
-                        if (ticket.secondary.isNotEmpty) ...[
+                        if (ticket.isPrimaryDanTuo) ...[
+                          _numberGroup(
+                              ticket.lottery == SimulationLottery.superLotto
+                                  ? '前胆'
+                                  : '红胆',
+                              ticket.primaryDan,
+                              const Color(0xFF4A9BD6)),
+                          const SizedBox(height: 10),
+                          _numberGroup(
+                              ticket.lottery == SimulationLottery.superLotto
+                                  ? '前拖'
+                                  : '红拖',
+                              ticket.primaryTuo,
+                              const Color(0xFF4A9BD6)),
+                        ] else
+                          _numberGroup(ticket.lottery.primaryLabel,
+                              ticket.primary, const Color(0xFF4A9BD6)),
+                        if (ticket.isSecondaryDanTuo) ...[
+                          const SizedBox(height: 10),
+                          _numberGroup('后胆', ticket.secondaryDan,
+                              const Color(0xFFE7A51B)),
+                          const SizedBox(height: 10),
+                          _numberGroup('后拖', ticket.secondaryTuo,
+                              const Color(0xFFE7A51B)),
+                        ] else if (ticket.secondary.isNotEmpty) ...[
                           const SizedBox(height: 10),
                           _numberGroup(ticket.lottery.secondaryLabel,
                               ticket.secondary, const Color(0xFFE7A51B)),

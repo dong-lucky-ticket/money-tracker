@@ -18,6 +18,7 @@ class BettingSimulationRecordsScreen extends StatefulWidget {
 
 class _BettingSimulationRecordsScreenState
     extends State<BettingSimulationRecordsScreen> {
+  static const _purple = Color(0xFF7C5CFC);
   final _repository = LotterySimulationRepository();
   List<SimulationRecord> _records = [];
   SimulationLottery? _filter;
@@ -25,9 +26,13 @@ class _BettingSimulationRecordsScreenState
   bool _deleting = false;
   String? _error;
 
-  List<SimulationRecord> get _visibleRecords => _records
-      .where((record) => _filter == null || record.lottery == _filter)
-      .toList();
+  List<SimulationRecord> get _visibleRecords {
+    final records = _records
+        .where((record) => _filter == null || record.lottery == _filter)
+        .toList();
+    records.sort((a, b) => b.createdAt.compareTo(a.createdAt));
+    return records;
+  }
 
   @override
   void initState() {
@@ -98,6 +103,8 @@ class _BettingSimulationRecordsScreenState
   @override
   Widget build(BuildContext context) {
     final visible = _visibleRecords;
+    final totalAmount =
+        visible.fold<int>(0, (sum, record) => sum + record.amount);
     return Scaffold(
       backgroundColor: AppColors.pageBackground,
       appBar: AppBar(
@@ -105,6 +112,7 @@ class _BettingSimulationRecordsScreenState
         backgroundColor: Colors.white,
         foregroundColor: AppColors.textPrimary,
         elevation: 0,
+        surfaceTintColor: Colors.transparent,
         actions: [
           IconButton(
             tooltip: '清空当前记录',
@@ -115,25 +123,22 @@ class _BettingSimulationRecordsScreenState
         ],
       ),
       body: Column(children: [
-        SizedBox(
-          height: 56,
-          child: ListView.separated(
-            padding: const EdgeInsets.symmetric(horizontal: 16),
-            scrollDirection: Axis.horizontal,
-            itemCount: SimulationLottery.values.length + 1,
-            separatorBuilder: (_, __) => const SizedBox(width: 8),
-            itemBuilder: (context, index) {
-              final lottery =
-                  index == 0 ? null : SimulationLottery.values[index - 1];
-              return ChoiceChip(
-                label: Text(lottery?.shortLabel ?? '全部'),
-                selected: _filter == lottery,
-                onSelected:
-                    _deleting ? null : (_) => setState(() => _filter = lottery),
-              );
-            },
+        _buildFilters(),
+        if (!_loading && _error == null)
+          Padding(
+            padding: const EdgeInsets.fromLTRB(20, 6, 20, 2),
+            child: Row(children: [
+              Text('共 ${visible.length} 条记录',
+                  style: const TextStyle(
+                      color: AppColors.textTertiary, fontSize: 12)),
+              const Spacer(),
+              Text('合计虚拟 ¥$totalAmount',
+                  style: const TextStyle(
+                      color: AppColors.textSecondary,
+                      fontSize: 12,
+                      fontWeight: FontWeight.w600)),
+            ]),
           ),
-        ),
         Expanded(
             child: _loading
                 ? const Center(child: CircularProgressIndicator())
@@ -150,14 +155,14 @@ class _BettingSimulationRecordsScreenState
                                 mainAxisSize: MainAxisSize.min,
                                 children: [
                                 Icon(Icons.receipt_long_outlined,
-                                    color: AppColors.textMuted, size: 48),
+                                    color: AppColors.textMuted, size: 56),
                                 SizedBox(height: 12),
                                 Text('还没有模拟记录',
                                     style: TextStyle(
                                         color: AppColors.textTertiary)),
                               ]))
                         : ListView.separated(
-                            padding: const EdgeInsets.all(16),
+                            padding: const EdgeInsets.fromLTRB(16, 10, 16, 24),
                             itemCount: visible.length,
                             separatorBuilder: (_, __) =>
                                 const SizedBox(height: 12),
@@ -168,52 +173,191 @@ class _BettingSimulationRecordsScreenState
     );
   }
 
+  Widget _buildFilters() {
+    return SizedBox(
+      height: 52,
+      child: ListView.separated(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+        scrollDirection: Axis.horizontal,
+        itemCount: SimulationLottery.values.length + 1,
+        separatorBuilder: (_, __) => const SizedBox(width: 8),
+        itemBuilder: (context, index) {
+          final lottery =
+              index == 0 ? null : SimulationLottery.values[index - 1];
+          final selected = _filter == lottery;
+          return Center(
+            child: ChoiceChip(
+              label: Text(lottery?.label ?? '全部'),
+              selected: selected,
+              showCheckmark: false,
+              onSelected:
+                  _deleting ? null : (_) => setState(() => _filter = lottery),
+              backgroundColor: Colors.white,
+              selectedColor: AppColors.primary,
+              side: BorderSide(
+                  color: selected ? AppColors.primary : AppColors.border),
+              labelStyle: TextStyle(
+                  color: selected ? Colors.white : AppColors.textSecondary,
+                  fontSize: 13,
+                  fontWeight: FontWeight.w600),
+              shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(20)),
+              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+              visualDensity: VisualDensity.compact,
+              materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+            ),
+          );
+        },
+      ),
+    );
+  }
+
+  Color _lotteryColor(SimulationLottery lottery) => switch (lottery) {
+        SimulationLottery.superLotto => AppColors.warning,
+        SimulationLottery.doubleColorBall => AppColors.danger,
+        SimulationLottery.sevenStar => AppColors.primary,
+        SimulationLottery.happyEight => AppColors.success,
+        SimulationLottery.qilecai => _purple,
+      };
+
+  Widget _lotteryBadge(SimulationLottery lottery) {
+    final color = _lotteryColor(lottery);
+    return Container(
+      width: 42,
+      height: 42,
+      alignment: Alignment.center,
+      decoration: BoxDecoration(
+        color: color.withOpacity(.12),
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Text(lottery.shortLabel,
+          style: TextStyle(
+              color: color, fontSize: 12, fontWeight: FontWeight.w700)),
+    );
+  }
+
+  Widget _ticketBadge(int index) => Container(
+        width: 22,
+        height: 22,
+        alignment: Alignment.center,
+        decoration: BoxDecoration(
+            shape: BoxShape.circle,
+            color: AppColors.primary.withOpacity(.12)),
+        child: Text('$index',
+            style: const TextStyle(
+                color: AppColors.primary,
+                fontSize: 12,
+                fontWeight: FontWeight.w700)),
+      );
+
+  Widget _ticketCard(SimulationRecord record, int displayIndex) {
+    // Tickets are stored in selection order; display them newest first to
+    // mirror the basket list.
+    final ticketIndex = record.tickets.length - 1 - displayIndex;
+    final ticket = record.tickets[ticketIndex];
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+      decoration: BoxDecoration(
+        color: AppColors.surfaceMuted,
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              _ticketBadge(displayIndex + 1),
+              const SizedBox(width: 10),
+              Expanded(child: SimulationTicketNumbers(ticket: ticket)),
+            ],
+          ),
+          const SizedBox(height: 8),
+          Align(
+            alignment: Alignment.centerRight,
+            child: Text('${ticket.playLabel} · ${ticket.lines}注',
+                style: const TextStyle(
+                    color: AppColors.primary,
+                    fontSize: 12,
+                    fontWeight: FontWeight.w600)),
+          ),
+        ],
+      ),
+    );
+  }
+
   Widget _recordCard(SimulationRecord record) {
+    final date = DateFormat('yyyy-MM-dd HH:mm')
+        .format(record.createdAt.toLocal());
     return Material(
       color: Colors.white,
       borderRadius: BorderRadius.circular(16),
       clipBehavior: Clip.antiAlias,
-      child: ExpansionTile(
-        key: PageStorageKey(record.id),
-        tilePadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-        childrenPadding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
-        title: Text(record.lottery.label,
-            style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w700)),
-        subtitle: Padding(
-          padding: const EdgeInsets.only(top: 6),
-          child: Text(
-              '${DateFormat('yyyy-MM-dd HH:mm').format(record.createdAt.toLocal())}\n${record.lines}注 × ${record.multiple}倍${record.additional ? ' · 追加' : ''}  |  虚拟 ¥${record.amount}',
-              style: const TextStyle(
-                  fontSize: 12, color: AppColors.textTertiary, height: 1.6)),
-        ),
-        children: [
-          for (var i = 0; i < record.tickets.length; i++) ...[
-            const Divider(height: 20),
-            Row(children: [
-              SizedBox(
-                  width: 24,
-                  child: Text('${i + 1}',
-                      style: const TextStyle(
-                          color: AppColors.textMuted, fontSize: 12))),
-              Expanded(
-                  child: SimulationTicketNumbers(ticket: record.tickets[i])),
-            ]),
-            Align(
-                alignment: Alignment.centerRight,
-                child: Text(
-                    '${record.tickets[i].playLabel} · ${record.tickets[i].lines}注',
-                    style: const TextStyle(
-                        color: AppColors.textTertiary, fontSize: 12))),
-          ],
-          Align(
-            alignment: Alignment.centerRight,
-            child: TextButton.icon(
-              onPressed: _deleting ? null : () => _delete([record]),
-              icon: const Icon(Icons.delete_outline, size: 16),
-              label: const Text('删除记录'),
+      child: Theme(
+        data: Theme.of(context).copyWith(dividerColor: Colors.transparent),
+        child: ExpansionTile(
+          key: PageStorageKey(record.id),
+          maintainState: true,
+          shape: const Border(),
+          collapsedShape: const Border(),
+          tilePadding:
+              const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+          childrenPadding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
+          iconColor: AppColors.textTertiary,
+          collapsedIconColor: AppColors.textTertiary,
+          leading: _lotteryBadge(record.lottery),
+          title: Row(children: [
+            Expanded(
+              child: Text(record.lottery.label,
+                  style: const TextStyle(
+                      fontSize: 15, fontWeight: FontWeight.w700)),
             ),
+            Text('¥${record.amount}',
+                style: const TextStyle(
+                    color: AppColors.danger,
+                    fontSize: 16,
+                    fontWeight: FontWeight.w700)),
+          ]),
+          subtitle: Padding(
+            padding: const EdgeInsets.only(top: 4),
+            child: Row(children: [
+              Expanded(
+                child: Text(date,
+                    style: const TextStyle(
+                        color: AppColors.textTertiary, fontSize: 12)),
+              ),
+              Text(
+                  '${record.lines}注 · ${record.multiple}倍${record.additional ? ' · 追加' : ''}',
+                  style: const TextStyle(
+                      color: AppColors.textSecondary,
+                      fontSize: 12,
+                      fontWeight: FontWeight.w600)),
+            ]),
           ),
-        ],
+          children: [
+            const Divider(height: 1, color: AppColors.divider),
+            const SizedBox(height: 12),
+            for (var i = 0; i < record.tickets.length; i++) ...[
+              if (i > 0) const SizedBox(height: 8),
+              _ticketCard(record, i),
+            ],
+            const SizedBox(height: 12),
+            Align(
+              alignment: Alignment.centerRight,
+              child: TextButton.icon(
+                onPressed: _deleting ? null : () => _delete([record]),
+                style: TextButton.styleFrom(
+                  foregroundColor: AppColors.danger,
+                  padding: const EdgeInsets.symmetric(horizontal: 10),
+                  visualDensity: VisualDensity.compact,
+                  tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                ),
+                icon: const Icon(Icons.delete_outline, size: 16),
+                label: const Text('删除记录'),
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }

@@ -5,6 +5,7 @@ import '../models/lottery_simulation.dart';
 import '../services/lottery_simulation_repository.dart';
 import '../theme/app_colors.dart';
 import '../widgets/lottery/simulation_ticket_numbers.dart';
+import 'historical_record_match_screen.dart';
 
 class BettingSimulationRecordsScreen extends StatefulWidget {
   final SimulationLottery? initialLottery;
@@ -98,6 +99,12 @@ class _BettingSimulationRecordsScreenState
     } finally {
       if (mounted) setState(() => _deleting = false);
     }
+  }
+
+  void _openHistoricalMatch(SimulationRecord record) {
+    Navigator.of(context).push(MaterialPageRoute(
+      builder: (_) => HistoricalRecordMatchScreen(record: record),
+    ));
   }
 
   @override
@@ -342,19 +349,45 @@ class _BettingSimulationRecordsScreenState
               _ticketCard(record, i),
             ],
             const SizedBox(height: 12),
-            Align(
-              alignment: Alignment.centerRight,
-              child: TextButton.icon(
-                onPressed: _deleting ? null : () => _delete([record]),
-                style: TextButton.styleFrom(
-                  foregroundColor: AppColors.danger,
-                  padding: const EdgeInsets.symmetric(horizontal: 10),
-                  visualDensity: VisualDensity.compact,
-                  tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+            Row(
+              mainAxisAlignment: MainAxisAlignment.end,
+              children: [
+                if (record.lottery == SimulationLottery.superLotto) ...[
+                  FilledButton.icon(
+                    onPressed: _deleting
+                        ? null
+                        : () => _openHistoricalMatch(record),
+                    style: FilledButton.styleFrom(
+                      backgroundColor: AppColors.primary,
+                      foregroundColor: Colors.white,
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 14, vertical: 8),
+                      visualDensity: VisualDensity.compact,
+                      tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                      shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(10)),
+                    ),
+                    icon: const Icon(Icons.manage_search, size: 16),
+                    label: const Text('历史中奖匹配'),
+                  ),
+                  const SizedBox(width: 8),
+                ],
+                OutlinedButton.icon(
+                  onPressed: _deleting ? null : () => _delete([record]),
+                  style: OutlinedButton.styleFrom(
+                    foregroundColor: AppColors.danger,
+                    side: const BorderSide(color: AppColors.danger),
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 14, vertical: 8),
+                    visualDensity: VisualDensity.compact,
+                    tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                    shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(10)),
+                  ),
+                  icon: const Icon(Icons.delete_outline, size: 16),
+                  label: const Text('删除记录'),
                 ),
-                icon: const Icon(Icons.delete_outline, size: 16),
-                label: const Text('删除记录'),
-              ),
+              ],
             ),
           ],
         ),

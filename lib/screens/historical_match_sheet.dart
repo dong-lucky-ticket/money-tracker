@@ -40,6 +40,7 @@ class _HistoricalMatchSheetState extends State<HistoricalMatchSheet> {
   List<_HistoricalDraw> _draws = const [];
   bool _loading = true;
   bool _winnersOnly = false;
+  bool _numbersExpanded = true;
   int? _limit = 30;
 
   @override
@@ -166,56 +167,80 @@ class _HistoricalMatchSheetState extends State<HistoricalMatchSheet> {
                 child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Row(children: [
-                        const Expanded(
-                            child: Text('当前选号',
-                                style: TextStyle(
-                                    color: AppColors.textSecondary,
-                                    fontSize: 13))),
-                        Text(ticket.playLabel,
-                            style: const TextStyle(
-                                color: AppColors.textTertiary, fontSize: 12)),
-                      ]),
-                      const SizedBox(height: 12),
-                      if (ticket.lottery == SimulationLottery.sevenStar)
-                        _sevenStarBalls()
-                      else if (ticket.isDanTuo) ...[
-                        if (ticket.isPrimaryDanTuo) ...[
+                      InkWell(
+                        onTap: () => setState(
+                            () => _numbersExpanded = !_numbersExpanded),
+                        borderRadius: BorderRadius.circular(6),
+                        child: Padding(
+                          padding: const EdgeInsets.symmetric(vertical: 4),
+                          child: Row(children: [
+                            const Expanded(
+                                child: Text('当前选号',
+                                    style: TextStyle(
+                                        color: AppColors.textSecondary,
+                                        fontSize: 13))),
+                            Text(ticket.playLabel,
+                                style: const TextStyle(
+                                    color: AppColors.textTertiary,
+                                    fontSize: 12)),
+                            const SizedBox(width: 6),
+                            Icon(
+                              _numbersExpanded
+                                  ? Icons.expand_less
+                                  : Icons.expand_more,
+                              size: 18,
+                              color: AppColors.textTertiary,
+                            ),
+                          ]),
+                        ),
+                      ),
+                      if (_numbersExpanded) ...[
+                        const SizedBox(height: 12),
+                        if (ticket.lottery == SimulationLottery.sevenStar)
+                          _sevenStarBalls()
+                        else if (ticket.isDanTuo) ...[
+                          if (ticket.isPrimaryDanTuo) ...[
+                            _numberGroup(
+                                ticket.lottery ==
+                                        SimulationLottery.superLotto
+                                    ? '前胆'
+                                    : '红胆',
+                                ticket.primaryDan,
+                                const Color(0xFF4A9BD6)),
+                            const SizedBox(height: 10),
+                            _numberGroup(
+                                ticket.lottery ==
+                                        SimulationLottery.superLotto
+                                    ? '前拖'
+                                    : '红拖',
+                                ticket.primaryTuo,
+                                const Color(0xFF4A9BD6)),
+                          ] else
+                            _numberGroup(ticket.lottery.primaryLabel,
+                                ticket.primary, const Color(0xFF4A9BD6)),
+                          if (ticket.isSecondaryDanTuo) ...[
+                            const SizedBox(height: 10),
+                            _numberGroup('后胆', ticket.secondaryDan,
+                                const Color(0xFFE7A51B)),
+                            const SizedBox(height: 10),
+                            _numberGroup('后拖', ticket.secondaryTuo,
+                                const Color(0xFFE7A51B)),
+                          ] else if (ticket.secondary.isNotEmpty) ...[
+                            const SizedBox(height: 10),
+                            _numberGroup(ticket.lottery.secondaryLabel,
+                                ticket.secondary, const Color(0xFFE7A51B)),
+                          ],
+                        ] else ...[
                           _numberGroup(
-                              ticket.lottery == SimulationLottery.superLotto
-                                  ? '前胆'
-                                  : '红胆',
-                              ticket.primaryDan,
-                              const Color(0xFF4A9BD6)),
-                          const SizedBox(height: 10),
-                          _numberGroup(
-                              ticket.lottery == SimulationLottery.superLotto
-                                  ? '前拖'
-                                  : '红拖',
-                              ticket.primaryTuo,
-                              const Color(0xFF4A9BD6)),
-                        ] else
-                          _numberGroup(ticket.lottery.primaryLabel,
+                              ticket.lottery == SimulationLottery.qilecai
+                                  ? '基本'
+                                  : ticket.lottery.primaryLabel,
                               ticket.primary, const Color(0xFF4A9BD6)),
-                        if (ticket.isSecondaryDanTuo) ...[
-                          const SizedBox(height: 10),
-                          _numberGroup('后胆', ticket.secondaryDan,
-                              const Color(0xFFE7A51B)),
-                          const SizedBox(height: 10),
-                          _numberGroup('后拖', ticket.secondaryTuo,
-                              const Color(0xFFE7A51B)),
-                        ] else if (ticket.secondary.isNotEmpty) ...[
-                          const SizedBox(height: 10),
-                          _numberGroup(ticket.lottery.secondaryLabel,
-                              ticket.secondary, const Color(0xFFE7A51B)),
-                        ],
-                      ] else ...[
-                        _numberGroup(ticket.lottery.primaryLabel,
-                            ticket.primary, const Color(0xFF4A9BD6)),
-                        if (ticket.secondary.isNotEmpty) ...[
-                          const SizedBox(height: 10),
-                          _numberGroup(ticket.lottery.secondaryLabel,
-                              ticket.secondary, const Color(0xFFE7A51B)),
+                          if (ticket.secondary.isNotEmpty) ...[
+                            const SizedBox(height: 10),
+                            _numberGroup(ticket.lottery.secondaryLabel,
+                                ticket.secondary, const Color(0xFFE7A51B)),
+                          ],
                         ],
                       ],
                     ]),

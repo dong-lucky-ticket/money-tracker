@@ -172,6 +172,91 @@ void main() {
     expect(tester.takeException(), isNull);
   });
 
+  testWidgets('Double Color Ball dan-tuo builds a valid dan-tuo ticket',
+      (tester) async {
+    tester.view.devicePixelRatio = 1;
+    tester.view.physicalSize = const Size(390, 844);
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+
+    await tester.pumpWidget(const MaterialApp(
+      home: BettingSimulatorScreen(),
+    ));
+    await tester.runAsync(
+        () => Future<void>.delayed(const Duration(milliseconds: 20)));
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.text('双色球'));
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.byType(DropdownButton<bool>));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('胆拖投注').last);
+    await tester.pumpAndSettle();
+
+    for (final number in [1, 2]) {
+      final danBall = find.byKey(ValueKey('pick-doubleColorBall-dan-$number'));
+      await tester.ensureVisible(danBall);
+      await tester.tap(danBall);
+      await tester.pump();
+    }
+
+    for (final number in [3, 4, 5, 6, 7, 8]) {
+      final tuoBall = find.byKey(ValueKey('pick-doubleColorBall-tuo-$number'));
+      await tester.ensureVisible(tuoBall);
+      await tester.tap(tuoBall);
+      await tester.pump();
+    }
+
+    final blueBall = find.byKey(const ValueKey('pick-doubleColorBall-blue-8'));
+    await tester.ensureVisible(blueBall);
+    await tester.tap(blueBall);
+    await tester.pumpAndSettle();
+
+    // dan 1-2, tuo 3-8 (six tuo codes) => C(6, 4) = 15 lines, 30 yuan.
+    expect(find.text('已选 15注，共30元', findRichText: true), findsOneWidget);
+
+    await tester.tap(find.text('选好了'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('胆拖'), findsOneWidget);
+    expect(find.text('红胆'), findsOneWidget);
+    expect(find.text('红拖'), findsOneWidget);
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('Double Color Ball machine pick keeps dan-tuo mode',
+      (tester) async {
+    tester.view.devicePixelRatio = 1;
+    tester.view.physicalSize = const Size(390, 844);
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+
+    await tester.pumpWidget(const MaterialApp(
+      home: BettingSimulatorScreen(),
+    ));
+    await tester.runAsync(
+        () => Future<void>.delayed(const Duration(milliseconds: 20)));
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.text('双色球'));
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.byType(DropdownButton<bool>));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('胆拖投注').last);
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.text('机选'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('胆拖投注'), findsOneWidget);
+    expect(find.text('基本投注'), findsNothing);
+    expect(find.text('红球胆码'), findsOneWidget);
+    expect(find.text('红球拖码'), findsOneWidget);
+    expect(tester.takeException(), isNull);
+  });
+
   testWidgets('Seven Star selection preserves the front six and back one',
       (tester) async {
     tester.view.devicePixelRatio = 1;

@@ -141,4 +141,84 @@ void main() {
     expect(await repository.loadDraftTickets(SimulationLottery.superLotto),
         isEmpty);
   });
+
+  test('Double Color Ball dan-tuo calculates lines and validates rules', () {
+    SimulationTicket danTuo({
+      required List<int> dan,
+      required List<int> tuo,
+      List<int> blue = const [1],
+    }) =>
+        SimulationTicket(
+          lottery: SimulationLottery.doubleColorBall,
+          primary: [...dan, ...tuo],
+          secondary: blue,
+          primaryDan: dan,
+          primaryTuo: tuo,
+        );
+
+    final valid = danTuo(dan: [1, 2], tuo: [3, 4, 5, 6, 7]);
+    expect(valid.isValid, isTrue);
+    expect(valid.lines, 5); // C(5, 4) * C(1, 1)
+    expect(valid.playLabel, '胆拖');
+    expect(valid.primary, [1, 2, 3, 4, 5, 6, 7]);
+
+    // Five dan codes with one tuo code total six red balls, below seven.
+    expect(danTuo(dan: [1, 2, 3, 4, 5], tuo: [6]).isValid, isFalse);
+    // Dan codes and tuo codes must not overlap.
+    expect(danTuo(dan: [1, 2], tuo: [3, 4, 5, 6, 2]).isValid, isFalse);
+    // At most five dan codes.
+    expect(danTuo(dan: [1, 2, 3, 4, 5, 6], tuo: [7]).isValid, isFalse);
+
+    // Multiple blue balls turn it into a compound dan-tuo bet.
+    final compound =
+        danTuo(dan: [1], tuo: [2, 3, 4, 5, 6, 7], blue: [8, 9]);
+    expect(compound.isValid, isTrue);
+    expect(compound.lines, 12); // C(6, 5) * 2
+  });
+
+  test('persists and restores dan-tuo tickets', () {
+    final ticket = SimulationTicket(
+      lottery: SimulationLottery.doubleColorBall,
+      primary: [1, 2, 3, 4, 5, 6, 7],
+      secondary: [8],
+      primaryDan: [1, 2],
+      primaryTuo: [3, 4, 5, 6, 7],
+    );
+    final restored = SimulationTicket.fromMap(ticket.toMap());
+    expect(restored.isDanTuo, isTrue);
+    expect(restored.primaryDan, [1, 2]);
+    expect(restored.primaryTuo, [3, 4, 5, 6, 7]);
+    expect(restored.lines, 5);
+  });
+
+  testWidgets('Double Color Ball dan-tuo numbers show dan and tuo rows',
+      (tester) async {
+    final ticket = SimulationTicket(
+      lottery: SimulationLottery.doubleColorBall,
+      primary: [1, 2, 3, 4, 5, 6, 7],
+      secondary: [8],
+      primaryDan: [1, 2],
+      primaryTuo: [3, 4, 5, 6, 7],
+    );
+    await tester.pumpWidget(MaterialApp(
+      home: Scaffold(body: SimulationTicketNumbers(ticket: ticket)),
+    ));
+
+    expect(find.text('红胆'), findsOneWidget);
+    expect(find.text('红拖'), findsOneWidget);
+    expect(find.text('蓝球'), findsOneWidget);
+  });
+
+  test('Double Color Ball dan-tuo random pick stays within dan-tuo rules', () {
+    for (var seed = 0; seed < 50; seed++) {
+      final ticket = SimulationTicket.danTuoRandom(
+          SimulationLottery.doubleColorBall, Random(seed));
+      expect(ticket.isDanTuo, isTrue);
+      expect(ticket.isValid, isTrue);
+      expect(ticket.primaryDan.length, inInclusiveRange(1, 5));
+      expect(ticket.primaryDan.length + ticket.primaryTuo.length, 7);
+      expect(ticket.secondary, hasLength(1));
+      expect(ticket.lines, greaterThan(0));
+    }
+  });
 }

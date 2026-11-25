@@ -12,6 +12,22 @@ class SimulationTicketNumbers extends StatelessWidget {
   Widget build(BuildContext context) {
     final lottery = ticket.lottery;
     final isSevenStar = lottery == SimulationLottery.sevenStar;
+    if (ticket.isDanTuo) {
+      const danger = AppColors.danger;
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          _row('红胆', ticket.primaryDan, danger),
+          const SizedBox(height: 6),
+          _row('红拖', ticket.primaryTuo, danger),
+          if (ticket.secondary.isNotEmpty) ...[
+            const SizedBox(height: 6),
+            _row(lottery.secondaryLabel, ticket.secondary, AppColors.primary),
+          ],
+        ],
+      );
+    }
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [

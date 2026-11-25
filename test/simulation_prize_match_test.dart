@@ -132,6 +132,38 @@ void main() {
     );
   });
 
+  test('Double Color Ball dan-tuo matches only lines formed by dan codes', () {
+    final ticket = SimulationTicket(
+      lottery: SimulationLottery.doubleColorBall,
+      primary: [1, 2, 3, 4, 5, 6, 7],
+      secondary: [8],
+      primaryDan: [1, 2],
+      primaryTuo: [3, 4, 5, 6, 7],
+    );
+
+    // Both dan codes miss while all five tuo codes hit. Every generated line
+    // carries exactly 4 red hits, so with a missed blue ball the best tier is
+    // the fifth prize rather than the fourth.
+    expect(
+      simulationPrizeLabel(
+        ticket: ticket,
+        primaryDraw: [3, 4, 5, 6, 7, 8],
+        secondaryDraw: [9],
+      ),
+      '五等奖',
+    );
+
+    // With the blue ball hit, the best possible line reaches the fourth prize.
+    expect(
+      simulationPrizeLabel(
+        ticket: ticket,
+        primaryDraw: [3, 4, 5, 6, 7, 8],
+        secondaryDraw: [8],
+      ),
+      '四等奖',
+    );
+  });
+
   test('Happy 8 compound play matches prizes across generated lines', () {
     final ticket = SimulationTicket(
       lottery: SimulationLottery.happyEight,

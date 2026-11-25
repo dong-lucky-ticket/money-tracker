@@ -24,16 +24,21 @@ import 'historical_match_sheet.dart';
 class _SimulationDraft {
   final Set<int> primary = {};
   final Set<int> secondary = {};
+  final Set<int> primaryDan = {};
+  final Set<int> primaryTuo = {};
   final List<int?> digits = List.filled(7, null);
   final List<SimulationTicket> tickets = [];
   int happyEightCount = 10;
   int multiple = 1;
   bool additional = false;
+  bool danTuoMode = false;
   int? editingTicketIndex;
 
   void clearSelection() {
     primary.clear();
     secondary.clear();
+    primaryDan.clear();
+    primaryTuo.clear();
     digits.fillRange(0, 7, null);
     editingTicketIndex = null;
   }
@@ -81,16 +86,24 @@ class _BettingSimulatorScreenState extends State<BettingSimulatorScreen> {
     _loadRecentDraws(_kind);
   }
 
-  SimulationTicket get _currentTicket => SimulationTicket(
-        lottery: _kind,
-        primary: _kind == SimulationLottery.sevenStar
-            ? _draft.digits.take(6).whereType<int>().toList()
-            : _draft.primary.toList(),
-        secondary: _kind == SimulationLottery.sevenStar
-            ? (_draft.digits[6] == null ? [] : [_draft.digits[6]!])
-            : _draft.secondary.toList(),
-        happyEightCount: _draft.happyEightCount,
-      );
+  SimulationTicket get _currentTicket {
+    final danTuo = _kind == SimulationLottery.doubleColorBall &&
+        _draft.danTuoMode;
+    return SimulationTicket(
+      lottery: _kind,
+      primary: _kind == SimulationLottery.sevenStar
+          ? _draft.digits.take(6).whereType<int>().toList()
+          : danTuo
+              ? {..._draft.primaryDan, ..._draft.primaryTuo}.toList()
+              : _draft.primary.toList(),
+      secondary: _kind == SimulationLottery.sevenStar
+          ? (_draft.digits[6] == null ? [] : [_draft.digits[6]!])
+          : _draft.secondary.toList(),
+      primaryDan: danTuo ? _draft.primaryDan.toList() : const [],
+      primaryTuo: danTuo ? _draft.primaryTuo.toList() : const [],
+      happyEightCount: _draft.happyEightCount,
+    );
+  }
 
   String get _nextDrawLabel {
     const weekdays = ['周一', '周二', '周三', '周四', '周五', '周六', '周日'];
@@ -229,49 +242,8 @@ class _BettingSimulatorScreenState extends State<BettingSimulatorScreen> {
                                   const EdgeInsets.symmetric(horizontal: 16),
                               child: _buildDigitPicker(),
                             )
-                          else ...[
-                            Padding(
-                              padding:
-                                  const EdgeInsets.symmetric(horizontal: 16),
-                              child: _numberSection(
-                                title: _kind == SimulationLottery.happyEight
-                                    ? '号码区'
-                                    : _kind.primaryLabel,
-                                hint: _kind == SimulationLottery.happyEight
-                                    ? '至少选择 ${_draft.happyEightCount} 个号码，超出按复式计算'
-                                    : '至少选择 ${_kind.primaryCount} 个号码',
-                                max: _kind.primaryMax,
-                                selection: _draft.primary,
-                                color: (_kind ==
-                                            SimulationLottery
-                                                .doubleColorBall ||
-                                        _kind == SimulationLottery.qilecai)
-                                    ? AppColors.danger
-                                    : _blue,
-                                limit: null,
-                              ),
-                            ),
-                            if (_kind.secondaryCount > 0) ...[
-                              const Padding(
-                                  padding: EdgeInsets.symmetric(
-                                      horizontal: 16, vertical: 22),
-                                  child: Divider(height: 1)),
-                              Padding(
-                                padding:
-                                    const EdgeInsets.symmetric(horizontal: 16),
-                                child: _numberSection(
-                                  title: _kind.secondaryLabel,
-                                  hint: '至少选择 ${_kind.secondaryCount} 个号码',
-                                  max: _kind.secondaryMax,
-                                  selection: _draft.secondary,
-                                  color:
-                                      _kind == SimulationLottery.doubleColorBall
-                                          ? _blue
-                                          : AppColors.warning,
-                                ),
-                              ),
-                            ],
-                          ],
+                          else
+                            ..._buildNumberPickers(),
                         ],
                       ),
                     ),
@@ -340,6 +312,14 @@ class _BettingSimulatorScreenState extends State<BettingSimulatorScreen> {
     _loadRecentDraws(kind);
   }
 
+  void _setDanTuoMode(bool enabled) {
+    if (_draft.danTuoMode == enabled) return;
+    setState(() {
+      _draft.danTuoMode = enabled;
+      _draft.clearSelection();
+    });
+  }
+
   Widget _buildToolbar() {
     return SizedBox(
       height: 48,
@@ -366,9 +346,25 @@ class _BettingSimulatorScreenState extends State<BettingSimulatorScreen> {
                       });
                     },
                   )
-                : const Text('基本投注',
-                    style:
-                        TextStyle(fontSize: 16, fontWeight: FontWeight.w700)),
+                : _kind == SimulationLottery.doubleColorBall
+                    ? DropdownButton<bool>(
+                        value: _draft.danTuoMode,
+                        underline: const SizedBox.shrink(),
+                        isExpanded: true,
+                        items: const [
+                          DropdownMenuItem(
+                              value: false, child: Text('基本投注')),
+                          DropdownMenuItem(
+                              value: true, child: Text('胆拖投注')),
+                        ],
+                        onChanged: (value) {
+                          if (value == null) return;
+                          _setDanTuoMode(value);
+                        },
+                      )
+                    : const Text('基本投注',
+                        style: TextStyle(
+                            fontSize: 16, fontWeight: FontWeight.w700)),
           ),
           TextButton(
               onPressed: _openBasket,
@@ -591,13 +587,106 @@ class _BettingSimulatorScreenState extends State<BettingSimulatorScreen> {
     );
   }
 
+  List<Widget> _buildNumberPickers() {
+    final danTuo = _kind == SimulationLottery.doubleColorBall &&
+        _draft.danTuoMode;
+    if (danTuo) {
+      return [
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16),
+          child: _numberSection(
+            title: '红球胆码',
+            hint: '胆码1-5个，每注必含，不能与拖码重复',
+            max: _kind.primaryMax,
+            selection: _draft.primaryDan,
+            color: AppColors.danger,
+            limit: 5,
+            excluded: _draft.primaryTuo,
+            blockedMessage: '该号码已选为拖码',
+            keyPrefix: 'dan',
+          ),
+        ),
+        const Padding(
+            padding: EdgeInsets.symmetric(horizontal: 16, vertical: 22),
+            child: Divider(height: 1)),
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16),
+          child: _numberSection(
+            title: '红球拖码',
+            hint: '胆码+拖码合计不少于7个红球',
+            max: _kind.primaryMax,
+            selection: _draft.primaryTuo,
+            color: AppColors.danger,
+            excluded: _draft.primaryDan,
+            blockedMessage: '该号码已选为胆码',
+            keyPrefix: 'tuo',
+          ),
+        ),
+        const Padding(
+            padding: EdgeInsets.symmetric(horizontal: 16, vertical: 22),
+            child: Divider(height: 1)),
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16),
+          child: _numberSection(
+            title: '蓝球',
+            hint: '至少选择 ${_kind.secondaryCount} 个号码，多个蓝球为复式胆拖',
+            max: _kind.secondaryMax,
+            selection: _draft.secondary,
+            color: _blue,
+            keyPrefix: 'blue',
+          ),
+        ),
+      ];
+    }
+    return [
+      Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 16),
+        child: _numberSection(
+          title: _kind == SimulationLottery.happyEight
+              ? '号码区'
+              : _kind.primaryLabel,
+          hint: _kind == SimulationLottery.happyEight
+              ? '至少选择 ${_draft.happyEightCount} 个号码，超出按复式计算'
+              : '至少选择 ${_kind.primaryCount} 个号码',
+          max: _kind.primaryMax,
+          selection: _draft.primary,
+          color: (_kind == SimulationLottery.doubleColorBall ||
+                  _kind == SimulationLottery.qilecai)
+              ? AppColors.danger
+              : _blue,
+          limit: null,
+        ),
+      ),
+      if (_kind.secondaryCount > 0) ...[
+        const Padding(
+            padding: EdgeInsets.symmetric(horizontal: 16, vertical: 22),
+            child: Divider(height: 1)),
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16),
+          child: _numberSection(
+            title: _kind.secondaryLabel,
+            hint: '至少选择 ${_kind.secondaryCount} 个号码',
+            max: _kind.secondaryMax,
+            selection: _draft.secondary,
+            color: _kind == SimulationLottery.doubleColorBall
+                ? _blue
+                : AppColors.warning,
+          ),
+        ),
+      ],
+    ];
+  }
+
   Widget _numberSection(
       {required String title,
       required String hint,
       required int max,
       required Set<int> selection,
       required Color color,
-      int? limit}) {
+      int? limit,
+      Set<int> excluded = const {},
+      String blockedMessage = '该号码已在另一分区选中',
+      String? keyPrefix}) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -621,14 +710,21 @@ class _BettingSimulatorScreenState extends State<BettingSimulatorScreen> {
           return Wrap(spacing: spacing, runSpacing: 14, children: [
             for (var number = 1; number <= max; number++)
               SizedBox(
-                key: ValueKey('pick-${_kind.name}-$number'),
+                key: ValueKey(keyPrefix == null
+                    ? 'pick-${_kind.name}-$number'
+                    : 'pick-${_kind.name}-$keyPrefix-$number'),
                 width: size,
                 height: size,
                 child: _ball(
                   label: number.toString().padLeft(2, '0'),
                   selected: selection.contains(number),
                   color: color,
+                  enabled: !excluded.contains(number),
                   onTap: () {
+                    if (excluded.contains(number)) {
+                      _message(blockedMessage);
+                      return;
+                    }
                     if (!selection.contains(number) &&
                         limit != null &&
                         selection.length >= limit) {
@@ -682,23 +778,33 @@ class _BettingSimulatorScreenState extends State<BettingSimulatorScreen> {
       {required String label,
       required bool selected,
       required Color color,
-      required VoidCallback onTap}) {
+      required VoidCallback onTap,
+      bool enabled = true}) {
+    final textColor = !enabled
+        ? AppColors.textMuted
+        : selected
+            ? Colors.white
+            : color;
     return Semantics(
       button: true,
       selected: selected,
       child: Material(
-        color: selected ? color : Colors.white,
+        color: !enabled
+            ? AppColors.surfaceSoft
+            : selected
+                ? color
+                : Colors.white,
         elevation: selected ? 0 : 1,
         shadowColor: Colors.black12,
         shape: CircleBorder(
             side: BorderSide(color: selected ? color : AppColors.border)),
         child: InkWell(
-          onTap: onTap,
+          onTap: enabled ? onTap : null,
           customBorder: const CircleBorder(),
           child: Center(
               child: Text(label,
                   style: TextStyle(
-                      color: selected ? Colors.white : color,
+                      color: textColor,
                       fontSize: 18,
                       fontWeight: FontWeight.w500))),
         ),
@@ -801,8 +907,11 @@ class _BettingSimulatorScreenState extends State<BettingSimulatorScreen> {
     _scrollController.jumpTo(0);
   }
 
-  SimulationTicket _randomTicket() => SimulationTicket.random(_kind, _random,
-      happyEightCount: _draft.happyEightCount);
+  SimulationTicket _randomTicket() =>
+      _kind == SimulationLottery.doubleColorBall && _draft.danTuoMode
+          ? SimulationTicket.danTuoRandom(_kind, _random)
+          : SimulationTicket.random(_kind, _random,
+              happyEightCount: _draft.happyEightCount);
 
   void _restoreSelection(SimulationTicket ticket) {
     _draft.clearSelection();
@@ -811,7 +920,13 @@ class _BettingSimulatorScreenState extends State<BettingSimulatorScreen> {
         _draft.digits[i] = ticket.primary[i];
       }
       _draft.digits[6] = ticket.secondary.single;
+    } else if (ticket.isDanTuo) {
+      _draft.danTuoMode = true;
+      _draft.primaryDan.addAll(ticket.primaryDan);
+      _draft.primaryTuo.addAll(ticket.primaryTuo);
+      _draft.secondary.addAll(ticket.secondary);
     } else {
+      _draft.danTuoMode = false;
       _draft.primary.addAll(ticket.primary);
       _draft.secondary.addAll(ticket.secondary);
     }
@@ -945,11 +1060,7 @@ class _BettingSimulatorScreenState extends State<BettingSimulatorScreen> {
                           _scrollController.jumpTo(0);
                         }
 
-                        final playTag = _kind == SimulationLottery.happyEight
-                            ? ticket.playLabel
-                            : ticket.lines > 1
-                                ? '复式'
-                                : '单式';
+                        final playTag = ticket.playLabel;
 
                         return Container(
                           padding: const EdgeInsets.fromLTRB(10, 10, 4, 10),

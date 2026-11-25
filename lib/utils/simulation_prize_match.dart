@@ -151,6 +151,55 @@ String? simulationPrizeLabel({
     return _tierLabel(tier);
   }
 
+  if (ticket.isDanTuo) {
+    const tiers = [
+      [
+        [6, 1]
+      ],
+      [
+        [6, 0]
+      ],
+      [
+        [5, 1]
+      ],
+      [
+        [5, 0],
+        [4, 1]
+      ],
+      [
+        [4, 0],
+        [3, 1]
+      ],
+      [
+        [2, 1],
+        [1, 1],
+        [0, 1]
+      ],
+    ];
+    final danHits = ticket.primaryDan
+        .toSet()
+        .intersection(primaryDraw.toSet())
+        .length;
+    final tuoHits = ticket.primaryTuo
+        .toSet()
+        .intersection(primaryDraw.toSet())
+        .length;
+    final tuoNeeded = ticket.lottery.primaryCount - ticket.primaryDan.length;
+    final tuoMisses = ticket.primaryTuo.length - tuoHits;
+    final minTuoHits = (tuoNeeded - tuoMisses).clamp(0, tuoNeeded).toInt();
+    final maxTuoHits = tuoHits < tuoNeeded ? tuoHits : tuoNeeded;
+    final danTuoFrontHits = {
+      for (var hits = minTuoHits; hits <= maxTuoHits; hits++)
+        danHits + hits,
+    };
+    final tier = _tierIndex(
+        tiers,
+        (condition) =>
+            danTuoFrontHits.contains(condition[0]) &&
+            backCounts.contains(condition[1]));
+    return _tierLabel(tier);
+  }
+
   const tiers = [
     [
       [6, 1]

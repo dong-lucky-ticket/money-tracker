@@ -179,7 +179,18 @@ class _HistoricalMatchSheetState extends State<HistoricalMatchSheet> {
                       const SizedBox(height: 12),
                       if (ticket.lottery == SimulationLottery.sevenStar)
                         _sevenStarBalls()
-                      else ...[
+                      else if (ticket.isDanTuo) ...[
+                        _numberGroup('红胆', ticket.primaryDan,
+                            const Color(0xFF4A9BD6)),
+                        const SizedBox(height: 10),
+                        _numberGroup('红拖', ticket.primaryTuo,
+                            const Color(0xFF4A9BD6)),
+                        if (ticket.secondary.isNotEmpty) ...[
+                          const SizedBox(height: 10),
+                          _numberGroup(ticket.lottery.secondaryLabel,
+                              ticket.secondary, const Color(0xFFE7A51B)),
+                        ],
+                      ] else ...[
                         _numberGroup(ticket.lottery.primaryLabel,
                             ticket.primary, const Color(0xFF4A9BD6)),
                         if (ticket.secondary.isNotEmpty) ...[

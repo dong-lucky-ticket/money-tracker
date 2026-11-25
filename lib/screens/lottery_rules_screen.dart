@@ -647,6 +647,19 @@ class _DoubleColorBallNotes extends StatelessWidget {
         ),
         SizedBox(height: 10),
         Text(
+          '胆拖投注（红球）',
+          style: TextStyle(
+            fontWeight: FontWeight.w600,
+            color: AppColors.textPrimary,
+          ),
+        ),
+        SizedBox(height: 4),
+        Text(
+          '从红球区选择1-5个号码作为胆码，再选择与胆码不重复的号码作为拖码，胆码与拖码合计不得少于7个。每注由全部胆码加上从拖码中补充的号码组成6个红球；从蓝球区选择1个或多个号码。选中多个蓝球即为复式胆拖。',
+          style: TextStyle(color: AppColors.textSecondary, height: 1.65),
+        ),
+        SizedBox(height: 10),
+        Text(
           '特别规定',
           style: TextStyle(
             fontWeight: FontWeight.w600,

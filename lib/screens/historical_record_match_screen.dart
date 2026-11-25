@@ -304,10 +304,20 @@ class _HistoricalRecordMatchScreenState extends State<HistoricalRecordMatchScree
             ),
             if (_numbersExpanded) ...[
               const SizedBox(height: 12),
-              for (var i = 0; i < record.tickets.length; i++) ...[
-                if (i > 0) const SizedBox(height: 8),
-                _ticketTile(record, i),
-              ],
+              ConstrainedBox(
+                constraints: BoxConstraints(
+                    maxHeight: MediaQuery.sizeOf(context).height * 0.34),
+                child: SingleChildScrollView(
+                  child: Column(
+                    children: [
+                      for (var i = 0; i < record.tickets.length; i++) ...[
+                        if (i > 0) const SizedBox(height: 8),
+                        _ticketTile(record, i),
+                      ],
+                    ],
+                  ),
+                ),
+              ),
             ],
           ],
         ),
@@ -375,7 +385,10 @@ class _HistoricalRecordMatchScreenState extends State<HistoricalRecordMatchScree
                   fontWeight: winning ? FontWeight.w700 : FontWeight.normal)),
         ]),
         const SizedBox(height: 11),
-        _drawBalls(draw),
+        if (widget.record.lottery == SimulationLottery.sevenStar)
+          _sevenStarBalls(draw)
+        else
+          _drawBalls(draw),
       ]),
     );
   }
@@ -430,7 +443,48 @@ class _HistoricalRecordMatchScreenState extends State<HistoricalRecordMatchScree
     });
   }
 
-  Widget _ball(int number, Color color, {bool hit = false, double size = 34}) =>
+  Widget _sevenStarBalls(_HistoricalDraw draw) {
+    final winning = _winningTicket(draw);
+    final selected = winning == null
+        ? const <int>[]
+        : [...winning.primary, ...winning.secondary];
+    final numbers = [...draw.primary, ...draw.secondary];
+    const spacing = 5.0;
+    const minSize = 24.0;
+    const defaultSize = 34.0;
+    return LayoutBuilder(builder: (context, constraints) {
+      if (numbers.isEmpty) return const SizedBox.shrink();
+      final available =
+          (constraints.maxWidth - (numbers.length - 1) * spacing) /
+              numbers.length;
+      final size = available.clamp(minSize, defaultSize).toDouble();
+      final balls = [
+        for (var index = 0; index < numbers.length; index++)
+          _ball(
+            numbers[index],
+            index < 6 ? const Color(0xFF4A9BD6) : const Color(0xFFE7A51B),
+            pad: false,
+            hit: index < selected.length && selected[index] == numbers[index],
+            size: size,
+          ),
+      ];
+      if (available >= minSize) {
+        return Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            for (var index = 0; index < balls.length; index++) ...[
+              if (index > 0) const SizedBox(width: spacing),
+              balls[index],
+            ],
+          ],
+        );
+      }
+      return Wrap(spacing: spacing, runSpacing: 7, children: balls);
+    });
+  }
+
+  Widget _ball(int number, Color color,
+          {bool hit = false, bool pad = true, double size = 34}) =>
       Container(
         width: size,
         height: size,
@@ -441,7 +495,7 @@ class _HistoricalRecordMatchScreenState extends State<HistoricalRecordMatchScree
             border: Border.all(
                 color: color.withOpacity(hit ? 1 : .65),
                 width: hit ? 1 : .8)),
-        child: Text(number.toString().padLeft(2, '0'),
+        child: Text(pad ? number.toString().padLeft(2, '0') : '$number',
             style: TextStyle(
                 color: hit ? Colors.white : color,
                 fontSize: size < 30

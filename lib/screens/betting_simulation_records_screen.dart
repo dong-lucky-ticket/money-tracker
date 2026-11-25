@@ -352,26 +352,24 @@ class _BettingSimulationRecordsScreenState
             Row(
               mainAxisAlignment: MainAxisAlignment.end,
               children: [
-                if (record.lottery == SimulationLottery.superLotto) ...[
-                  FilledButton.icon(
-                    onPressed: _deleting
-                        ? null
-                        : () => _openHistoricalMatch(record),
-                    style: FilledButton.styleFrom(
-                      backgroundColor: AppColors.primary,
-                      foregroundColor: Colors.white,
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: 14, vertical: 8),
-                      visualDensity: VisualDensity.compact,
-                      tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                      shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(10)),
-                    ),
-                    icon: const Icon(Icons.manage_search, size: 16),
-                    label: const Text('历史中奖匹配'),
+                FilledButton.icon(
+                  onPressed: _deleting
+                      ? null
+                      : () => _openHistoricalMatch(record),
+                  style: FilledButton.styleFrom(
+                    backgroundColor: AppColors.primary,
+                    foregroundColor: Colors.white,
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 14, vertical: 8),
+                    visualDensity: VisualDensity.compact,
+                    tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                    shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(10)),
                   ),
-                  const SizedBox(width: 8),
-                ],
+                  icon: const Icon(Icons.manage_search, size: 16),
+                  label: const Text('历史中奖匹配'),
+                ),
+                const SizedBox(width: 8),
                 OutlinedButton.icon(
                   onPressed: _deleting ? null : () => _delete([record]),
                   style: OutlinedButton.styleFrom(

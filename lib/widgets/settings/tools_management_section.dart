@@ -1,6 +1,8 @@
+
 import 'package:flutter/material.dart';
 
 import '../../screens/betting_simulator_screen.dart';
+import '../../screens/gambling_stats_screen.dart';
 import '../../screens/unit_converter_screen.dart';
 import '../../theme/app_colors.dart';
 import 'settings_section.dart';
@@ -35,6 +37,23 @@ class ToolsManagementSection extends StatelessWidget {
               },
             ),
             SettingsItem(
+              icon: Icons.stacked_bar_chart,
+              iconColor: AppColors.danger,
+              title: '赌狗统计',
+              trailingText: '体彩/福彩 · 刮刮乐/纸质彩票',
+              showArrow: true,
+              onTap: () async {
+                const page = GamblingStatsScreen();
+                if (onOpenPage != null) {
+                  await onOpenPage!(page);
+                  return;
+                }
+                await Navigator.of(context).push(
+                  MaterialPageRoute(builder: (_) => page),
+                );
+              },
+            ),
+            SettingsItem(
               icon: Icons.swap_horiz,
               iconColor: AppColors.primary,
               title: '单位换算',
@@ -58,3 +77,5 @@ class ToolsManagementSection extends StatelessWidget {
     );
   }
 }
+
+

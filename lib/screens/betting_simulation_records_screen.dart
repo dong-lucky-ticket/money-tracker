@@ -220,9 +220,9 @@ class _BettingSimulationRecordsScreenState
   }
 
   String _lotteryAsset(SimulationLottery lottery) => switch (lottery) {
-        SimulationLottery.superLotto => 'assets/lottery/dlt.jpg',
+        SimulationLottery.superLotto => 'assets/lottery/dltlogo.jpg',
         SimulationLottery.doubleColorBall => 'assets/lottery/block-ssq-m.png',
-        SimulationLottery.sevenStar => 'assets/lottery/qxc.jpg',
+        SimulationLottery.sevenStar => 'assets/lottery/sevenstarlogo.jpg',
         SimulationLottery.happyEight => 'assets/lottery/block-kl8-m.png',
         SimulationLottery.qilecai => 'assets/lottery/block-qlc-m.png',
       };
